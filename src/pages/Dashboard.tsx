@@ -38,36 +38,36 @@ import {
 } from "recharts";
 
 const donationTrend = [
-  { month: "Jul", amount: 125000 },
-  { month: "Aug", amount: 180000 },
-  { month: "Sep", amount: 220000 },
-  { month: "Oct", amount: 310000 },
-  { month: "Nov", amount: 450000 },
-  { month: "Dec", amount: 520000 },
+  { month: "Th7", amount: 125000 },
+  { month: "Th8", amount: 180000 },
+  { month: "Th9", amount: 220000 },
+  { month: "Th10", amount: 310000 },
+  { month: "Th11", amount: 450000 },
+  { month: "Th12", amount: 520000 },
 ];
 
 const impactData = [
-  { name: "Water", value: 35, color: "hsl(200, 70%, 50%)" },
-  { name: "Education", value: 25, color: "hsl(280, 70%, 50%)" },
-  { name: "Food", value: 20, color: "hsl(16, 85%, 58%)" },
-  { name: "Healthcare", value: 12, color: "hsl(174, 62%, 38%)" },
-  { name: "Other", value: 8, color: "hsl(220, 10%, 60%)" },
+  { name: "Nước Sạch", value: 35, color: "hsl(200, 70%, 50%)" },
+  { name: "Giáo Dục", value: 25, color: "hsl(280, 70%, 50%)" },
+  { name: "Lương Thực", value: 20, color: "hsl(16, 85%, 58%)" },
+  { name: "Y Tế", value: 12, color: "hsl(174, 62%, 38%)" },
+  { name: "Khác", value: 8, color: "hsl(220, 10%, 60%)" },
 ];
 
 const topDonors = [
-  { name: "Sarah M.", total: 15000, campaigns: 23, badge: "Diamond Giver", avatar: "S" },
-  { name: "Tech4Good Foundation", total: 12500, campaigns: 5, badge: "Corporate Hero", avatar: "T" },
-  { name: "Anonymous Hero", total: 10000, campaigns: 45, badge: "Platinum Giver", avatar: "A" },
-  { name: "John D.", total: 8500, campaigns: 12, badge: "Gold Giver", avatar: "J" },
-  { name: "Maria L.", total: 7200, campaigns: 31, badge: "Gold Giver", avatar: "M" },
+  { name: "Sarah N.", total: 15000, campaigns: 23, badge: "Kim Cương", avatar: "S" },
+  { name: "Quỹ Tech4Good", total: 12500, campaigns: 5, badge: "Anh Hùng DN", avatar: "T" },
+  { name: "Ẩn Danh", total: 10000, campaigns: 45, badge: "Bạch Kim", avatar: "A" },
+  { name: "Minh D.", total: 8500, campaigns: 12, badge: "Vàng", avatar: "M" },
+  { name: "Lan L.", total: 7200, campaigns: 31, badge: "Vàng", avatar: "L" },
 ];
 
 const recentActivity = [
-  { type: "donation", user: "Sarah M.", amount: 500, campaign: "Clean Water Vietnam", time: "2 min ago" },
-  { type: "milestone", campaign: "Education India", milestone: "75% funded", time: "15 min ago" },
-  { type: "donation", user: "Anonymous", amount: 1000, campaign: "Food Relief Kenya", time: "32 min ago" },
-  { type: "campaign", campaign: "Medical Supplies Philippines", status: "launched", time: "1 hr ago" },
-  { type: "donation", user: "Tech4Good", amount: 2500, campaign: "Shelter Brazil", time: "2 hrs ago" },
+  { type: "donation", user: "Sarah N.", amount: 500, campaign: "Nước Sạch Việt Nam", time: "2 phút trước" },
+  { type: "milestone", campaign: "Giáo Dục Ấn Độ", milestone: "đạt 75%", time: "15 phút trước" },
+  { type: "donation", user: "Ẩn Danh", amount: 1000, campaign: "Cứu Trợ Kenya", time: "32 phút trước" },
+  { type: "campaign", campaign: "Vật Tư Y Tế Philippines", status: "vừa ra mắt", time: "1 giờ trước" },
+  { type: "donation", user: "Tech4Good", amount: 2500, campaign: "Nhà Ở Brazil", time: "2 giờ trước" },
 ];
 
 const Dashboard = () => {
@@ -81,13 +81,13 @@ const Dashboard = () => {
           <div className="mb-8">
             <Badge variant="accent" className="mb-3">
               <Activity className="w-3.5 h-3.5 mr-1" />
-              Live Dashboard
+              Tổng Quan Trực Tiếp
             </Badge>
             <h1 className="font-display text-4xl font-bold mb-2">
-              Impact <span className="gradient-text">Dashboard</span>
+              Bảng Điều Khiển <span className="gradient-text">Tác Động</span>
             </h1>
             <p className="text-muted-foreground">
-              Real-time transparency into global charitable impact
+              Minh bạch real-time về tác động từ thiện toàn cầu
             </p>
           </div>
 
@@ -95,7 +95,7 @@ const Dashboard = () => {
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
             {[
               {
-                label: "Total Raised",
+                label: "Tổng Quyên Góp",
                 value: "$2.4M",
                 change: "+12.5%",
                 trend: "up",
@@ -103,7 +103,7 @@ const Dashboard = () => {
                 color: "text-primary",
               },
               {
-                label: "Active Campaigns",
+                label: "Chiến Dịch Hoạt Động",
                 value: "142",
                 change: "+8",
                 trend: "up",
@@ -111,7 +111,7 @@ const Dashboard = () => {
                 color: "text-secondary",
               },
               {
-                label: "Total Donors",
+                label: "Tổng Nhà Hảo Tâm",
                 value: "45.2K",
                 change: "+2.3K",
                 trend: "up",
@@ -119,7 +119,7 @@ const Dashboard = () => {
                 color: "text-success",
               },
               {
-                label: "Countries Reached",
+                label: "Quốc Gia Tiếp Cận",
                 value: "84",
                 change: "+3",
                 trend: "up",
@@ -170,12 +170,12 @@ const Dashboard = () => {
               >
                 <div className="flex items-center justify-between mb-6">
                   <div>
-                    <h3 className="font-display font-semibold text-lg">Donation Trend</h3>
-                    <p className="text-sm text-muted-foreground">Monthly donations over time</p>
+                    <h3 className="font-display font-semibold text-lg">Xu Hướng Quyên Góp</h3>
+                    <p className="text-sm text-muted-foreground">Quyên góp hàng tháng theo thời gian</p>
                   </div>
                   <Badge variant="success">
                     <TrendingUp className="w-3 h-3 mr-1" />
-                    +18% this month
+                    +18% tháng này
                   </Badge>
                 </div>
                 <div className="h-[300px]">
@@ -199,7 +199,7 @@ const Dashboard = () => {
                           border: "1px solid hsl(var(--border))",
                           borderRadius: "0.75rem",
                         }}
-                        formatter={(value: number) => [`$${value.toLocaleString()}`, "Donations"]}
+                        formatter={(value: number) => [`$${value.toLocaleString()}`, "Quyên góp"]}
                       />
                       <Area
                         type="monotone"
@@ -221,7 +221,7 @@ const Dashboard = () => {
                 transition={{ delay: 0.3 }}
                 className="glass-card p-6"
               >
-                <h3 className="font-display font-semibold text-lg mb-6">Impact by Category</h3>
+                <h3 className="font-display font-semibold text-lg mb-6">Tác Động Theo Danh Mục</h3>
                 <div className="grid md:grid-cols-2 gap-6 items-center">
                   <div className="h-[200px]">
                     <ResponsiveContainer width="100%" height="100%">
@@ -273,7 +273,7 @@ const Dashboard = () => {
                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-success opacity-75"></span>
                     <span className="relative inline-flex rounded-full h-3 w-3 bg-success"></span>
                   </span>
-                  <h3 className="font-display font-semibold">Live Activity</h3>
+                  <h3 className="font-display font-semibold">Hoạt Động Trực Tiếp</h3>
                 </div>
                 <div className="space-y-4 max-h-[400px] overflow-y-auto scrollbar-hide">
                   {recentActivity.map((activity, index) => (
@@ -299,16 +299,16 @@ const Dashboard = () => {
                         <p className="text-sm">
                           {activity.type === "donation" && (
                             <>
-                              <span className="font-medium">{activity.user}</span> donated{" "}
+                              <span className="font-medium">{activity.user}</span> đã quyên góp{" "}
                               <span className="text-primary font-semibold">
                                 ${activity.amount}
                               </span>{" "}
-                              to {activity.campaign}
+                              cho {activity.campaign}
                             </>
                           )}
                           {activity.type === "milestone" && (
                             <>
-                              <span className="font-medium">{activity.campaign}</span> reached{" "}
+                              <span className="font-medium">{activity.campaign}</span>{" "}
                               <span className="text-success font-semibold">
                                 {activity.milestone}
                               </span>
@@ -316,7 +316,7 @@ const Dashboard = () => {
                           )}
                           {activity.type === "campaign" && (
                             <>
-                              New campaign{" "}
+                              Chiến dịch mới{" "}
                               <span className="font-medium">{activity.campaign}</span>{" "}
                               {activity.status}!
                             </>
@@ -337,10 +337,10 @@ const Dashboard = () => {
                 className="glass-card p-6"
               >
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="font-display font-semibold">Top Donors</h3>
+                  <h3 className="font-display font-semibold">Top Nhà Hảo Tâm</h3>
                   <Badge variant="accent">
                     <Award className="w-3 h-3 mr-1" />
-                    Leaderboard
+                    Bảng Xếp Hạng
                   </Badge>
                 </div>
                 <div className="space-y-4">
@@ -369,7 +369,7 @@ const Dashboard = () => {
                       <div className="flex-1 min-w-0">
                         <div className="font-medium text-sm truncate">{donor.name}</div>
                         <div className="text-xs text-muted-foreground">
-                          {donor.campaigns} campaigns
+                          {donor.campaigns} chiến dịch
                         </div>
                       </div>
                       <div className="text-right">

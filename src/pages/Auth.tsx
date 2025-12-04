@@ -39,7 +39,7 @@ const Auth = () => {
           <Link to="/">
             <Button variant="ghost" className="text-primary-foreground hover:bg-primary-light">
               <ArrowRight className="w-4 h-4 rotate-180 mr-2" />
-              Back to Home
+              Về Trang Chủ
             </Button>
           </Link>
         </div>
@@ -54,15 +54,15 @@ const Auth = () => {
             <div className="text-center mb-6">
               <Badge variant="gold" className="mb-4">
                 <Sparkles className="w-3.5 h-3.5 mr-1" />
-                Join FUN Charity
+                Tham Gia FUN Charity
               </Badge>
               <h1 className="font-display text-2xl font-bold mb-2">
-                {activeTab === "login" ? "Welcome Back" : "Create Account"}
+                {activeTab === "login" ? "Chào Mừng Trở Lại" : "Tạo Tài Khoản"}
               </h1>
               <p className="text-sm text-muted-foreground">
                 {activeTab === "login"
-                  ? "Sign in to continue your impact journey"
-                  : "Start making a transparent difference today"}
+                  ? "Đăng nhập để tiếp tục hành trình tạo tác động"
+                  : "Bắt đầu tạo sự khác biệt minh bạch ngay hôm nay"}
               </p>
             </div>
 
@@ -70,13 +70,13 @@ const Auth = () => {
             {activeTab === "signup" && (
               <div className="mb-6">
                 <Label className="text-sm text-muted-foreground mb-3 block">
-                  I want to join as
+                  Tôi muốn tham gia với vai trò
                 </Label>
                 <div className="grid grid-cols-3 gap-2">
                   {[
-                    { type: "donor", icon: Heart, label: "Donor" },
-                    { type: "volunteer", icon: Users, label: "Volunteer" },
-                    { type: "ngo", icon: Building2, label: "NGO" },
+                    { type: "donor", icon: Heart, label: "Nhà Hảo Tâm" },
+                    { type: "volunteer", icon: Users, label: "Tình Nguyện" },
+                    { type: "ngo", icon: Building2, label: "Tổ Chức" },
                   ].map((option) => {
                     const Icon = option.icon;
                     return (
@@ -112,10 +112,10 @@ const Auth = () => {
             <Tabs value={activeTab} onValueChange={setActiveTab}>
               <TabsList className="w-full mb-6 bg-muted/50">
                 <TabsTrigger value="login" className="flex-1">
-                  Sign In
+                  Đăng Nhập
                 </TabsTrigger>
                 <TabsTrigger value="signup" className="flex-1">
-                  Sign Up
+                  Đăng Ký
                 </TabsTrigger>
               </TabsList>
 
@@ -128,14 +128,14 @@ const Auth = () => {
                     <Input
                       id="email"
                       type="email"
-                      placeholder="your@email.com"
+                      placeholder="email@example.com"
                       className="pl-10"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <Label htmlFor="password">Password</Label>
+                  <Label htmlFor="password">Mật Khẩu</Label>
                   <div className="relative mt-1">
                     <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                     <Input
@@ -148,7 +148,7 @@ const Auth = () => {
                 </div>
 
                 <Button variant="hero" className="w-full">
-                  Sign In
+                  Đăng Nhập
                   <ArrowRight className="w-4 h-4" />
                 </Button>
               </TabsContent>
@@ -157,7 +157,7 @@ const Auth = () => {
               <TabsContent value="signup" className="space-y-4">
                 <div>
                   <Label htmlFor="name">
-                    {userType === "ngo" ? "Organization Name" : "Full Name"}
+                    {userType === "ngo" ? "Tên Tổ Chức" : "Họ và Tên"}
                   </Label>
                   <div className="relative mt-1">
                     {userType === "ngo" ? (
@@ -167,7 +167,7 @@ const Auth = () => {
                     )}
                     <Input
                       id="name"
-                      placeholder={userType === "ngo" ? "Organization name" : "Your name"}
+                      placeholder={userType === "ngo" ? "Tên tổ chức" : "Họ và tên của bạn"}
                       className="pl-10"
                     />
                   </div>
@@ -180,14 +180,14 @@ const Auth = () => {
                     <Input
                       id="signup-email"
                       type="email"
-                      placeholder="your@email.com"
+                      placeholder="email@example.com"
                       className="pl-10"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <Label htmlFor="signup-password">Password</Label>
+                  <Label htmlFor="signup-password">Mật Khẩu</Label>
                   <div className="relative mt-1">
                     <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                     <Input
@@ -203,16 +203,16 @@ const Auth = () => {
                   <div className="bg-muted/50 rounded-xl p-4">
                     <div className="flex items-center gap-2 mb-2">
                       <Shield className="w-4 h-4 text-secondary" />
-                      <span className="text-sm font-medium">KYC Required</span>
+                      <span className="text-sm font-medium">Yêu Cầu KYC</span>
                     </div>
                     <p className="text-xs text-muted-foreground">
-                      NGOs cần hoàn thành KYC verification để launch campaigns. Bạn sẽ được hướng dẫn sau khi đăng ký.
+                      Các tổ chức NGO cần hoàn thành xác minh KYC để khởi chạy chiến dịch. Bạn sẽ được hướng dẫn sau khi đăng ký.
                     </p>
                   </div>
                 )}
 
                 <Button variant="hero" className="w-full">
-                  Create Account
+                  Tạo Tài Khoản
                   <ArrowRight className="w-4 h-4" />
                 </Button>
               </TabsContent>
@@ -224,18 +224,18 @@ const Auth = () => {
                 <div className="w-full border-t border-border"></div>
               </div>
               <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-card px-2 text-muted-foreground">Or continue with</span>
+                <span className="bg-card px-2 text-muted-foreground">Hoặc tiếp tục với</span>
               </div>
             </div>
 
             {/* Wallet Connect */}
             <Button variant="wallet" className="w-full">
               <Wallet className="w-4 h-4" />
-              Connect Wallet
+              Kết Nối Ví
             </Button>
 
             <p className="text-xs text-center text-muted-foreground mt-4">
-              Supports MetaMask, WalletConnect, and more
+              Hỗ trợ MetaMask, WalletConnect và nhiều ví khác
             </p>
           </motion.div>
 

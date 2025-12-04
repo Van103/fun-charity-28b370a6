@@ -18,11 +18,11 @@ import {
 } from "lucide-react";
 
 const navItems = [
-  { name: "Campaigns", path: "/campaigns", icon: Newspaper },
-  { name: "Needs Map", path: "/needs-map", icon: MapPin },
-  { name: "Dashboard", path: "/dashboard", icon: LayoutDashboard },
-  { name: "Profiles", path: "/profiles", icon: Users },
-  { name: "Reviews", path: "/reviews", icon: Star },
+  { name: "Chiến Dịch", path: "/campaigns", icon: Newspaper },
+  { name: "Bản Đồ Nhu Cầu", path: "/needs-map", icon: MapPin },
+  { name: "Tổng Quan", path: "/dashboard", icon: LayoutDashboard },
+  { name: "Hồ Sơ", path: "/profiles", icon: Users },
+  { name: "Đánh Giá", path: "/reviews", icon: Star },
 ];
 
 export function Navbar() {
@@ -67,18 +67,18 @@ export function Navbar() {
             
             <Button variant="wallet" size="sm" className="gap-2">
               <Wallet className="w-4 h-4" />
-              <span className="font-mono text-xs">Connect Wallet</span>
+              <span className="font-mono text-xs">Kết Nối Ví</span>
             </Button>
 
             <div className="flex items-center gap-2 pl-3 border-l border-border">
               <Link to="/auth">
                 <Button variant="outline" size="sm">
-                  Sign In
+                  Đăng Nhập
                 </Button>
               </Link>
               <Link to="/campaigns">
                 <Button variant="hero" size="sm">
-                  Donate Now
+                  Quyên Góp
                 </Button>
               </Link>
             </div>
@@ -124,16 +124,16 @@ export function Navbar() {
               <div className="pt-4 space-y-2 border-t border-border">
                 <Button variant="wallet" className="w-full">
                   <Wallet className="w-4 h-4" />
-                  Connect Wallet
+                  Kết Nối Ví
                 </Button>
                 <Link to="/auth" onClick={() => setIsOpen(false)}>
                   <Button variant="outline" className="w-full">
-                    Sign In
+                    Đăng Nhập
                   </Button>
                 </Link>
                 <Link to="/campaigns" onClick={() => setIsOpen(false)}>
                   <Button variant="hero" className="w-full">
-                    Donate Now
+                    Quyên Góp
                   </Button>
                 </Link>
               </div>

@@ -27,57 +27,57 @@ const profiles = {
   donors: [
     {
       id: 1,
-      name: "Sarah Nguyen",
+      name: "Sarah Nguyễn",
       avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200",
       wallet: "0x1a2b...3c4d",
       reputation: 4.9,
       totalDonated: 15000,
       campaigns: 23,
-      badges: ["Diamond Giver", "Early Adopter", "Impact Champion"],
+      badges: ["Kim Cương", "Tiên Phong", "Nhà Vô Địch Tác Động"],
       verified: true,
-      joinedDate: "Jan 2024",
+      joinedDate: "Tháng 1, 2024",
     },
     {
       id: 2,
-      name: "Tech4Good Foundation",
+      name: "Quỹ Tech4Good",
       avatar: "https://images.unsplash.com/photo-1560179707-f14e90ef3623?w=200",
       wallet: "tech4good.eth",
       reputation: 5.0,
       totalDonated: 50000,
       campaigns: 15,
-      badges: ["Corporate Hero", "Platinum Giver"],
+      badges: ["Anh Hùng Doanh Nghiệp", "Bạch Kim"],
       verified: true,
-      joinedDate: "Dec 2023",
+      joinedDate: "Tháng 12, 2023",
     },
   ],
   volunteers: [
     {
       id: 3,
-      name: "Minh Tran",
+      name: "Minh Trần",
       avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200",
       wallet: "0x5e6f...7g8h",
       reputation: 4.7,
       hoursVolunteered: 120,
       tasksCompleted: 45,
-      badges: ["Super Volunteer", "Community Leader"],
+      badges: ["Siêu Tình Nguyện Viên", "Lãnh Đạo Cộng Đồng"],
       verified: true,
-      joinedDate: "Feb 2024",
+      joinedDate: "Tháng 2, 2024",
     },
   ],
   ngos: [
     {
       id: 4,
-      name: "WaterAid Vietnam",
+      name: "WaterAid Việt Nam",
       avatar: "https://images.unsplash.com/photo-1594398901394-4e34939a4fd0?w=200",
       wallet: "wateraid.eth",
       reputation: 4.9,
       totalRaised: 250000,
       campaigns: 12,
       beneficiaries: 15000,
-      badges: ["Verified NGO", "Transparency Champion", "Top Performer"],
+      badges: ["NGO Đã Xác Minh", "Nhà Vô Địch Minh Bạch", "Hiệu Suất Cao"],
       verified: true,
-      kycStatus: "Verified",
-      location: "Ho Chi Minh City, Vietnam",
+      kycStatus: "Đã Xác Minh",
+      location: "TP. Hồ Chí Minh, Việt Nam",
     },
   ],
 };
@@ -95,13 +95,13 @@ const Profiles = () => {
           <div className="text-center mb-8">
             <Badge variant="gold" className="mb-4">
               <Users className="w-3.5 h-3.5 mr-1" />
-              Community Profiles
+              Hồ Sơ Cộng Đồng
             </Badge>
             <h1 className="font-display text-4xl md:text-5xl font-bold mb-4">
-              Our <span className="gradient-text">Community</span>
+              <span className="gradient-text">Cộng Đồng</span> Của Chúng Ta
             </h1>
             <p className="text-muted-foreground max-w-2xl mx-auto">
-              Explore profiles của Donors, Volunteers và NGOs. Reputation được verify on-chain.
+              Khám phá hồ sơ của Nhà Hảo Tâm, Tình Nguyện Viên và Tổ Chức. Uy tín được xác minh on-chain.
             </p>
           </div>
 
@@ -110,15 +110,15 @@ const Profiles = () => {
             <TabsList className="w-full justify-center mb-8 bg-muted/50 p-1 rounded-xl">
               <TabsTrigger value="donors" className="gap-2 rounded-lg">
                 <Heart className="w-4 h-4" />
-                Donors
+                Nhà Hảo Tâm
               </TabsTrigger>
               <TabsTrigger value="volunteers" className="gap-2 rounded-lg">
                 <Users className="w-4 h-4" />
-                Volunteers
+                Tình Nguyện Viên
               </TabsTrigger>
               <TabsTrigger value="ngos" className="gap-2 rounded-lg">
                 <Building2 className="w-4 h-4" />
-                NGOs
+                Tổ Chức
               </TabsTrigger>
             </TabsList>
 
@@ -149,7 +149,7 @@ const Profiles = () => {
                         </div>
                         <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
                           <Calendar className="w-3 h-3" />
-                          Joined {profile.joinedDate}
+                          Tham gia {profile.joinedDate}
                         </div>
                       </div>
                     </div>
@@ -177,11 +177,11 @@ const Profiles = () => {
                         <div className="font-display font-bold text-secondary">
                           ${profile.totalDonated.toLocaleString()}
                         </div>
-                        <div className="text-xs text-muted-foreground">Total Donated</div>
+                        <div className="text-xs text-muted-foreground">Tổng Quyên Góp</div>
                       </div>
                       <div className="text-center p-3 bg-muted/50 rounded-xl">
                         <div className="font-display font-bold">{profile.campaigns}</div>
-                        <div className="text-xs text-muted-foreground">Campaigns</div>
+                        <div className="text-xs text-muted-foreground">Chiến Dịch</div>
                       </div>
                     </div>
 
@@ -248,13 +248,13 @@ const Profiles = () => {
                     <div className="grid grid-cols-2 gap-4 mb-4">
                       <div className="text-center p-3 bg-muted/50 rounded-xl">
                         <div className="font-display font-bold text-primary">
-                          {profile.hoursVolunteered}h
+                          {profile.hoursVolunteered} giờ
                         </div>
-                        <div className="text-xs text-muted-foreground">Hours</div>
+                        <div className="text-xs text-muted-foreground">Số Giờ</div>
                       </div>
                       <div className="text-center p-3 bg-muted/50 rounded-xl">
                         <div className="font-display font-bold">{profile.tasksCompleted}</div>
-                        <div className="text-xs text-muted-foreground">Tasks</div>
+                        <div className="text-xs text-muted-foreground">Nhiệm Vụ</div>
                       </div>
                     </div>
 
@@ -331,17 +331,17 @@ const Profiles = () => {
                         <div className="font-display font-bold text-success">
                           ${(profile.totalRaised / 1000).toFixed(0)}K
                         </div>
-                        <div className="text-xs text-muted-foreground">Raised</div>
+                        <div className="text-xs text-muted-foreground">Đã Gây Quỹ</div>
                       </div>
                       <div className="text-center p-3 bg-muted/50 rounded-xl">
                         <div className="font-display font-bold">{profile.campaigns}</div>
-                        <div className="text-xs text-muted-foreground">Campaigns</div>
+                        <div className="text-xs text-muted-foreground">Chiến Dịch</div>
                       </div>
                       <div className="text-center p-3 bg-muted/50 rounded-xl">
                         <div className="font-display font-bold">
                           {(profile.beneficiaries / 1000).toFixed(0)}K
                         </div>
-                        <div className="text-xs text-muted-foreground">Helped</div>
+                        <div className="text-xs text-muted-foreground">Đã Hỗ Trợ</div>
                       </div>
                     </div>
 

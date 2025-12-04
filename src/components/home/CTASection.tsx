@@ -6,25 +6,25 @@ import { Link } from "react-router-dom";
 const roles = [
   {
     icon: Heart,
-    title: "For Donors",
-    description: "Donate với sự tin tưởng. Track impact. Earn reputation & badges.",
-    cta: "Start Giving",
+    title: "Dành Cho Nhà Hảo Tâm",
+    description: "Quyên góp với sự tin tưởng. Theo dõi tác động. Nhận uy tín & huy hiệu.",
+    cta: "Bắt Đầu Quyên Góp",
     href: "/campaigns",
     gradient: "from-secondary to-secondary-light",
   },
   {
     icon: Users,
-    title: "For Volunteers",
-    description: "Tìm cơ hội. Build skills. Tạo impact thực sự trong cộng đồng.",
-    cta: "Join as Volunteer",
+    title: "Dành Cho Tình Nguyện Viên",
+    description: "Tìm cơ hội. Xây dựng kỹ năng. Tạo tác động thực sự trong cộng đồng.",
+    cta: "Tham Gia Tình Nguyện",
     href: "/auth",
     gradient: "from-primary to-primary-light",
   },
   {
     icon: Building2,
-    title: "For NGOs",
-    description: "Launch campaigns. Build trust với community. Scale your impact.",
-    cta: "Register NGO",
+    title: "Dành Cho Tổ Chức",
+    description: "Khởi chạy chiến dịch. Xây dựng niềm tin với cộng đồng. Mở rộng tác động.",
+    cta: "Đăng Ký Tổ Chức",
     href: "/auth",
     gradient: "from-success to-secondary",
   },
@@ -90,10 +90,10 @@ export function CTASection() {
               </div>
             </div>
             <h2 className="font-display text-3xl md:text-5xl font-bold text-primary-foreground mb-4">
-              Ready to Make a <span className="text-secondary">Difference</span>?
+              Sẵn Sàng Tạo <span className="text-secondary">Sự Khác Biệt</span>?
             </h2>
             <p className="text-primary-foreground/80 text-lg mb-4 max-w-2xl mx-auto">
-              Join thousands of donors, volunteers, và NGOs tạo nên transparent, lasting impact thông qua Web3 technology.
+              Tham gia cùng hàng nghìn nhà hảo tâm, tình nguyện viên và tổ chức tạo nên tác động minh bạch, bền vững thông qua công nghệ Web3.
             </p>
             <p className="text-secondary font-medium mb-8">
               Từ thiện là ánh sáng. Minh bạch là vàng.
@@ -102,12 +102,12 @@ export function CTASection() {
               <Link to="/campaigns">
                 <Button variant="hero" size="xl">
                   <Heart className="w-5 h-5" fill="currentColor" />
-                  Browse Campaigns
+                  Duyệt Chiến Dịch
                 </Button>
               </Link>
               <Button variant="wallet" size="xl">
                 <Wallet className="w-5 h-5" />
-                Connect Wallet
+                Kết Nối Ví
               </Button>
             </div>
           </div>
