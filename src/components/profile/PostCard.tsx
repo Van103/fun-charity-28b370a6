@@ -4,7 +4,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Heart, MessageCircle, Share2, Send, MoreHorizontal, Trash2 } from "lucide-react";
+import { Heart, MessageCircle, Share2, Send, MoreHorizontal, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { vi } from "date-fns/locale";
 import {
@@ -13,6 +13,11 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+
+interface MediaItem {
+  url: string;
+  type: string;
+}
 
 interface Comment {
   id: string;
@@ -31,6 +36,7 @@ interface PostCardProps {
     user_id: string;
     content: string | null;
     image_url: string | null;
+    media_urls?: MediaItem[] | null;
     created_at: string;
     profiles?: {
       full_name: string | null;
@@ -48,7 +54,15 @@ export function PostCard({ post, currentUserId, onDelete }: PostCardProps) {
   const [showComments, setShowComments] = useState(false);
   const [newComment, setNewComment] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [currentMediaIndex, setCurrentMediaIndex] = useState(0);
   const { toast } = useToast();
+
+  // Get media items from media_urls or fallback to image_url
+  const mediaItems: MediaItem[] = post.media_urls && Array.isArray(post.media_urls) && post.media_urls.length > 0
+    ? post.media_urls
+    : post.image_url
+      ? [{ url: post.image_url, type: "image" }]
+      : [];
 
   useEffect(() => {
     fetchLikes();
@@ -83,7 +97,6 @@ export function PostCard({ post, currentUserId, onDelete }: PostCardProps) {
       .order("created_at", { ascending: true });
 
     if (commentsData && commentsData.length > 0) {
-      // Fetch profiles for comment authors
       const userIds = [...new Set(commentsData.map((c) => c.user_id))];
       const { data: profilesData } = await supabase
         .from("profiles")
@@ -196,6 +209,14 @@ export function PostCard({ post, currentUserId, onDelete }: PostCardProps) {
     });
   };
 
+  const nextMedia = () => {
+    setCurrentMediaIndex((prev) => (prev + 1) % mediaItems.length);
+  };
+
+  const prevMedia = () => {
+    setCurrentMediaIndex((prev) => (prev - 1 + mediaItems.length) % mediaItems.length);
+  };
+
   const timeAgo = formatDistanceToNow(new Date(post.created_at), {
     addSuffix: true,
     locale: vi,
@@ -246,14 +267,57 @@ export function PostCard({ post, currentUserId, onDelete }: PostCardProps) {
         </div>
       )}
 
-      {/* Image */}
-      {post.image_url && (
-        <div className="w-full">
-          <img
-            src={post.image_url}
-            alt="Post"
-            className="w-full object-cover max-h-[500px]"
-          />
+      {/* Media Carousel */}
+      {mediaItems.length > 0 && (
+        <div className="relative w-full">
+          {mediaItems[currentMediaIndex].type === "video" ? (
+            <video
+              src={mediaItems[currentMediaIndex].url}
+              className="w-full object-cover max-h-[500px]"
+              controls
+            />
+          ) : (
+            <img
+              src={mediaItems[currentMediaIndex].url}
+              alt="Post"
+              className="w-full object-cover max-h-[500px]"
+            />
+          )}
+          
+          {/* Navigation arrows */}
+          {mediaItems.length > 1 && (
+            <>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full"
+                onClick={prevMedia}
+              >
+                <ChevronLeft className="w-5 h-5" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full"
+                onClick={nextMedia}
+              >
+                <ChevronRight className="w-5 h-5" />
+              </Button>
+              
+              {/* Dots indicator */}
+              <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
+                {mediaItems.map((_, index) => (
+                  <button
+                    key={index}
+                    className={`w-2 h-2 rounded-full transition-colors ${
+                      index === currentMediaIndex ? "bg-white" : "bg-white/50"
+                    }`}
+                    onClick={() => setCurrentMediaIndex(index)}
+                  />
+                ))}
+              </div>
+            </>
+          )}
         </div>
       )}
 
@@ -290,7 +354,6 @@ export function PostCard({ post, currentUserId, onDelete }: PostCardProps) {
       {/* Comments Section */}
       {showComments && (
         <div className="p-4 space-y-4">
-          {/* Comments List */}
           {comments.map((comment) => (
             <div key={comment.id} className="flex gap-2">
               <Avatar className="w-8 h-8">
@@ -308,7 +371,6 @@ export function PostCard({ post, currentUserId, onDelete }: PostCardProps) {
             </div>
           ))}
 
-          {/* New Comment Input */}
           {currentUserId && (
             <div className="flex gap-2">
               <Textarea

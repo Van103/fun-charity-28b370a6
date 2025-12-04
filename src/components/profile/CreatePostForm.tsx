@@ -4,7 +4,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Image as ImageIcon, X, Send } from "lucide-react";
+import { Image as ImageIcon, X, Send, Video } from "lucide-react";
+
+interface MediaItem {
+  file: File;
+  preview: string;
+  type: "image" | "video";
+}
 
 interface CreatePostFormProps {
   profile: {
@@ -17,47 +23,62 @@ interface CreatePostFormProps {
 
 export function CreatePostForm({ profile, onPostCreated }: CreatePostFormProps) {
   const [content, setContent] = useState("");
-  const [imageFile, setImageFile] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [mediaItems, setMediaItems] = useState<MediaItem[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
-  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setImageFile(file);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagePreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
+  const handleMediaSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files) return;
 
-  const removeImage = () => {
-    setImageFile(null);
-    setImagePreview(null);
+    const newItems: MediaItem[] = [];
+    
+    Array.from(files).forEach((file) => {
+      const isVideo = file.type.startsWith("video/");
+      const isImage = file.type.startsWith("image/");
+      
+      if (!isImage && !isVideo) return;
+      
+      const preview = URL.createObjectURL(file);
+      newItems.push({
+        file,
+        preview,
+        type: isVideo ? "video" : "image",
+      });
+    });
+
+    setMediaItems((prev) => [...prev, ...newItems]);
+    
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
   };
 
+  const removeMedia = (index: number) => {
+    setMediaItems((prev) => {
+      const item = prev[index];
+      URL.revokeObjectURL(item.preview);
+      return prev.filter((_, i) => i !== index);
+    });
+  };
+
   const handleSubmit = async () => {
-    if (!content.trim() && !imageFile) return;
+    if (!content.trim() && mediaItems.length === 0) return;
     if (!profile?.user_id) return;
 
     setIsSubmitting(true);
     try {
-      let imageUrl: string | null = null;
+      const uploadedMedia: { url: string; type: string }[] = [];
 
-      if (imageFile) {
-        const fileExt = imageFile.name.split(".").pop();
-        const filePath = `${profile.user_id}/${Date.now()}.${fileExt}`;
+      // Upload all media files
+      for (const item of mediaItems) {
+        const fileExt = item.file.name.split(".").pop();
+        const filePath = `${profile.user_id}/${Date.now()}-${Math.random().toString(36).substr(2, 9)}.${fileExt}`;
 
         const { error: uploadError } = await supabase.storage
           .from("post-images")
-          .upload(filePath, imageFile);
+          .upload(filePath, item.file);
 
         if (uploadError) throw uploadError;
 
@@ -65,20 +86,26 @@ export function CreatePostForm({ profile, onPostCreated }: CreatePostFormProps) 
           .from("post-images")
           .getPublicUrl(filePath);
 
-        imageUrl = publicUrl;
+        uploadedMedia.push({
+          url: publicUrl,
+          type: item.type,
+        });
       }
 
       const { error } = await supabase.from("posts").insert({
         user_id: profile.user_id,
         content: content.trim() || null,
-        image_url: imageUrl,
+        image_url: uploadedMedia.length > 0 ? uploadedMedia[0].url : null,
+        media_urls: uploadedMedia,
       });
 
       if (error) throw error;
 
+      // Clean up previews
+      mediaItems.forEach((item) => URL.revokeObjectURL(item.preview));
+      
       setContent("");
-      setImageFile(null);
-      setImagePreview(null);
+      setMediaItems([]);
       onPostCreated();
 
       toast({
@@ -115,32 +142,52 @@ export function CreatePostForm({ profile, onPostCreated }: CreatePostFormProps) 
         </div>
       </div>
 
-      {imagePreview && (
-        <div className="relative inline-block">
-          <img
-            src={imagePreview}
-            alt="Preview"
-            className="max-h-64 rounded-lg object-cover"
-          />
-          <Button
-            size="icon"
-            variant="destructive"
-            className="absolute top-2 right-2 w-8 h-8"
-            onClick={removeImage}
-          >
-            <X className="w-4 h-4" />
-          </Button>
+      {/* Media Previews */}
+      {mediaItems.length > 0 && (
+        <div className={`grid gap-2 ${mediaItems.length === 1 ? 'grid-cols-1' : mediaItems.length === 2 ? 'grid-cols-2' : 'grid-cols-3'}`}>
+          {mediaItems.map((item, index) => (
+            <div key={index} className="relative aspect-square">
+              {item.type === "video" ? (
+                <video
+                  src={item.preview}
+                  className="w-full h-full object-cover rounded-lg"
+                  controls
+                />
+              ) : (
+                <img
+                  src={item.preview}
+                  alt={`Preview ${index + 1}`}
+                  className="w-full h-full object-cover rounded-lg"
+                />
+              )}
+              <Button
+                size="icon"
+                variant="destructive"
+                className="absolute top-2 right-2 w-7 h-7"
+                onClick={() => removeMedia(index)}
+              >
+                <X className="w-4 h-4" />
+              </Button>
+              {item.type === "video" && (
+                <div className="absolute bottom-2 left-2 bg-black/60 px-2 py-1 rounded text-xs text-white flex items-center gap-1">
+                  <Video className="w-3 h-3" />
+                  Video
+                </div>
+              )}
+            </div>
+          ))}
         </div>
       )}
 
       <div className="flex items-center justify-between border-t border-border pt-4">
-        <div>
+        <div className="flex gap-2">
           <input
             type="file"
             ref={fileInputRef}
-            accept="image/*"
-            onChange={handleImageSelect}
+            accept="image/*,video/*"
+            onChange={handleMediaSelect}
             className="hidden"
+            multiple
           />
           <Button
             variant="ghost"
@@ -149,14 +196,14 @@ export function CreatePostForm({ profile, onPostCreated }: CreatePostFormProps) 
             className="text-muted-foreground hover:text-secondary"
           >
             <ImageIcon className="w-5 h-5 mr-2" />
-            Thêm ảnh
+            Ảnh/Video
           </Button>
         </div>
         <Button
           variant="gold"
           size="sm"
           onClick={handleSubmit}
-          disabled={isSubmitting || (!content.trim() && !imageFile)}
+          disabled={isSubmitting || (!content.trim() && mediaItems.length === 0)}
         >
           {isSubmitting ? (
             <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2" />
