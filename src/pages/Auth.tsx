@@ -1,12 +1,14 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Logo } from "@/components/brand/Logo";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 import {
   Heart,
   Users,
@@ -18,11 +20,139 @@ import {
   ArrowRight,
   Shield,
   Sparkles,
+  Loader2,
 } from "lucide-react";
 
 const Auth = () => {
   const [activeTab, setActiveTab] = useState("login");
   const [userType, setUserType] = useState<"donor" | "volunteer" | "ngo">("donor");
+  const [loading, setLoading] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [fullName, setFullName] = useState("");
+  const { toast } = useToast();
+  const navigate = useNavigate();
+
+  // Check if user is already logged in
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (session?.user) {
+        navigate("/");
+      }
+    });
+
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        navigate("/");
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [navigate]);
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!email || !password) {
+      toast({
+        title: "Lỗi",
+        description: "Vui lòng nhập email và mật khẩu",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setLoading(true);
+    
+    const { error } = await supabase.auth.signInWithPassword({
+      email: email.trim(),
+      password,
+    });
+
+    setLoading(false);
+
+    if (error) {
+      let errorMessage = "Đã xảy ra lỗi khi đăng nhập";
+      if (error.message.includes("Invalid login credentials")) {
+        errorMessage = "Email hoặc mật khẩu không chính xác";
+      } else if (error.message.includes("Email not confirmed")) {
+        errorMessage = "Vui lòng xác nhận email của bạn trước khi đăng nhập";
+      }
+      toast({
+        title: "Đăng nhập thất bại",
+        description: errorMessage,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    toast({
+      title: "Đăng nhập thành công",
+      description: "Chào mừng bạn trở lại FUN Charity!",
+    });
+    navigate("/");
+  };
+
+  const handleSignup = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!email || !password || !fullName) {
+      toast({
+        title: "Lỗi",
+        description: "Vui lòng điền đầy đủ thông tin",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (password.length < 6) {
+      toast({
+        title: "Lỗi",
+        description: "Mật khẩu phải có ít nhất 6 ký tự",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setLoading(true);
+    
+    const redirectUrl = `${window.location.origin}/`;
+    
+    const { error } = await supabase.auth.signUp({
+      email: email.trim(),
+      password,
+      options: {
+        emailRedirectTo: redirectUrl,
+        data: {
+          full_name: fullName,
+          role: userType,
+        },
+      },
+    });
+
+    setLoading(false);
+
+    if (error) {
+      let errorMessage = "Đã xảy ra lỗi khi đăng ký";
+      if (error.message.includes("User already registered")) {
+        errorMessage = "Email này đã được sử dụng. Vui lòng đăng nhập hoặc sử dụng email khác.";
+      } else if (error.message.includes("Password")) {
+        errorMessage = "Mật khẩu không hợp lệ. Vui lòng sử dụng mật khẩu mạnh hơn.";
+      }
+      toast({
+        title: "Đăng ký thất bại",
+        description: errorMessage,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    toast({
+      title: "Đăng ký thành công!",
+      description: "Tài khoản của bạn đã được tạo. Chào mừng đến với FUN Charity!",
+    });
+    navigate("/");
+  };
 
   return (
     <main className="min-h-screen bg-primary relative overflow-hidden">
@@ -82,6 +212,7 @@ const Auth = () => {
                     return (
                       <button
                         key={option.type}
+                        type="button"
                         onClick={() => setUserType(option.type as typeof userType)}
                         className={`p-3 rounded-xl border-2 transition-all ${
                           userType === option.type
@@ -120,101 +251,138 @@ const Auth = () => {
               </TabsList>
 
               {/* Login Form */}
-              <TabsContent value="login" className="space-y-4">
-                <div>
-                  <Label htmlFor="email">Email</Label>
-                  <div className="relative mt-1">
-                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                    <Input
-                      id="email"
-                      type="email"
-                      placeholder="email@example.com"
-                      className="pl-10"
-                    />
+              <TabsContent value="login">
+                <form onSubmit={handleLogin} className="space-y-4">
+                  <div>
+                    <Label htmlFor="email">Email</Label>
+                    <div className="relative mt-1">
+                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                      <Input
+                        id="email"
+                        type="email"
+                        placeholder="email@example.com"
+                        className="pl-10"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        disabled={loading}
+                      />
+                    </div>
                   </div>
-                </div>
 
-                <div>
-                  <Label htmlFor="password">Mật Khẩu</Label>
-                  <div className="relative mt-1">
-                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                    <Input
-                      id="password"
-                      type="password"
-                      placeholder="••••••••"
-                      className="pl-10"
-                    />
+                  <div>
+                    <Label htmlFor="password">Mật Khẩu</Label>
+                    <div className="relative mt-1">
+                      <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                      <Input
+                        id="password"
+                        type="password"
+                        placeholder="••••••••"
+                        className="pl-10"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        disabled={loading}
+                      />
+                    </div>
                   </div>
-                </div>
 
-                <Button variant="hero" className="w-full">
-                  Đăng Nhập
-                  <ArrowRight className="w-4 h-4" />
-                </Button>
+                  <Button variant="hero" className="w-full" type="submit" disabled={loading}>
+                    {loading ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        Đang xử lý...
+                      </>
+                    ) : (
+                      <>
+                        Đăng Nhập
+                        <ArrowRight className="w-4 h-4" />
+                      </>
+                    )}
+                  </Button>
+                </form>
               </TabsContent>
 
               {/* Signup Form */}
-              <TabsContent value="signup" className="space-y-4">
-                <div>
-                  <Label htmlFor="name">
-                    {userType === "ngo" ? "Tên Tổ Chức" : "Họ và Tên"}
-                  </Label>
-                  <div className="relative mt-1">
-                    {userType === "ngo" ? (
-                      <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                    ) : (
-                      <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                    )}
-                    <Input
-                      id="name"
-                      placeholder={userType === "ngo" ? "Tên tổ chức" : "Họ và tên của bạn"}
-                      className="pl-10"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <Label htmlFor="signup-email">Email</Label>
-                  <div className="relative mt-1">
-                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                    <Input
-                      id="signup-email"
-                      type="email"
-                      placeholder="email@example.com"
-                      className="pl-10"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <Label htmlFor="signup-password">Mật Khẩu</Label>
-                  <div className="relative mt-1">
-                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                    <Input
-                      id="signup-password"
-                      type="password"
-                      placeholder="••••••••"
-                      className="pl-10"
-                    />
-                  </div>
-                </div>
-
-                {userType === "ngo" && (
-                  <div className="bg-muted/50 rounded-xl p-4">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Shield className="w-4 h-4 text-secondary" />
-                      <span className="text-sm font-medium">Yêu Cầu KYC</span>
+              <TabsContent value="signup">
+                <form onSubmit={handleSignup} className="space-y-4">
+                  <div>
+                    <Label htmlFor="name">
+                      {userType === "ngo" ? "Tên Tổ Chức" : "Họ và Tên"}
+                    </Label>
+                    <div className="relative mt-1">
+                      {userType === "ngo" ? (
+                        <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                      ) : (
+                        <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                      )}
+                      <Input
+                        id="name"
+                        placeholder={userType === "ngo" ? "Tên tổ chức" : "Họ và tên của bạn"}
+                        className="pl-10"
+                        value={fullName}
+                        onChange={(e) => setFullName(e.target.value)}
+                        disabled={loading}
+                      />
                     </div>
-                    <p className="text-xs text-muted-foreground">
-                      Các tổ chức NGO cần hoàn thành xác minh KYC để khởi chạy chiến dịch. Bạn sẽ được hướng dẫn sau khi đăng ký.
-                    </p>
                   </div>
-                )}
 
-                <Button variant="hero" className="w-full">
-                  Tạo Tài Khoản
-                  <ArrowRight className="w-4 h-4" />
-                </Button>
+                  <div>
+                    <Label htmlFor="signup-email">Email</Label>
+                    <div className="relative mt-1">
+                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                      <Input
+                        id="signup-email"
+                        type="email"
+                        placeholder="email@example.com"
+                        className="pl-10"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        disabled={loading}
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="signup-password">Mật Khẩu</Label>
+                    <div className="relative mt-1">
+                      <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                      <Input
+                        id="signup-password"
+                        type="password"
+                        placeholder="••••••••"
+                        className="pl-10"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        disabled={loading}
+                      />
+                    </div>
+                  </div>
+
+                  {userType === "ngo" && (
+                    <div className="bg-muted/50 rounded-xl p-4">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Shield className="w-4 h-4 text-secondary" />
+                        <span className="text-sm font-medium">Yêu Cầu KYC</span>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Các tổ chức NGO cần hoàn thành xác minh KYC để khởi chạy chiến dịch. Bạn sẽ được hướng dẫn sau khi đăng ký.
+                      </p>
+                    </div>
+                  )}
+
+                  <Button variant="hero" className="w-full" type="submit" disabled={loading}>
+                    {loading ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        Đang xử lý...
+                      </>
+                    ) : (
+                      <>
+                        Tạo Tài Khoản
+                        <ArrowRight className="w-4 h-4" />
+                      </>
+                    )}
+                  </Button>
+                </form>
               </TabsContent>
             </Tabs>
 
