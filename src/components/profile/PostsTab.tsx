@@ -4,11 +4,17 @@ import { CreatePostForm } from "./CreatePostForm";
 import { PostCard } from "./PostCard";
 import { FileText } from "lucide-react";
 
+interface MediaItem {
+  url: string;
+  type: string;
+}
+
 interface Post {
   id: string;
   user_id: string;
   content: string | null;
   image_url: string | null;
+  media_urls?: MediaItem[] | null;
   created_at: string;
   profiles?: {
     full_name: string | null;
@@ -50,6 +56,7 @@ export function PostsTab({ profile, currentUserId }: PostsTabProps) {
       // Add profile info to each post
       const postsWithProfile = (data || []).map((post) => ({
         ...post,
+        media_urls: post.media_urls as unknown as MediaItem[] | null,
         profiles: {
           full_name: profile.full_name,
           avatar_url: profile.avatar_url,
@@ -88,6 +95,7 @@ export function PostsTab({ profile, currentUserId }: PostsTabProps) {
               post={post}
               currentUserId={currentUserId}
               onDelete={fetchPosts}
+              onUpdate={fetchPosts}
             />
           ))}
         </div>
