@@ -1,9 +1,10 @@
-import { useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Logo } from "@/components/brand/Logo";
+import { supabase } from "@/integrations/supabase/client";
+import { User } from "@supabase/supabase-js";
 import {
   Menu,
   X,
@@ -13,8 +14,9 @@ import {
   MapPin,
   Users,
   Star,
-  Shield,
   Newspaper,
+  LogOut,
+  User as UserIcon,
 } from "lucide-react";
 
 const navItems = [
@@ -27,7 +29,27 @@ const navItems = [
 
 export function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
   const location = useLocation();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      setUser(session?.user ?? null);
+    });
+
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    setUser(null);
+    navigate("/");
+  };
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border/50">
@@ -71,16 +93,35 @@ export function Navbar() {
             </Button>
 
             <div className="flex items-center gap-2 pl-3 border-l border-border">
-              <Link to="/auth">
-                <Button variant="outline" size="sm">
-                  Đăng Nhập
-                </Button>
-              </Link>
-              <Link to="/campaigns">
-                <Button variant="hero" size="sm">
-                  Quyên Góp
-                </Button>
-              </Link>
+              {user ? (
+                <>
+                  <div className="flex items-center gap-2 text-sm">
+                    <div className="w-8 h-8 rounded-full bg-secondary/20 flex items-center justify-center">
+                      <UserIcon className="w-4 h-4 text-secondary" />
+                    </div>
+                    <span className="text-muted-foreground max-w-[120px] truncate">
+                      {user.user_metadata?.full_name || user.email?.split('@')[0]}
+                    </span>
+                  </div>
+                  <Button variant="outline" size="sm" onClick={handleLogout}>
+                    <LogOut className="w-4 h-4 mr-1" />
+                    Đăng Xuất
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Link to="/auth">
+                    <Button variant="outline" size="sm">
+                      Đăng Nhập
+                    </Button>
+                  </Link>
+                  <Link to="/campaigns">
+                    <Button variant="hero" size="sm">
+                      Quyên Góp
+                    </Button>
+                  </Link>
+                </>
+              )}
             </div>
           </div>
 
@@ -126,16 +167,35 @@ export function Navbar() {
                   <Wallet className="w-4 h-4" />
                   Kết Nối Ví
                 </Button>
-                <Link to="/auth" onClick={() => setIsOpen(false)}>
-                  <Button variant="outline" className="w-full">
-                    Đăng Nhập
-                  </Button>
-                </Link>
-                <Link to="/campaigns" onClick={() => setIsOpen(false)}>
-                  <Button variant="hero" className="w-full">
-                    Quyên Góp
-                  </Button>
-                </Link>
+                {user ? (
+                  <>
+                    <div className="flex items-center gap-2 px-4 py-2">
+                      <div className="w-8 h-8 rounded-full bg-secondary/20 flex items-center justify-center">
+                        <UserIcon className="w-4 h-4 text-secondary" />
+                      </div>
+                      <span className="text-muted-foreground text-sm truncate">
+                        {user.user_metadata?.full_name || user.email?.split('@')[0]}
+                      </span>
+                    </div>
+                    <Button variant="outline" className="w-full" onClick={() => { handleLogout(); setIsOpen(false); }}>
+                      <LogOut className="w-4 h-4 mr-2" />
+                      Đăng Xuất
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <Link to="/auth" onClick={() => setIsOpen(false)}>
+                      <Button variant="outline" className="w-full">
+                        Đăng Nhập
+                      </Button>
+                    </Link>
+                    <Link to="/campaigns" onClick={() => setIsOpen(false)}>
+                      <Button variant="hero" className="w-full">
+                        Quyên Góp
+                      </Button>
+                    </Link>
+                  </>
+                )}
               </div>
             </div>
           </motion.div>
