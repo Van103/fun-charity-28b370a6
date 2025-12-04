@@ -95,14 +95,14 @@ export function Navbar() {
             <div className="flex items-center gap-2 pl-3 border-l border-border">
               {user ? (
                 <>
-                  <div className="flex items-center gap-2 text-sm">
+                  <Link to="/profile" className="flex items-center gap-2 text-sm hover:opacity-80 transition-opacity cursor-pointer">
                     <div className="w-8 h-8 rounded-full bg-secondary/20 flex items-center justify-center">
                       <UserIcon className="w-4 h-4 text-secondary" />
                     </div>
                     <span className="text-muted-foreground max-w-[120px] truncate">
                       {user.user_metadata?.full_name || user.email?.split('@')[0]}
                     </span>
-                  </div>
+                  </Link>
                   <Button variant="outline" size="sm" onClick={handleLogout}>
                     <LogOut className="w-4 h-4 mr-1" />
                     Đăng Xuất
@@ -169,14 +169,14 @@ export function Navbar() {
                 </Button>
                 {user ? (
                   <>
-                    <div className="flex items-center gap-2 px-4 py-2">
+                    <Link to="/profile" onClick={() => setIsOpen(false)} className="flex items-center gap-2 px-4 py-2 hover:bg-muted rounded-md transition-colors">
                       <div className="w-8 h-8 rounded-full bg-secondary/20 flex items-center justify-center">
                         <UserIcon className="w-4 h-4 text-secondary" />
                       </div>
                       <span className="text-muted-foreground text-sm truncate">
                         {user.user_metadata?.full_name || user.email?.split('@')[0]}
                       </span>
-                    </div>
+                    </Link>
                     <Button variant="outline" className="w-full" onClick={() => { handleLogout(); setIsOpen(false); }}>
                       <LogOut className="w-4 h-4 mr-2" />
                       Đăng Xuất

@@ -11,6 +11,7 @@ import NeedsMap from "./pages/NeedsMap";
 import Profiles from "./pages/Profiles";
 import Reviews from "./pages/Reviews";
 import Auth from "./pages/Auth";
+import UserProfile from "./pages/UserProfile";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -30,6 +31,7 @@ const App = () => (
           <Route path="/profiles" element={<Profiles />} />
           <Route path="/reviews" element={<Reviews />} />
           <Route path="/auth" element={<Auth />} />
+          <Route path="/profile" element={<UserProfile />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
