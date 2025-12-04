@@ -1,10 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Heart, MessageCircle, Share2, Send, MoreHorizontal, Trash2, Edit2, X, Check, Copy, UserPlus } from "lucide-react";
+import { MessageCircle, Share2, Send, MoreHorizontal, Trash2, Edit2, Copy, UserPlus, Image as ImageIcon, X } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { vi } from "date-fns/locale";
 import {
@@ -18,6 +18,9 @@ import {
   Dialog,
   DialogContent,
 } from "@/components/ui/dialog";
+import { ReactionPicker, ReactionDisplay, REACTIONS } from "./ReactionPicker";
+import { StickerPicker } from "./StickerPicker";
+import { EditPostModal } from "./EditPostModal";
 
 interface MediaItem {
   url: string;
@@ -27,12 +30,15 @@ interface MediaItem {
 interface Comment {
   id: string;
   content: string;
+  image_url: string | null;
   created_at: string;
   user_id: string;
   profiles?: {
     full_name: string | null;
     avatar_url: string | null;
   };
+  reactions?: { type: string; count: number }[];
+  userReaction?: string | null;
 }
 
 interface PostCardProps {
@@ -54,15 +60,17 @@ interface PostCardProps {
 }
 
 export function PostCard({ post, currentUserId, onDelete, onUpdate }: PostCardProps) {
-  const [liked, setLiked] = useState(false);
-  const [likesCount, setLikesCount] = useState(0);
   const [comments, setComments] = useState<Comment[]>([]);
   const [showComments, setShowComments] = useState(false);
   const [newComment, setNewComment] = useState("");
+  const [commentImage, setCommentImage] = useState<File | null>(null);
+  const [commentImagePreview, setCommentImagePreview] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
-  const [editContent, setEditContent] = useState(post.content || "");
   const [selectedMediaIndex, setSelectedMediaIndex] = useState<number | null>(null);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [postReactions, setPostReactions] = useState<{ type: string; count: number }[]>([]);
+  const [userPostReaction, setUserPostReaction] = useState<string | null>(null);
+  const commentImageInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
   // Get media items from media_urls or fallback to image_url
@@ -73,27 +81,29 @@ export function PostCard({ post, currentUserId, onDelete, onUpdate }: PostCardPr
       : [];
 
   useEffect(() => {
-    fetchLikes();
+    fetchPostReactions();
     fetchComments();
   }, [post.id]);
 
-  const fetchLikes = async () => {
-    const { count } = await supabase
-      .from("post_likes")
-      .select("*", { count: "exact", head: true })
+  const fetchPostReactions = async () => {
+    const { data } = await supabase
+      .from("post_reactions")
+      .select("reaction_type, user_id")
       .eq("post_id", post.id);
 
-    setLikesCount(count || 0);
-
-    if (currentUserId) {
-      const { data } = await supabase
-        .from("post_likes")
-        .select("id")
-        .eq("post_id", post.id)
-        .eq("user_id", currentUserId)
-        .maybeSingle();
-
-      setLiked(!!data);
+    if (data) {
+      // Count reactions by type
+      const reactionCounts: Record<string, number> = {};
+      data.forEach((r) => {
+        reactionCounts[r.reaction_type] = (reactionCounts[r.reaction_type] || 0) + 1;
+        if (r.user_id === currentUserId) {
+          setUserPostReaction(r.reaction_type);
+        }
+      });
+      
+      setPostReactions(
+        Object.entries(reactionCounts).map(([type, count]) => ({ type, count }))
+      );
     }
   };
 
@@ -111,17 +121,40 @@ export function PostCard({ post, currentUserId, onDelete, onUpdate }: PostCardPr
         .select("user_id, full_name, avatar_url")
         .in("user_id", userIds);
 
+      // Fetch comment reactions
+      const commentIds = commentsData.map((c) => c.id);
+      const { data: reactionsData } = await supabase
+        .from("comment_reactions")
+        .select("comment_id, reaction_type, user_id")
+        .in("comment_id", commentIds);
+
       const profilesMap = new Map(
         (profilesData || []).map((p) => [p.user_id, p])
       );
 
-      const commentsWithProfiles = commentsData.map((comment) => ({
-        ...comment,
-        profiles: profilesMap.get(comment.user_id) || {
-          full_name: null,
-          avatar_url: null,
-        },
-      }));
+      const commentsWithProfiles = commentsData.map((comment) => {
+        // Count reactions for this comment
+        const commentReactions = (reactionsData || []).filter(r => r.comment_id === comment.id);
+        const reactionCounts: Record<string, number> = {};
+        let userReaction: string | null = null;
+        
+        commentReactions.forEach((r) => {
+          reactionCounts[r.reaction_type] = (reactionCounts[r.reaction_type] || 0) + 1;
+          if (r.user_id === currentUserId) {
+            userReaction = r.reaction_type;
+          }
+        });
+
+        return {
+          ...comment,
+          profiles: profilesMap.get(comment.user_id) || {
+            full_name: null,
+            avatar_url: null,
+          },
+          reactions: Object.entries(reactionCounts).map(([type, count]) => ({ type, count })),
+          userReaction,
+        };
+      });
 
       setComments(commentsWithProfiles);
     } else {
@@ -129,51 +162,136 @@ export function PostCard({ post, currentUserId, onDelete, onUpdate }: PostCardPr
     }
   };
 
-  const handleLike = async () => {
+  const handlePostReaction = async (reactionType: string) => {
     if (!currentUserId) {
       toast({
         title: "Lỗi",
-        description: "Vui lòng đăng nhập để thích bài viết",
+        description: "Vui lòng đăng nhập để tương tác",
         variant: "destructive",
       });
       return;
     }
 
     try {
-      if (liked) {
+      if (userPostReaction === reactionType) {
+        // Remove reaction
         await supabase
-          .from("post_likes")
+          .from("post_reactions")
           .delete()
           .eq("post_id", post.id)
-          .eq("user_id", currentUserId);
-        setLikesCount((prev) => prev - 1);
+          .eq("user_id", currentUserId)
+          .eq("reaction_type", reactionType);
+        setUserPostReaction(null);
       } else {
-        await supabase.from("post_likes").insert({
+        // Remove existing reaction first if any
+        if (userPostReaction) {
+          await supabase
+            .from("post_reactions")
+            .delete()
+            .eq("post_id", post.id)
+            .eq("user_id", currentUserId);
+        }
+        // Add new reaction
+        await supabase.from("post_reactions").insert({
           post_id: post.id,
           user_id: currentUserId,
+          reaction_type: reactionType,
         });
-        setLikesCount((prev) => prev + 1);
+        setUserPostReaction(reactionType);
       }
-      setLiked(!liked);
+      fetchPostReactions();
     } catch (error) {
-      console.error("Error toggling like:", error);
+      console.error("Error toggling reaction:", error);
     }
   };
 
+  const handleCommentReaction = async (commentId: string, reactionType: string, currentReaction: string | null) => {
+    if (!currentUserId) return;
+
+    try {
+      if (currentReaction === reactionType) {
+        await supabase
+          .from("comment_reactions")
+          .delete()
+          .eq("comment_id", commentId)
+          .eq("user_id", currentUserId)
+          .eq("reaction_type", reactionType);
+      } else {
+        if (currentReaction) {
+          await supabase
+            .from("comment_reactions")
+            .delete()
+            .eq("comment_id", commentId)
+            .eq("user_id", currentUserId);
+        }
+        await supabase.from("comment_reactions").insert({
+          comment_id: commentId,
+          user_id: currentUserId,
+          reaction_type: reactionType,
+        });
+      }
+      fetchComments();
+    } catch (error) {
+      console.error("Error toggling comment reaction:", error);
+    }
+  };
+
+  const handleCommentImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setCommentImage(file);
+      setCommentImagePreview(URL.createObjectURL(file));
+    }
+  };
+
+  const removeCommentImage = () => {
+    if (commentImagePreview) {
+      URL.revokeObjectURL(commentImagePreview);
+    }
+    setCommentImage(null);
+    setCommentImagePreview(null);
+  };
+
+  const handleStickerSelect = (sticker: string) => {
+    setNewComment((prev) => prev + sticker);
+  };
+
   const handleComment = async () => {
-    if (!newComment.trim() || !currentUserId) return;
+    if (!newComment.trim() && !commentImage) return;
+    if (!currentUserId) return;
 
     setIsSubmitting(true);
     try {
+      let imageUrl: string | null = null;
+
+      if (commentImage) {
+        const fileExt = commentImage.name.split(".").pop();
+        const filePath = `comments/${currentUserId}/${Date.now()}.${fileExt}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from("post-images")
+          .upload(filePath, commentImage);
+
+        if (uploadError) throw uploadError;
+
+        const { data: { publicUrl } } = supabase.storage
+          .from("post-images")
+          .getPublicUrl(filePath);
+
+        imageUrl = publicUrl;
+      }
+
       const { error } = await supabase.from("post_comments").insert({
         post_id: post.id,
         user_id: currentUserId,
         content: newComment.trim(),
+        image_url: imageUrl,
       });
 
       if (error) throw error;
 
       setNewComment("");
+      removeCommentImage();
       fetchComments();
     } catch (error: any) {
       toast({
@@ -206,35 +324,6 @@ export function PostCard({ post, currentUserId, onDelete, onUpdate }: PostCardPr
         description: "Không thể xóa bài viết",
         variant: "destructive",
       });
-    }
-  };
-
-  const handleEdit = async () => {
-    if (!editContent.trim() && mediaItems.length === 0) return;
-
-    setIsSubmitting(true);
-    try {
-      const { error } = await supabase
-        .from("posts")
-        .update({ content: editContent.trim() })
-        .eq("id", post.id);
-
-      if (error) throw error;
-
-      toast({
-        title: "Thành công",
-        description: "Đã cập nhật bài viết",
-      });
-      setIsEditing(false);
-      onUpdate?.();
-    } catch (error) {
-      toast({
-        title: "Lỗi",
-        description: "Không thể cập nhật bài viết",
-        variant: "destructive",
-      });
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
@@ -410,6 +499,8 @@ export function PostCard({ post, currentUserId, onDelete, onUpdate }: PostCardPr
     );
   };
 
+  const totalReactions = postReactions.reduce((sum, r) => sum + r.count, 0);
+
   return (
     <>
       <div className="glass-card overflow-hidden">
@@ -437,10 +528,7 @@ export function PostCard({ post, currentUserId, onDelete, onUpdate }: PostCardPr
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => {
-                  setEditContent(post.content || "");
-                  setIsEditing(true);
-                }}>
+                <DropdownMenuItem onClick={() => setShowEditModal(true)}>
                   <Edit2 className="w-4 h-4 mr-2" />
                   Chỉnh sửa bài viết
                 </DropdownMenuItem>
@@ -458,45 +546,10 @@ export function PostCard({ post, currentUserId, onDelete, onUpdate }: PostCardPr
         </div>
 
         {/* Content */}
-        {isEditing ? (
-          <div className="px-4 pb-3 space-y-3">
-            <Textarea
-              value={editContent}
-              onChange={(e) => setEditContent(e.target.value)}
-              className="min-h-[100px] resize-none"
-              placeholder="Nội dung bài viết..."
-            />
-            <div className="flex gap-2 justify-end">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setIsEditing(false)}
-                disabled={isSubmitting}
-              >
-                <X className="w-4 h-4 mr-1" />
-                Hủy
-              </Button>
-              <Button
-                variant="gold"
-                size="sm"
-                onClick={handleEdit}
-                disabled={isSubmitting}
-              >
-                {isSubmitting ? (
-                  <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-1" />
-                ) : (
-                  <Check className="w-4 h-4 mr-1" />
-                )}
-                Lưu
-              </Button>
-            </div>
+        {post.content && (
+          <div className="px-4 pb-3">
+            <p className="text-foreground whitespace-pre-wrap">{post.content}</p>
           </div>
-        ) : (
-          post.content && (
-            <div className="px-4 pb-3">
-              <p className="text-foreground whitespace-pre-wrap">{post.content}</p>
-            </div>
-          )
         )}
 
         {/* Media Grid */}
@@ -504,20 +557,31 @@ export function PostCard({ post, currentUserId, onDelete, onUpdate }: PostCardPr
 
         {/* Stats */}
         <div className="px-4 py-2 flex items-center justify-between text-sm text-muted-foreground border-b border-border">
-          <span>{likesCount} lượt thích</span>
+          <div className="flex items-center gap-1">
+            {postReactions.length > 0 && (
+              <>
+                <div className="flex -space-x-1">
+                  {postReactions.slice(0, 3).map((r) => (
+                    <span key={r.type} className="text-sm">
+                      {REACTIONS.find(reaction => reaction.type === r.type)?.emoji}
+                    </span>
+                  ))}
+                </div>
+                <span>{totalReactions}</span>
+              </>
+            )}
+          </div>
           <span>{comments.length} bình luận</span>
         </div>
 
         {/* Actions */}
         <div className="flex items-center border-b border-border">
-          <Button
-            variant="ghost"
-            className={`flex-1 rounded-none ${liked ? "text-red-500" : ""}`}
-            onClick={handleLike}
-          >
-            <Heart className={`w-5 h-5 mr-2 ${liked ? "fill-current" : ""}`} />
-            Thích
-          </Button>
+          <ReactionPicker
+            onReact={handlePostReaction}
+            currentReaction={userPostReaction}
+            reactions={postReactions}
+            disabled={!currentUserId}
+          />
           <Button
             variant="ghost"
             className="flex-1 rounded-none"
@@ -556,50 +620,118 @@ export function PostCard({ post, currentUserId, onDelete, onUpdate }: PostCardPr
           <div className="p-4 space-y-4">
             {comments.map((comment) => (
               <div key={comment.id} className="flex gap-2">
-                <Avatar className="w-8 h-8">
+                <Avatar className="w-8 h-8 flex-shrink-0">
                   <AvatarImage src={comment.profiles?.avatar_url || ""} />
                   <AvatarFallback className="text-xs bg-secondary/20 text-secondary">
                     {comment.profiles?.full_name?.charAt(0) || "U"}
                   </AvatarFallback>
                 </Avatar>
-                <div className="flex-1 bg-muted/50 rounded-lg p-2">
-                  <span className="font-semibold text-sm">
-                    {comment.profiles?.full_name || "Người dùng"}
-                  </span>
-                  <p className="text-sm text-foreground">{comment.content}</p>
+                <div className="flex-1 space-y-1">
+                  <div className="bg-muted/50 rounded-2xl p-3">
+                    <span className="font-semibold text-sm block">
+                      {comment.profiles?.full_name || "Người dùng"}
+                    </span>
+                    <p className="text-sm text-foreground">{comment.content}</p>
+                    {comment.image_url && (
+                      <img 
+                        src={comment.image_url} 
+                        alt="Comment" 
+                        className="mt-2 rounded-lg max-h-48 object-cover cursor-pointer"
+                        onClick={() => window.open(comment.image_url!, '_blank')}
+                      />
+                    )}
+                  </div>
+                  <div className="flex items-center gap-4 px-2">
+                    <ReactionDisplay
+                      reactions={comment.reactions || []}
+                      currentReaction={comment.userReaction}
+                      onReact={(type) => handleCommentReaction(comment.id, type, comment.userReaction || null)}
+                      disabled={!currentUserId}
+                    />
+                    <span className="text-xs text-muted-foreground">
+                      {formatDistanceToNow(new Date(comment.created_at), { locale: vi })}
+                    </span>
+                  </div>
                 </div>
               </div>
             ))}
 
+            {/* New Comment Input */}
             {currentUserId && (
-              <div className="flex gap-2">
-                <Textarea
-                  placeholder="Viết bình luận..."
-                  value={newComment}
-                  onChange={(e) => setNewComment(e.target.value)}
-                  className="min-h-[40px] resize-none text-sm"
-                  rows={1}
-                />
-                <Button
-                  size="icon"
-                  variant="gold"
-                  onClick={handleComment}
-                  disabled={!newComment.trim() || isSubmitting}
-                >
-                  <Send className="w-4 h-4" />
-                </Button>
+              <div className="space-y-2">
+                {commentImagePreview && (
+                  <div className="relative inline-block">
+                    <img 
+                      src={commentImagePreview} 
+                      alt="Preview" 
+                      className="max-h-32 rounded-lg"
+                    />
+                    <Button
+                      size="icon"
+                      variant="destructive"
+                      className="absolute -top-2 -right-2 w-6 h-6"
+                      onClick={removeCommentImage}
+                    >
+                      <X className="w-3 h-3" />
+                    </Button>
+                  </div>
+                )}
+                <div className="flex gap-2 items-end">
+                  <div className="flex-1 relative">
+                    <Textarea
+                      placeholder="Viết bình luận..."
+                      value={newComment}
+                      onChange={(e) => setNewComment(e.target.value)}
+                      className="min-h-[40px] resize-none text-sm pr-20"
+                      rows={1}
+                    />
+                    <div className="absolute right-2 bottom-2 flex items-center gap-1">
+                      <input
+                        type="file"
+                        ref={commentImageInputRef}
+                        accept="image/*,image/gif"
+                        onChange={handleCommentImageSelect}
+                        className="hidden"
+                      />
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="h-6 w-6"
+                        onClick={() => commentImageInputRef.current?.click()}
+                      >
+                        <ImageIcon className="w-4 h-4 text-muted-foreground" />
+                      </Button>
+                      <StickerPicker onSelect={handleStickerSelect} />
+                    </div>
+                  </div>
+                  <Button
+                    size="icon"
+                    variant="gold"
+                    onClick={handleComment}
+                    disabled={(!newComment.trim() && !commentImage) || isSubmitting}
+                  >
+                    <Send className="w-4 h-4" />
+                  </Button>
+                </div>
               </div>
             )}
           </div>
         )}
       </div>
 
+      {/* Edit Post Modal */}
+      <EditPostModal
+        open={showEditModal}
+        onOpenChange={setShowEditModal}
+        post={post}
+        onSaved={() => onUpdate?.()}
+      />
+
       {/* Full screen media viewer */}
       <Dialog open={selectedMediaIndex !== null} onOpenChange={() => setSelectedMediaIndex(null)}>
         <DialogContent className="max-w-5xl p-0 bg-black border-none">
           {selectedMediaIndex !== null && mediaItems[selectedMediaIndex] && (
             <div className="relative">
-              {/* Close button */}
               <Button
                 variant="ghost"
                 size="icon"
@@ -609,7 +741,6 @@ export function PostCard({ post, currentUserId, onDelete, onUpdate }: PostCardPr
                 <X className="w-6 h-6" />
               </Button>
               
-              {/* Media display */}
               <div className="flex items-center justify-center min-h-[50vh] max-h-[90vh]">
                 {mediaItems[selectedMediaIndex].type === "video" ? (
                   <video
@@ -627,7 +758,6 @@ export function PostCard({ post, currentUserId, onDelete, onUpdate }: PostCardPr
                 )}
               </div>
 
-              {/* Navigation for multiple media */}
               {mediaItems.length > 1 && (
                 <>
                   <Button
@@ -655,7 +785,6 @@ export function PostCard({ post, currentUserId, onDelete, onUpdate }: PostCardPr
                     </svg>
                   </Button>
                   
-                  {/* Thumbnails */}
                   <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 p-2 bg-black/60 rounded-lg">
                     {mediaItems.map((item, index) => (
                       <button
