@@ -28,110 +28,110 @@ import {
 const campaigns = [
   {
     id: 1,
-    title: "Clean Water for Rural Vietnam",
-    organization: "WaterAid Vietnam",
+    title: "Nước Sạch Cho Vùng Nông Thôn Việt Nam",
+    organization: "WaterAid Việt Nam",
     image: "https://images.unsplash.com/photo-1594398901394-4e34939a4fd0?w=800&auto=format&fit=crop&q=60",
     raised: 45000,
     goal: 60000,
     donors: 892,
     daysLeft: 12,
-    location: "Vietnam",
-    category: "Water & Sanitation",
+    location: "Việt Nam",
+    category: "Nước & Vệ Sinh",
     verified: true,
     trending: true,
   },
   {
     id: 2,
-    title: "Education for Underprivileged Children",
-    organization: "EduHope Foundation",
+    title: "Giáo Dục Cho Trẻ Em Khó Khăn",
+    organization: "Quỹ EduHope",
     image: "https://images.unsplash.com/photo-1497486751825-1233686d5d80?w=800&auto=format&fit=crop&q=60",
     raised: 28500,
     goal: 40000,
     donors: 456,
     daysLeft: 25,
-    location: "India",
-    category: "Education",
+    location: "Ấn Độ",
+    category: "Giáo Dục",
     verified: true,
     trending: false,
   },
   {
     id: 3,
-    title: "Emergency Food Relief - East Africa",
-    organization: "Global Food Network",
+    title: "Cứu Trợ Lương Thực Khẩn Cấp - Đông Phi",
+    organization: "Mạng Lưới Lương Thực Toàn Cầu",
     image: "https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?w=800&auto=format&fit=crop&q=60",
     raised: 89000,
     goal: 100000,
     donors: 2341,
     daysLeft: 5,
     location: "Kenya",
-    category: "Hunger Relief",
+    category: "Cứu Trợ Lương Thực",
     verified: true,
     trending: true,
   },
   {
     id: 4,
-    title: "Medical Supplies for Remote Clinics",
-    organization: "Health Without Borders",
+    title: "Vật Tư Y Tế Cho Phòng Khám Vùng Xa",
+    organization: "Y Tế Không Biên Giới",
     image: "https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=800&auto=format&fit=crop&q=60",
     raised: 32000,
     goal: 50000,
     donors: 678,
     daysLeft: 18,
     location: "Philippines",
-    category: "Healthcare",
+    category: "Y Tế",
     verified: true,
     trending: false,
   },
   {
     id: 5,
-    title: "Shelter for Homeless Families",
-    organization: "Home Again Initiative",
+    title: "Nhà Ở Cho Gia Đình Vô Gia Cư",
+    organization: "Sáng Kiến Mái Ấm",
     image: "https://images.unsplash.com/photo-1469022563428-aa04fef9f5a2?w=800&auto=format&fit=crop&q=60",
     raised: 67000,
     goal: 80000,
     donors: 1234,
     daysLeft: 8,
     location: "Brazil",
-    category: "Housing",
+    category: "Nhà Ở",
     verified: true,
     trending: true,
   },
   {
     id: 6,
-    title: "Reforestation Project Amazon",
-    organization: "Green Earth Alliance",
+    title: "Dự Án Trồng Rừng Amazon",
+    organization: "Liên Minh Xanh Trái Đất",
     image: "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=800&auto=format&fit=crop&q=60",
     raised: 120000,
     goal: 150000,
     donors: 3456,
     daysLeft: 30,
     location: "Brazil",
-    category: "Environment",
+    category: "Môi Trường",
     verified: true,
     trending: true,
   },
 ];
 
 const categories = [
-  "All Categories",
-  "Water & Sanitation",
-  "Education",
-  "Hunger Relief",
-  "Healthcare",
-  "Housing",
-  "Environment",
+  "Tất Cả Danh Mục",
+  "Nước & Vệ Sinh",
+  "Giáo Dục",
+  "Cứu Trợ Lương Thực",
+  "Y Tế",
+  "Nhà Ở",
+  "Môi Trường",
 ];
 
 const Campaigns = () => {
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("All Categories");
+  const [selectedCategory, setSelectedCategory] = useState("Tất Cả Danh Mục");
 
   const filteredCampaigns = campaigns.filter((campaign) => {
     const matchesSearch =
       campaign.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       campaign.organization.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesCategory =
-      selectedCategory === "All Categories" ||
+      selectedCategory === "Tất Cả Danh Mục" ||
       campaign.category === selectedCategory;
     return matchesSearch && matchesCategory;
   });
@@ -146,14 +146,14 @@ const Campaigns = () => {
           <div className="text-center mb-12">
             <Badge variant="trending" className="mb-4">
               <Heart className="w-3.5 h-3.5 mr-1" />
-              Make an Impact
+              Tạo Tác Động
             </Badge>
             <h1 className="font-display text-4xl md:text-5xl font-bold mb-4">
-              Discover <span className="gradient-text">Campaigns</span>
+              Khám Phá <span className="gradient-text">Chiến Dịch</span>
             </h1>
             <p className="text-muted-foreground max-w-2xl mx-auto">
-              Browse verified campaigns from trusted NGOs around the world.
-              Every donation is tracked on-chain for full transparency.
+              Duyệt qua các chiến dịch đã được xác minh từ các tổ chức NGO đáng tin cậy trên toàn thế giới.
+              Mọi khoản quyên góp đều được ghi nhận on-chain để minh bạch hoàn toàn.
             </p>
           </div>
 
@@ -162,7 +162,7 @@ const Campaigns = () => {
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
               <Input
-                placeholder="Search campaigns..."
+                placeholder="Tìm kiếm chiến dịch..."
                 className="pl-10"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -171,7 +171,7 @@ const Campaigns = () => {
             <Select value={selectedCategory} onValueChange={setSelectedCategory}>
               <SelectTrigger className="w-full md:w-[200px]">
                 <Filter className="w-4 h-4 mr-2" />
-                <SelectValue placeholder="Category" />
+                <SelectValue placeholder="Danh mục" />
               </SelectTrigger>
               <SelectContent>
                 {categories.map((category) => (
@@ -208,13 +208,13 @@ const Campaigns = () => {
                         {campaign.verified && (
                           <Badge variant="verified" className="backdrop-blur-sm">
                             <Verified className="w-3 h-3" />
-                            Verified
+                            Đã Xác Minh
                           </Badge>
                         )}
                         {campaign.trending && (
                           <Badge variant="trending" className="backdrop-blur-sm">
                             <TrendingUp className="w-3 h-3" />
-                            Trending
+                            Nổi Bật
                           </Badge>
                         )}
                       </div>
@@ -239,7 +239,7 @@ const Campaigns = () => {
                       </h3>
 
                       <p className="text-sm text-muted-foreground mb-4">
-                        by {campaign.organization}
+                        bởi {campaign.organization}
                       </p>
 
                       {/* Progress */}
@@ -249,7 +249,7 @@ const Campaigns = () => {
                             ${campaign.raised.toLocaleString()}
                           </span>
                           <span className="text-muted-foreground">
-                            of ${campaign.goal.toLocaleString()}
+                            mục tiêu ${campaign.goal.toLocaleString()}
                           </span>
                         </div>
                         <Progress
@@ -262,11 +262,11 @@ const Campaigns = () => {
                       <div className="flex items-center justify-between text-sm text-muted-foreground">
                         <div className="flex items-center gap-1">
                           <Users className="w-4 h-4" />
-                          {campaign.donors} donors
+                          {campaign.donors} nhà hảo tâm
                         </div>
                         <div className="flex items-center gap-1">
                           <Clock className="w-4 h-4" />
-                          {campaign.daysLeft} days left
+                          còn {campaign.daysLeft} ngày
                         </div>
                       </div>
                     </div>
@@ -278,7 +278,7 @@ const Campaigns = () => {
 
           {filteredCampaigns.length === 0 && (
             <div className="text-center py-16">
-              <p className="text-muted-foreground">No campaigns found matching your criteria.</p>
+              <p className="text-muted-foreground">Không tìm thấy chiến dịch phù hợp với tiêu chí của bạn.</p>
             </div>
           )}
         </div>

@@ -21,53 +21,53 @@ import {
 const reviews = [
   {
     id: 1,
-    campaign: "Clean Water for Rural Vietnam",
+    campaign: "Nước Sạch Cho Vùng Nông Thôn Việt Nam",
     reviewer: {
-      name: "Sarah Nguyen",
+      name: "Sarah Nguyễn",
       avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200",
       reputation: 4.9,
       verified: true,
     },
     rating: 5,
-    content: "Tôi đã theo dõi campaign này từ đầu và thực sự impressed với sự minh bạch. Mọi chi tiêu đều có receipt và proof on-chain. Impact report rất chi tiết và có thể verify được.",
-    date: "2 days ago",
+    content: "Tôi đã theo dõi chiến dịch này từ đầu và thực sự ấn tượng với sự minh bạch. Mọi chi tiêu đều có biên lai và bằng chứng on-chain. Báo cáo tác động rất chi tiết và có thể xác minh được.",
+    date: "2 ngày trước",
     likes: 45,
     comments: 12,
-    reward: "Gold Badge + 50 FUN",
+    reward: "Huy Hiệu Vàng + 50 FUN",
     helpful: true,
   },
   {
     id: 2,
-    campaign: "Education for Underprivileged Children",
+    campaign: "Giáo Dục Cho Trẻ Em Khó Khăn",
     reviewer: {
-      name: "Minh Tran",
+      name: "Minh Trần",
       avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200",
       reputation: 4.7,
       verified: true,
     },
     rating: 4,
-    content: "Campaign tốt, team NGO rất responsive. Một số updates hơi chậm nhưng overall impact rất positive. Recommend!",
-    date: "5 days ago",
+    content: "Chiến dịch tốt, team NGO rất phản hồi nhanh. Một số cập nhật hơi chậm nhưng tổng thể tác động rất tích cực. Khuyến nghị!",
+    date: "5 ngày trước",
     likes: 28,
     comments: 5,
-    reward: "Silver Badge + 25 FUN",
+    reward: "Huy Hiệu Bạc + 25 FUN",
     helpful: true,
   },
   {
     id: 3,
-    campaign: "Emergency Food Relief - East Africa",
+    campaign: "Cứu Trợ Lương Thực Khẩn Cấp - Đông Phi",
     reviewer: {
-      name: "Tech4Good Foundation",
+      name: "Quỹ Tech4Good",
       avatar: "https://images.unsplash.com/photo-1560179707-f14e90ef3623?w=200",
       reputation: 5.0,
       verified: true,
     },
     rating: 5,
-    content: "Là corporate donor, chúng tôi đặc biệt appreciate sự transparent trong reporting. Mọi fund usage đều được track on-chain và có third-party audit. Đây là cách từ thiện nên được làm.",
-    date: "1 week ago",
+    content: "Là nhà tài trợ doanh nghiệp, chúng tôi đặc biệt đánh giá cao sự minh bạch trong báo cáo. Mọi việc sử dụng quỹ đều được theo dõi on-chain và có kiểm toán bên thứ ba. Đây là cách từ thiện nên được làm.",
+    date: "1 tuần trước",
     likes: 89,
     comments: 23,
-    reward: "Platinum Badge + 100 FUN",
+    reward: "Huy Hiệu Bạch Kim + 100 FUN",
     helpful: true,
   },
 ];
@@ -86,13 +86,13 @@ const Reviews = () => {
           <div className="text-center mb-8">
             <Badge variant="gold" className="mb-4">
               <Star className="w-3.5 h-3.5 mr-1" />
-              Community Reviews
+              Đánh Giá Cộng Đồng
             </Badge>
             <h1 className="font-display text-4xl md:text-5xl font-bold mb-4">
-              Reviews & <span className="gradient-text">Rewards</span>
+              Đánh Giá & <span className="gradient-text">Phần Thưởng</span>
             </h1>
             <p className="text-muted-foreground max-w-2xl mx-auto">
-              Đánh giá công tâm, nhận rewards xứng đáng. Mọi review đều contribute vào Reputation System.
+              Đánh giá công tâm, nhận phần thưởng xứng đáng. Mọi đánh giá đều đóng góp vào Hệ Thống Uy Tín.
             </p>
           </div>
 
@@ -108,9 +108,9 @@ const Reviews = () => {
                   <Gift className="w-6 h-6 text-secondary" />
                 </div>
                 <div>
-                  <h3 className="font-display font-semibold">Review & Earn Rewards</h3>
+                  <h3 className="font-display font-semibold">Đánh Giá & Nhận Thưởng</h3>
                   <p className="text-sm text-muted-foreground">
-                    Viết review chất lượng → Nhận Reputation Tokens + FUN Money
+                    Viết đánh giá chất lượng → Nhận Token Uy Tín + FUN Money
                   </p>
                 </div>
               </div>
@@ -118,21 +118,21 @@ const Reviews = () => {
                 <div className="text-center">
                   <Badge variant="gold" className="mb-1">
                     <Trophy className="w-3 h-3 mr-1" />
-                    Gold
+                    Vàng
                   </Badge>
                   <p className="text-xs text-muted-foreground">50 FUN</p>
                 </div>
                 <div className="text-center">
                   <Badge variant="secondary" className="mb-1">
                     <Award className="w-3 h-3 mr-1" />
-                    Silver
+                    Bạc
                   </Badge>
                   <p className="text-xs text-muted-foreground">25 FUN</p>
                 </div>
                 <div className="text-center">
                   <Badge variant="muted" className="mb-1">
                     <Star className="w-3 h-3 mr-1" />
-                    Bronze
+                    Đồng
                   </Badge>
                   <p className="text-xs text-muted-foreground">10 FUN</p>
                 </div>
@@ -202,11 +202,11 @@ const Reviews = () => {
                     <div className="flex items-center gap-4">
                       <button className="flex items-center gap-1 text-sm text-muted-foreground hover:text-secondary transition-colors">
                         <ThumbsUp className="w-4 h-4" />
-                        {review.likes} Helpful
+                        {review.likes} Hữu ích
                       </button>
                       <button className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors">
                         <MessageCircle className="w-4 h-4" />
-                        {review.comments} Comments
+                        {review.comments} Bình luận
                       </button>
                     </div>
                     <button className="text-sm text-muted-foreground hover:text-destructive transition-colors">
@@ -225,12 +225,12 @@ const Reviews = () => {
                 transition={{ delay: 0.3 }}
                 className="glass-card p-6 luxury-border sticky top-24"
               >
-                <h3 className="font-display font-semibold mb-4">Write a Review</h3>
+                <h3 className="font-display font-semibold mb-4">Viết Đánh Giá</h3>
 
                 {/* Rating */}
                 <div className="mb-4">
                   <label className="text-sm text-muted-foreground mb-2 block">
-                    Your Rating
+                    Đánh Giá Của Bạn
                   </label>
                   <div className="flex gap-1">
                     {[1, 2, 3, 4, 5].map((star) => (
@@ -254,10 +254,10 @@ const Reviews = () => {
                 {/* Review Text */}
                 <div className="mb-4">
                   <label className="text-sm text-muted-foreground mb-2 block">
-                    Your Review
+                    Nội Dung Đánh Giá
                   </label>
                   <Textarea
-                    placeholder="Share your experience with this campaign..."
+                    placeholder="Chia sẻ trải nghiệm của bạn với chiến dịch này..."
                     value={newReview}
                     onChange={(e) => setNewReview(e.target.value)}
                     className="min-h-[120px]"
@@ -268,16 +268,16 @@ const Reviews = () => {
                 <div className="bg-muted/50 rounded-xl p-4 mb-4">
                   <div className="flex items-center gap-2 mb-2">
                     <Gift className="w-4 h-4 text-secondary" />
-                    <span className="text-sm font-medium">Potential Reward</span>
+                    <span className="text-sm font-medium">Phần Thưởng Tiềm Năng</span>
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    Quality reviews can earn up to Gold Badge + 50 FUN tokens based on helpfulness votes from community.
+                    Đánh giá chất lượng có thể nhận được Huy Hiệu Vàng + 50 token FUN dựa trên số phiếu hữu ích từ cộng đồng.
                   </p>
                 </div>
 
                 <Button variant="hero" className="w-full">
                   <Send className="w-4 h-4" />
-                  Submit Review
+                  Gửi Đánh Giá
                 </Button>
               </motion.div>
 
@@ -288,23 +288,23 @@ const Reviews = () => {
                 transition={{ delay: 0.4 }}
                 className="glass-card p-6 luxury-border"
               >
-                <h4 className="font-semibold mb-3">Review Guidelines</h4>
+                <h4 className="font-semibold mb-3">Hướng Dẫn Đánh Giá</h4>
                 <ul className="space-y-2 text-sm text-muted-foreground">
                   <li className="flex items-start gap-2">
                     <Verified className="w-4 h-4 text-success mt-0.5" />
-                    Be honest và constructive
+                    Trung thực và xây dựng
                   </li>
                   <li className="flex items-start gap-2">
                     <Verified className="w-4 h-4 text-success mt-0.5" />
-                    Focus on facts có thể verify
+                    Tập trung vào sự thật có thể xác minh
                   </li>
                   <li className="flex items-start gap-2">
                     <Verified className="w-4 h-4 text-success mt-0.5" />
-                    Mention specific impact nếu có
+                    Đề cập tác động cụ thể nếu có
                   </li>
                   <li className="flex items-start gap-2">
                     <Verified className="w-4 h-4 text-success mt-0.5" />
-                    Respect privacy của beneficiaries
+                    Tôn trọng quyền riêng tư của người thụ hưởng
                   </li>
                 </ul>
               </motion.div>

@@ -29,57 +29,57 @@ import {
 const needs = [
   {
     id: 1,
-    title: "Emergency Medical Supplies Needed",
-    location: "Ho Chi Minh City, Vietnam",
+    title: "Cần Vật Tư Y Tế Khẩn Cấp",
+    location: "TP. Hồ Chí Minh, Việt Nam",
     coordinates: { lat: 10.8231, lng: 106.6297 },
     urgency: "critical",
-    type: "Healthcare",
-    organization: "Red Cross Vietnam",
+    type: "Y Tế",
+    organization: "Hội Chữ Thập Đỏ Việt Nam",
     verified: true,
-    eta: "2-3 days",
-    description: "Urgent need for medical supplies for flood victims",
+    eta: "2-3 ngày",
+    description: "Cần gấp vật tư y tế cho nạn nhân lũ lụt",
     beneficiaries: 500,
     matched: false,
   },
   {
     id: 2,
-    title: "Clean Water Distribution",
-    location: "Mekong Delta, Vietnam",
+    title: "Phân Phối Nước Sạch",
+    location: "Đồng Bằng Sông Cửu Long, Việt Nam",
     coordinates: { lat: 10.0452, lng: 105.7469 },
     urgency: "high",
-    type: "Water & Sanitation",
-    organization: "WaterAid Vietnam",
+    type: "Nước & Vệ Sinh",
+    organization: "WaterAid Việt Nam",
     verified: true,
-    eta: "1 week",
-    description: "Water purification tablets and filters needed",
+    eta: "1 tuần",
+    description: "Cần viên lọc nước và bộ lọc nước",
     beneficiaries: 1200,
     matched: true,
   },
   {
     id: 3,
-    title: "School Supplies for Rural Children",
-    location: "Sapa, Vietnam",
+    title: "Đồ Dùng Học Tập Cho Trẻ Em Vùng Cao",
+    location: "Sapa, Việt Nam",
     coordinates: { lat: 22.3363, lng: 103.8438 },
     urgency: "medium",
-    type: "Education",
-    organization: "EduHope Foundation",
+    type: "Giáo Dục",
+    organization: "Quỹ EduHope",
     verified: true,
-    eta: "2 weeks",
-    description: "Books, notebooks, and writing materials",
+    eta: "2 tuần",
+    description: "Sách, vở và dụng cụ viết",
     beneficiaries: 350,
     matched: false,
   },
   {
     id: 4,
-    title: "Food Packages for Elderly",
-    location: "Hanoi, Vietnam",
+    title: "Gói Thực Phẩm Cho Người Cao Tuổi",
+    location: "Hà Nội, Việt Nam",
     coordinates: { lat: 21.0285, lng: 105.8542 },
     urgency: "high",
-    type: "Food Security",
-    organization: "Vietnam Red Cross",
+    type: "An Ninh Lương Thực",
+    organization: "Hội Chữ Thập Đỏ Việt Nam",
     verified: true,
-    eta: "3-5 days",
-    description: "Monthly food packages for 200 elderly households",
+    eta: "3-5 ngày",
+    description: "Gói thực phẩm hàng tháng cho 200 hộ gia đình người cao tuổi",
     beneficiaries: 200,
     matched: false,
   },
@@ -90,6 +90,13 @@ const urgencyColors = {
   high: "bg-warning text-warning-foreground",
   medium: "bg-secondary text-secondary-foreground",
   low: "bg-muted text-muted-foreground",
+};
+
+const urgencyLabels = {
+  critical: "Cấp Bách",
+  high: "Cao",
+  medium: "Trung Bình",
+  low: "Thấp",
 };
 
 const NeedsMap = () => {
@@ -115,13 +122,13 @@ const NeedsMap = () => {
           <div className="text-center mb-8">
             <Badge variant="urgent" className="mb-4">
               <Zap className="w-3.5 h-3.5 mr-1" />
-              Realtime Matching
+              Kết Nối Realtime
             </Badge>
             <h1 className="font-display text-4xl md:text-5xl font-bold mb-4">
-              Needs <span className="gradient-text">Map</span>
+              Bản Đồ <span className="gradient-text">Nhu Cầu</span>
             </h1>
             <p className="text-muted-foreground max-w-2xl mx-auto">
-              Khám phá nhu cầu từ thiện realtime. Smart matching engine kết nối nguồn lực với needs phù hợp.
+              Khám phá nhu cầu từ thiện realtime. Smart matching engine kết nối nguồn lực với nhu cầu phù hợp.
             </p>
           </div>
 
@@ -130,7 +137,7 @@ const NeedsMap = () => {
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
               <Input
-                placeholder="Search needs by location or title..."
+                placeholder="Tìm kiếm theo địa điểm hoặc tiêu đề..."
                 className="pl-10"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -139,27 +146,27 @@ const NeedsMap = () => {
             <Select value={selectedUrgency} onValueChange={setSelectedUrgency}>
               <SelectTrigger className="w-full md:w-[180px]">
                 <AlertTriangle className="w-4 h-4 mr-2" />
-                <SelectValue placeholder="Urgency" />
+                <SelectValue placeholder="Mức độ" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Urgency</SelectItem>
-                <SelectItem value="critical">Critical</SelectItem>
-                <SelectItem value="high">High</SelectItem>
-                <SelectItem value="medium">Medium</SelectItem>
-                <SelectItem value="low">Low</SelectItem>
+                <SelectItem value="all">Tất Cả Mức Độ</SelectItem>
+                <SelectItem value="critical">Cấp Bách</SelectItem>
+                <SelectItem value="high">Cao</SelectItem>
+                <SelectItem value="medium">Trung Bình</SelectItem>
+                <SelectItem value="low">Thấp</SelectItem>
               </SelectContent>
             </Select>
             <Select value={selectedType} onValueChange={setSelectedType}>
               <SelectTrigger className="w-full md:w-[180px]">
                 <Filter className="w-4 h-4 mr-2" />
-                <SelectValue placeholder="Type" />
+                <SelectValue placeholder="Loại" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Types</SelectItem>
-                <SelectItem value="Healthcare">Healthcare</SelectItem>
-                <SelectItem value="Water & Sanitation">Water & Sanitation</SelectItem>
-                <SelectItem value="Education">Education</SelectItem>
-                <SelectItem value="Food Security">Food Security</SelectItem>
+                <SelectItem value="all">Tất Cả Loại</SelectItem>
+                <SelectItem value="Y Tế">Y Tế</SelectItem>
+                <SelectItem value="Nước & Vệ Sinh">Nước & Vệ Sinh</SelectItem>
+                <SelectItem value="Giáo Dục">Giáo Dục</SelectItem>
+                <SelectItem value="An Ninh Lương Thực">An Ninh Lương Thực</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -201,9 +208,9 @@ const NeedsMap = () => {
                 </div>
 
                 <div className="absolute bottom-4 left-4 flex gap-2">
-                  <Badge variant="destructive" className="text-xs">Critical</Badge>
-                  <Badge variant="warning" className="text-xs">High</Badge>
-                  <Badge variant="secondary" className="text-xs">Medium</Badge>
+                  <Badge variant="destructive" className="text-xs">Cấp Bách</Badge>
+                  <Badge variant="warning" className="text-xs">Cao</Badge>
+                  <Badge variant="secondary" className="text-xs">Trung Bình</Badge>
                 </div>
               </div>
             </div>
@@ -211,10 +218,10 @@ const NeedsMap = () => {
             {/* Needs List */}
             <div className="space-y-4 max-h-[500px] overflow-y-auto scrollbar-hide">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="font-display font-semibold">Active Needs ({filteredNeeds.length})</h3>
+                <h3 className="font-display font-semibold">Nhu Cầu Đang Hoạt Động ({filteredNeeds.length})</h3>
                 <Button variant="hero" size="sm">
                   <Zap className="w-4 h-4" />
-                  Smart Match
+                  Kết Nối Thông Minh
                 </Button>
               </div>
 
@@ -228,12 +235,12 @@ const NeedsMap = () => {
                 >
                   <div className="flex items-start justify-between mb-2">
                     <Badge className={urgencyColors[need.urgency as keyof typeof urgencyColors]}>
-                      {need.urgency.charAt(0).toUpperCase() + need.urgency.slice(1)}
+                      {urgencyLabels[need.urgency as keyof typeof urgencyLabels]}
                     </Badge>
                     {need.verified && (
                       <Badge variant="verified">
                         <Verified className="w-3 h-3" />
-                        Verified
+                        Đã Xác Minh
                       </Badge>
                     )}
                   </div>
@@ -256,21 +263,21 @@ const NeedsMap = () => {
                     </div>
                     <div className="flex items-center gap-1">
                       <Users className="w-3 h-3" />
-                      {need.beneficiaries} beneficiaries
+                      {need.beneficiaries} người thụ hưởng
                     </div>
                   </div>
 
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-1 text-xs">
                       <Clock className="w-3 h-3 text-secondary" />
-                      <span className="text-secondary font-medium">ETA: {need.eta}</span>
+                      <span className="text-secondary font-medium">Dự kiến: {need.eta}</span>
                     </div>
                     {need.matched ? (
-                      <Badge variant="success" className="text-xs">Matched</Badge>
+                      <Badge variant="success" className="text-xs">Đã Kết Nối</Badge>
                     ) : (
                       <Button variant="outline" size="sm" className="text-xs h-7">
                         <Heart className="w-3 h-3" />
-                        Support
+                        Hỗ Trợ
                       </Button>
                     )}
                   </div>

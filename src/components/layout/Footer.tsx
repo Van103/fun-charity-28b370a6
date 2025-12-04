@@ -4,28 +4,28 @@ import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/brand/Logo";
 
 const footerLinks = {
-  Platform: [
-    { name: "Campaigns", href: "/campaigns" },
-    { name: "Needs Map", href: "/needs-map" },
-    { name: "Dashboard", href: "/dashboard" },
-    { name: "How It Works", href: "/how-it-works" },
+  "Nền Tảng": [
+    { name: "Chiến Dịch", href: "/campaigns" },
+    { name: "Bản Đồ Nhu Cầu", href: "/needs-map" },
+    { name: "Tổng Quan", href: "/dashboard" },
+    { name: "Cách Hoạt Động", href: "/how-it-works" },
   ],
-  Community: [
-    { name: "For Donors", href: "/donors" },
-    { name: "For Volunteers", href: "/volunteers" },
-    { name: "For NGOs", href: "/ngos" },
-    { name: "Leaderboard", href: "/leaderboard" },
+  "Cộng Đồng": [
+    { name: "Dành Cho Nhà Hảo Tâm", href: "/donors" },
+    { name: "Dành Cho Tình Nguyện Viên", href: "/volunteers" },
+    { name: "Dành Cho Tổ Chức", href: "/ngos" },
+    { name: "Bảng Xếp Hạng", href: "/leaderboard" },
   ],
-  Resources: [
-    { name: "Documentation", href: "/docs" },
-    { name: "Smart Contracts", href: "/contracts" },
+  "Tài Nguyên": [
+    { name: "Tài Liệu", href: "/docs" },
+    { name: "Hợp Đồng Thông Minh", href: "/contracts" },
     { name: "Blog", href: "/blog" },
-    { name: "Support", href: "/support" },
+    { name: "Hỗ Trợ", href: "/support" },
   ],
-  Legal: [
-    { name: "Privacy Policy", href: "/privacy" },
-    { name: "Terms of Service", href: "/terms" },
-    { name: "KYC Policy", href: "/kyc" },
+  "Pháp Lý": [
+    { name: "Chính Sách Bảo Mật", href: "/privacy" },
+    { name: "Điều Khoản Sử Dụng", href: "/terms" },
+    { name: "Chính Sách KYC", href: "/kyc" },
   ],
 };
 
@@ -89,12 +89,12 @@ export function Footer() {
         {/* Bottom */}
         <div className="mt-12 pt-8 border-t border-primary-light/30 flex flex-col md:flex-row items-center justify-between gap-4">
           <p className="text-sm text-primary-foreground/60">
-            © 2024 FUN Charity. All rights reserved. Built with{" "}
-            <Heart className="inline w-3 h-3 text-secondary" fill="currentColor" /> on Web3.
+            © 2024 FUN Charity. Bản quyền thuộc về FUN Charity. Được xây dựng với{" "}
+            <Heart className="inline w-3 h-3 text-secondary" fill="currentColor" /> trên Web3.
           </p>
           <div className="flex items-center gap-2 text-sm text-primary-foreground/60">
             <Sparkles className="w-4 h-4 text-secondary" />
-            <span>100% Transparent • On-Chain Verified • Community Governed</span>
+            <span>100% Minh Bạch • Xác Minh On-Chain • Quản Trị Cộng Đồng</span>
           </div>
         </div>
       </div>
