@@ -131,11 +131,19 @@
 @layer base {
   * {
     @apply border-border;
+    cursor: url('/cursors/angel-purple.svg') 16 16, auto;
   }
 
   body {
     @apply bg-background text-foreground antialiased;
     font-family: 'Inter', system-ui, sans-serif;
+    cursor: url('/cursors/angel-purple.svg') 16 16, auto;
+  }
+
+  /* Interactive elements get gold angel cursor */
+  a, button, [role="button"], input, textarea, select, 
+  [tabindex]:not([tabindex="-1"]), .cursor-pointer {
+    cursor: url('/cursors/angel-gold.svg') 16 16, pointer !important;
   }
 
   h1, h2, h3, h4, h5, h6 {

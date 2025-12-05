@@ -172,22 +172,11 @@ const CustomCursor = () => {
   if (reduceMotion) return null;
 
   return (
-    <>
-      <style>{`
-        body {
-          cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Cg fill='none'%3E%3C!-- Body --%3E%3Cellipse cx='16' cy='18' rx='5' ry='7' fill='%236B21A8'/%3E%3C!-- Head --%3E%3Ccircle cx='16' cy='9' r='5' fill='%239333EA'/%3E%3C!-- Halo --%3E%3Cellipse cx='16' cy='3' rx='4' ry='1' stroke='%23C9A23D' stroke-width='1.5' fill='none'/%3E%3C!-- Left Wing --%3E%3Cpath d='M11 14 C6 10 4 14 6 18 C8 22 11 20 11 18' fill='%23A855F7' opacity='0.9'/%3E%3C!-- Right Wing --%3E%3Cpath d='M21 14 C26 10 28 14 26 18 C24 22 21 20 21 18' fill='%23A855F7' opacity='0.9'/%3E%3C!-- Eyes --%3E%3Ccircle cx='14' cy='8' r='1' fill='white'/%3E%3Ccircle cx='18' cy='8' r='1' fill='white'/%3E%3C!-- Smile --%3E%3Cpath d='M14 11 Q16 13 18 11' stroke='%23C9A23D' stroke-width='1' fill='none' stroke-linecap='round'/%3E%3C/g%3E%3C/svg%3E") 16 16, auto;
-        }
-        
-        a, button, [role="button"], input, textarea, select, [tabindex]:not([tabindex="-1"]) {
-          cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Cg fill='none'%3E%3C!-- Body --%3E%3Cellipse cx='16' cy='18' rx='5' ry='7' fill='%23C9A23D'/%3E%3C!-- Head --%3E%3Ccircle cx='16' cy='9' r='5' fill='%23D4AF37'/%3E%3C!-- Halo --%3E%3Cellipse cx='16' cy='3' rx='4' ry='1' stroke='%23FFD700' stroke-width='1.5' fill='none'/%3E%3C!-- Left Wing --%3E%3Cpath d='M11 14 C6 10 4 14 6 18 C8 22 11 20 11 18' fill='%23F5D742' opacity='0.9'/%3E%3C!-- Right Wing --%3E%3Cpath d='M21 14 C26 10 28 14 26 18 C24 22 21 20 21 18' fill='%23F5D742' opacity='0.9'/%3E%3C!-- Eyes --%3E%3Ccircle cx='14' cy='8' r='1' fill='white'/%3E%3Ccircle cx='18' cy='8' r='1' fill='white'/%3E%3C!-- Smile --%3E%3Cpath d='M14 11 Q16 13 18 11' stroke='%236B21A8' stroke-width='1' fill='none' stroke-linecap='round'/%3E%3C/g%3E%3C/svg%3E") 16 16, pointer;
-        }
-      `}</style>
-      <canvas
-        ref={canvasRef}
-        className="fixed inset-0 pointer-events-none z-[9999]"
-        style={{ opacity: isVisible ? 1 : 0 }}
-      />
-    </>
+    <canvas
+      ref={canvasRef}
+      className="fixed inset-0 pointer-events-none z-[9999]"
+      style={{ opacity: isVisible ? 1 : 0 }}
+    />
   );
 };
 
