@@ -136,7 +136,7 @@ const CustomCursor = () => {
     const distance = Math.sqrt(dx * dx + dy * dy);
 
     // Spawn gold particles based on movement - more particles falling everywhere
-    if (distance > 3 && !reduceMotion && particlesEnabled && cursorType !== 'default') {
+    if (distance > 3 && particlesEnabled && cursorType !== 'default') {
       const particleCount = Math.min(Math.floor(distance / 8), 4);
       for (let i = 0; i < particleCount; i++) {
         particlesRef.current.push(
@@ -172,7 +172,7 @@ const CustomCursor = () => {
     }
 
     animationRef.current = requestAnimationFrame(animate);
-  }, [createParticle, drawParticle, reduceMotion, particlesEnabled, cursorType]);
+  }, [createParticle, drawParticle, particlesEnabled, cursorType]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -230,7 +230,8 @@ const CustomCursor = () => {
     };
   }, [animate]);
 
-  if (reduceMotion || !particlesEnabled || cursorType === 'default') return null;
+  // Only hide if particles are disabled or using default cursor
+  if (!particlesEnabled || cursorType === 'default') return null;
 
   return (
     <canvas

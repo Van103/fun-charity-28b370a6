@@ -59,7 +59,7 @@ const CursorSettings = () => {
                   </div>
                 ) : (
                   <img 
-                    src={option.cursor} 
+                    src={`${option.cursor}?v=${Date.now()}`} 
                     alt={option.nameVi} 
                     className="w-8 h-8 object-contain"
                   />

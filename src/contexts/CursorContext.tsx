@@ -125,14 +125,15 @@ export const CursorProvider = ({ children }: { children: ReactNode }) => {
     if (cursorType === 'default') {
       styleEl.textContent = '';
     } else {
+      const timestamp = Date.now();
       styleEl.textContent = `
         *, *::before, *::after {
-          cursor: url('${currentCursor.cursor}') 16 16, auto !important;
+          cursor: url('${currentCursor.cursor}?v=${timestamp}') 16 16, auto !important;
         }
         a, button, [role="button"], input, textarea, select, 
         [tabindex]:not([tabindex="-1"]), .cursor-pointer,
         a *, button *, [role="button"] * {
-          cursor: url('${currentCursor.cursorHover}') 16 16, pointer !important;
+          cursor: url('${currentCursor.cursorHover}?v=${timestamp}') 16 16, pointer !important;
         }
       `;
     }
