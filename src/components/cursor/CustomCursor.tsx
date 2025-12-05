@@ -36,21 +36,31 @@ const CustomCursor = () => {
   };
 
   const createParticle = useCallback((x: number, y: number): Particle => {
-    const useAlt = Math.random() > 0.5;
+    const rand = Math.random();
+    // Gold color palette for falling particles
+    const goldColors = [
+      'rgba(255, 215, 0, 1)',    // Gold
+      'rgba(255, 193, 7, 1)',    // Amber
+      'rgba(201, 162, 61, 1)',   // Dark gold
+      'rgba(255, 235, 59, 1)',   // Yellow
+      'rgba(255, 165, 0, 1)',    // Orange gold
+    ];
+    const color = goldColors[Math.floor(rand * goldColors.length)];
+    
     return {
       x,
       y,
-      vx: (Math.random() - 0.5) * 2,
-      vy: Math.random() * 2 + 1,
+      vx: (Math.random() - 0.5) * 4,
+      vy: Math.random() * 3 + 2,
       life: 1,
-      maxLife: 50 + Math.random() * 30,
-      size: 3 + Math.random() * 4,
+      maxLife: 60 + Math.random() * 40,
+      size: 4 + Math.random() * 6,
       rotation: Math.random() * Math.PI * 2,
-      rotationSpeed: (Math.random() - 0.5) * 0.15,
+      rotationSpeed: (Math.random() - 0.5) * 0.2,
       type: getParticleType(cursorType),
-      color: useAlt ? currentCursor.particleColorAlt : currentCursor.particleColor,
+      color,
     };
-  }, [cursorType, currentCursor]);
+  }, [cursorType]);
 
   const drawParticle = useCallback((
     ctx: CanvasRenderingContext2D,
@@ -125,14 +135,14 @@ const CustomCursor = () => {
     const dy = mouseRef.current.y - lastMouseRef.current.y;
     const distance = Math.sqrt(dx * dx + dy * dy);
 
-    // Spawn particles based on movement
-    if (distance > 5 && !reduceMotion && particlesEnabled && cursorType !== 'default') {
-      const particleCount = Math.min(Math.floor(distance / 12), 2);
+    // Spawn gold particles based on movement - more particles falling everywhere
+    if (distance > 3 && !reduceMotion && particlesEnabled && cursorType !== 'default') {
+      const particleCount = Math.min(Math.floor(distance / 8), 4);
       for (let i = 0; i < particleCount; i++) {
         particlesRef.current.push(
           createParticle(
-            mouseRef.current.x + (Math.random() - 0.5) * 12,
-            mouseRef.current.y + (Math.random() - 0.5) * 12
+            mouseRef.current.x + (Math.random() - 0.5) * 30,
+            mouseRef.current.y + (Math.random() - 0.5) * 20
           )
         );
       }
@@ -156,9 +166,9 @@ const CustomCursor = () => {
       return false;
     });
 
-    // Limit particles for performance
-    if (particlesRef.current.length > 40) {
-      particlesRef.current = particlesRef.current.slice(-40);
+    // Limit particles for performance - increased for more sparkle effect
+    if (particlesRef.current.length > 80) {
+      particlesRef.current = particlesRef.current.slice(-80);
     }
 
     animationRef.current = requestAnimationFrame(animate);
