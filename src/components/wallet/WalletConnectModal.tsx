@@ -7,23 +7,12 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Wallet, Link2, Check, AlertCircle, ExternalLink, Copy } from "lucide-react";
+import { Wallet, Link2, Check, AlertCircle, ExternalLink, Copy, Edit2 } from "lucide-react";
 
 interface WalletConnectModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onWalletConnected?: (address: string) => void;
-}
-
-declare global {
-  interface Window {
-    ethereum?: {
-      isMetaMask?: boolean;
-      request: (args: { method: string; params?: unknown[] }) => Promise<unknown>;
-      on: (event: string, callback: (...args: unknown[]) => void) => void;
-      removeListener: (event: string, callback: (...args: unknown[]) => void) => void;
-    };
-  }
 }
 
 export function WalletConnectModal({ open, onOpenChange, onWalletConnected }: WalletConnectModalProps) {
@@ -33,11 +22,18 @@ export function WalletConnectModal({ open, onOpenChange, onWalletConnected }: Wa
   const [manualAddress, setManualAddress] = useState("");
   const [showManualInput, setShowManualInput] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
     checkMetaMaskInstalled();
     loadSavedWallet();
+    // Reset edit mode when modal opens
+    if (open) {
+      setIsEditMode(false);
+      setShowManualInput(false);
+      setManualAddress("");
+    }
   }, [open]);
 
   const checkMetaMaskInstalled = () => {
@@ -79,6 +75,7 @@ export function WalletConnectModal({ open, onOpenChange, onWalletConnected }: Wa
         const address = accounts[0];
         await saveWalletAddress(address);
         setConnectedAddress(address);
+        setIsEditMode(false);
         onWalletConnected?.(address);
         toast({
           title: "Kết nối thành công!",
@@ -150,6 +147,7 @@ export function WalletConnectModal({ open, onOpenChange, onWalletConnected }: Wa
       setConnectedAddress(trimmedAddress);
       setManualAddress("");
       setShowManualInput(false);
+      setIsEditMode(false);
       onWalletConnected?.(trimmedAddress);
       toast({
         title: "Lưu thành công!",
@@ -203,15 +201,26 @@ export function WalletConnectModal({ open, onOpenChange, onWalletConnected }: Wa
         </DialogHeader>
 
         <div className="space-y-4 py-4">
-          {connectedAddress ? (
+          {connectedAddress && !isEditMode ? (
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               className="p-4 rounded-xl bg-success/10 border border-success/30"
             >
-              <div className="flex items-center gap-2 mb-2">
-                <Check className="w-5 h-5 text-success" />
-                <span className="font-medium text-success">Đã kết nối</span>
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <Check className="w-5 h-5 text-success" />
+                  <span className="font-medium text-success">Đã kết nối</span>
+                </div>
+                <Button 
+                  size="sm" 
+                  variant="ghost" 
+                  onClick={() => setIsEditMode(true)}
+                  className="h-8 px-2 text-muted-foreground hover:text-foreground"
+                >
+                  <Edit2 className="w-4 h-4 mr-1" />
+                  Đổi ví
+                </Button>
               </div>
               <div className="flex items-center justify-between gap-2 p-3 rounded-lg bg-background/50">
                 <code className="text-sm font-mono">{shortenAddress(connectedAddress)}</code>
@@ -240,6 +249,22 @@ export function WalletConnectModal({ open, onOpenChange, onWalletConnected }: Wa
             </motion.div>
           ) : (
             <>
+              {connectedAddress && isEditMode && (
+                <div className="p-3 rounded-lg bg-muted/50 border border-border mb-2">
+                  <p className="text-sm text-muted-foreground">
+                    Ví hiện tại: <code className="font-mono">{shortenAddress(connectedAddress)}</code>
+                  </p>
+                  <Button 
+                    variant="link" 
+                    size="sm" 
+                    onClick={() => setIsEditMode(false)}
+                    className="p-0 h-auto text-xs"
+                  >
+                    ← Quay lại
+                  </Button>
+                </div>
+              )}
+
               {/* MetaMask Connect Button */}
               <motion.button
                 whileHover={{ scale: 1.02 }}
