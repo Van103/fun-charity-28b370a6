@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/popover";
 import { MotionToggle } from "@/components/background/MotionToggle";
 import { WalletConnectModal } from "@/components/wallet/WalletConnectModal";
+import { WalletQuickView } from "@/components/wallet/WalletQuickView";
 import {
   Menu,
   X,
@@ -143,24 +144,32 @@ export function Navbar() {
               </PopoverContent>
             </Popover>
             
-            <Button 
-              variant="wallet" 
-              size="sm" 
-              className="gap-2"
-              onClick={() => setWalletModalOpen(true)}
-            >
-              {connectedWallet ? (
-                <>
-                  <Check className="w-4 h-4 text-success" />
-                  <span className="font-mono text-xs">{shortenAddress(connectedWallet)}</span>
-                </>
-              ) : (
-                <>
-                  <Wallet className="w-4 h-4" />
-                  <span className="font-mono text-xs">Kết Nối Ví</span>
-                </>
-              )}
-            </Button>
+            {connectedWallet ? (
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="wallet" size="sm" className="gap-2">
+                    <Check className="w-4 h-4 text-success" />
+                    <span className="font-mono text-xs">{shortenAddress(connectedWallet)}</span>
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent align="end" className="p-0 w-auto">
+                  <WalletQuickView 
+                    walletAddress={connectedWallet} 
+                    onChangeWallet={() => setWalletModalOpen(true)} 
+                  />
+                </PopoverContent>
+              </Popover>
+            ) : (
+              <Button 
+                variant="wallet" 
+                size="sm" 
+                className="gap-2"
+                onClick={() => setWalletModalOpen(true)}
+              >
+                <Wallet className="w-4 h-4" />
+                <span className="font-mono text-xs">Kết Nối Ví</span>
+              </Button>
+            )}
 
             <WalletConnectModal 
               open={walletModalOpen} 
