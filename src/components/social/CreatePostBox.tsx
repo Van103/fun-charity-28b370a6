@@ -2,10 +2,11 @@ import { useState, useRef } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Image, Video, Sparkles, X, Loader2, Send } from "lucide-react";
+import { Image, Video, Sparkles, X, Loader2, Send, PenSquare } from "lucide-react";
 import { useCreateFeedPost } from "@/hooks/useFeedPosts";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { CreatePostModal } from "./CreatePostModal";
 
 interface CreatePostBoxProps {
   profile?: {
@@ -20,6 +21,7 @@ export function CreatePostBox({ profile, onPostCreated }: CreatePostBoxProps) {
   const [mediaFiles, setMediaFiles] = useState<File[]>([]);
   const [mediaPreviews, setMediaPreviews] = useState<string[]>([]);
   const [isUploading, setIsUploading] = useState(false);
+  const [showAdvancedModal, setShowAdvancedModal] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
   
@@ -30,7 +32,6 @@ export function CreatePostBox({ profile, onPostCreated }: CreatePostBoxProps) {
     const files = Array.from(e.target.files || []);
     if (files.length === 0) return;
 
-    // Validate file size (max 20MB each)
     const validFiles = files.filter(file => {
       if (file.size > 20 * 1024 * 1024) {
         toast({
@@ -45,7 +46,6 @@ export function CreatePostBox({ profile, onPostCreated }: CreatePostBoxProps) {
 
     setMediaFiles(prev => [...prev, ...validFiles]);
     
-    // Create previews
     validFiles.forEach(file => {
       const reader = new FileReader();
       reader.onloadend = () => {
@@ -54,7 +54,6 @@ export function CreatePostBox({ profile, onPostCreated }: CreatePostBoxProps) {
       reader.readAsDataURL(file);
     });
 
-    // Reset input
     e.target.value = "";
   };
 
@@ -102,20 +101,17 @@ export function CreatePostBox({ profile, onPostCreated }: CreatePostBoxProps) {
     setIsUploading(true);
 
     try {
-      // Upload media files first
       let mediaUrls: string[] = [];
       if (mediaFiles.length > 0) {
         mediaUrls = await uploadFiles();
       }
 
-      // Create post
       await createPost.mutateAsync({
         post_type: "story",
         content: content.trim(),
         media_urls: mediaUrls,
       });
 
-      // Reset form
       setContent("");
       setMediaFiles([]);
       setMediaPreviews([]);
@@ -130,118 +126,137 @@ export function CreatePostBox({ profile, onPostCreated }: CreatePostBoxProps) {
   const isSubmitting = isUploading || createPost.isPending;
 
   return (
-    <div className="glass-card p-4">
-      <div className="flex items-start gap-3 mb-4">
-        <Avatar className="w-10 h-10 border-2 border-secondary/30">
-          <AvatarImage src={profile?.avatar_url || ""} />
-          <AvatarFallback className="bg-secondary/20">
-            {profile?.full_name?.charAt(0) || "U"}
-          </AvatarFallback>
-        </Avatar>
-        <Textarea
-          placeholder="Đăng bài để nhận từ 999 Happy Camly Coin trở lên nhé 🎉"
-          value={content}
-          onChange={(e) => setContent(e.target.value)}
-          className="flex-1 min-h-[60px] bg-muted/50 border-none rounded-xl px-4 py-3 text-sm placeholder:text-muted-foreground focus-visible:ring-1 focus-visible:ring-secondary resize-none"
-          disabled={isSubmitting}
+    <>
+      <div className="glass-card p-4">
+        <div className="flex items-start gap-3 mb-4">
+          <Avatar className="w-10 h-10 border-2 border-secondary/30">
+            <AvatarImage src={profile?.avatar_url || ""} />
+            <AvatarFallback className="bg-secondary/20">
+              {profile?.full_name?.charAt(0) || "U"}
+            </AvatarFallback>
+          </Avatar>
+          <Textarea
+            placeholder="Đăng bài để nhận từ 999 Happy Camly Coin trở lên nhé 🎉"
+            value={content}
+            onChange={(e) => setContent(e.target.value)}
+            className="flex-1 min-h-[60px] bg-muted/50 border-none rounded-xl px-4 py-3 text-sm placeholder:text-muted-foreground focus-visible:ring-1 focus-visible:ring-secondary resize-none"
+            disabled={isSubmitting}
+          />
+        </div>
+
+        {/* Media Previews */}
+        {mediaPreviews.length > 0 && (
+          <div className="mb-4 grid grid-cols-2 sm:grid-cols-3 gap-2">
+            {mediaPreviews.map((preview, index) => (
+              <div key={index} className="relative aspect-square rounded-lg overflow-hidden bg-muted">
+                {mediaFiles[index]?.type.startsWith("video/") ? (
+                  <video src={preview} className="w-full h-full object-cover" />
+                ) : (
+                  <img src={preview} alt="" className="w-full h-full object-cover" />
+                )}
+                <Button
+                  variant="destructive"
+                  size="icon"
+                  className="absolute top-1 right-1 h-6 w-6"
+                  onClick={() => removeMedia(index)}
+                  disabled={isSubmitting}
+                >
+                  <X className="w-3 h-3" />
+                </Button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Hidden file inputs */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          multiple
+          className="hidden"
+          onChange={(e) => handleFileSelect(e, "image")}
         />
-      </div>
+        <input
+          ref={videoInputRef}
+          type="file"
+          accept="video/*"
+          multiple
+          className="hidden"
+          onChange={(e) => handleFileSelect(e, "video")}
+        />
 
-      {/* Media Previews */}
-      {mediaPreviews.length > 0 && (
-        <div className="mb-4 grid grid-cols-2 sm:grid-cols-3 gap-2">
-          {mediaPreviews.map((preview, index) => (
-            <div key={index} className="relative aspect-square rounded-lg overflow-hidden bg-muted">
-              {mediaFiles[index]?.type.startsWith("video/") ? (
-                <video src={preview} className="w-full h-full object-cover" />
+        <div className="flex items-center justify-between pt-3 border-t border-border">
+          <div className="flex items-center gap-1">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="text-muted-foreground hover:text-foreground hover:bg-muted/50 gap-1.5"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={isSubmitting}
+            >
+              <Image className="w-4 h-4 text-success" />
+              <span className="hidden sm:inline text-xs">Ảnh</span>
+            </Button>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="text-muted-foreground hover:text-foreground hover:bg-muted/50 gap-1.5"
+              onClick={() => videoInputRef.current?.click()}
+              disabled={isSubmitting}
+            >
+              <Video className="w-4 h-4 text-destructive" />
+              <span className="hidden sm:inline text-xs">Video</span>
+            </Button>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="text-muted-foreground hover:text-secondary hover:bg-muted/50 gap-1.5"
+              onClick={() => setShowAdvancedModal(true)}
+              disabled={isSubmitting}
+            >
+              <PenSquare className="w-4 h-4" />
+              <span className="hidden sm:inline text-xs">Nâng cao</span>
+            </Button>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button 
+              size="sm" 
+              variant="ghost"
+              className="gap-1.5"
+              disabled={isSubmitting}
+            >
+              <Sparkles className="w-4 h-4" />
+              <span className="hidden sm:inline">AI</span>
+            </Button>
+            <Button 
+              size="sm" 
+              className="bg-gradient-to-r from-secondary to-secondary-light text-secondary-foreground gap-1.5"
+              onClick={handleSubmit}
+              disabled={isSubmitting || (!content.trim() && mediaFiles.length === 0)}
+            >
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span className="hidden sm:inline">Đang đăng...</span>
+                </>
               ) : (
-                <img src={preview} alt="" className="w-full h-full object-cover" />
+                <>
+                  <Send className="w-4 h-4" />
+                  <span className="hidden sm:inline">Đăng</span>
+                </>
               )}
-              <Button
-                variant="destructive"
-                size="icon"
-                className="absolute top-1 right-1 h-6 w-6"
-                onClick={() => removeMedia(index)}
-                disabled={isSubmitting}
-              >
-                <X className="w-3 h-3" />
-              </Button>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Hidden file inputs */}
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept="image/*"
-        multiple
-        className="hidden"
-        onChange={(e) => handleFileSelect(e, "image")}
-      />
-      <input
-        ref={videoInputRef}
-        type="file"
-        accept="video/*"
-        multiple
-        className="hidden"
-        onChange={(e) => handleFileSelect(e, "video")}
-      />
-
-      <div className="flex items-center justify-between pt-3 border-t border-border">
-        <div className="flex items-center gap-2">
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            className="text-muted-foreground hover:text-foreground hover:bg-muted/50 gap-2"
-            onClick={() => fileInputRef.current?.click()}
-            disabled={isSubmitting}
-          >
-            <Image className="w-5 h-5 text-success" />
-            <span className="hidden sm:inline">Ảnh/Bài viết</span>
-          </Button>
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            className="text-muted-foreground hover:text-foreground hover:bg-muted/50 gap-2"
-            onClick={() => videoInputRef.current?.click()}
-            disabled={isSubmitting}
-          >
-            <Video className="w-5 h-5 text-destructive" />
-            <span className="hidden sm:inline">Video</span>
-          </Button>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button 
-            size="sm" 
-            variant="ghost"
-            className="gap-2"
-            disabled={isSubmitting}
-          >
-            <Sparkles className="w-4 h-4" />
-            Enjoy AI
-          </Button>
-          <Button 
-            size="sm" 
-            className="bg-gradient-to-r from-secondary to-secondary-light text-secondary-foreground gap-2"
-            onClick={handleSubmit}
-            disabled={isSubmitting || (!content.trim() && mediaFiles.length === 0)}
-          >
-            {isSubmitting ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" />
-                Đang đăng...
-              </>
-            ) : (
-              <>
-                <Send className="w-4 h-4" />
-                Đăng bài
-              </>
-            )}
-          </Button>
+            </Button>
+          </div>
         </div>
       </div>
-    </div>
+
+      {/* Advanced Post Modal */}
+      <CreatePostModal 
+        open={showAdvancedModal}
+        onOpenChange={setShowAdvancedModal}
+        profile={profile}
+      />
+    </>
   );
 }
