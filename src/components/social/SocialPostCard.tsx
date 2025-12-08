@@ -5,7 +5,6 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import {
   MoreHorizontal,
-  Heart,
   MessageCircle,
   Share2,
   Gift,
@@ -19,6 +18,8 @@ import { motion } from "framer-motion";
 import { FeedPost } from "@/hooks/useFeedPosts";
 import { formatDistanceToNow } from "date-fns";
 import { vi } from "date-fns/locale";
+import { FeedReactionPicker, REACTIONS } from "./FeedReactionPicker";
+import { usePostReactions } from "@/hooks/useFeedReactions";
 
 interface SocialPostCardProps {
   post: FeedPost;
@@ -27,6 +28,22 @@ interface SocialPostCardProps {
 export function SocialPostCard({ post }: SocialPostCardProps) {
   const [showCommentInput, setShowCommentInput] = useState(false);
   const [commentText, setCommentText] = useState("");
+
+  // Reactions hook
+  const {
+    userReaction,
+    reactionCounts,
+    totalReactions,
+    addReaction,
+    removeReaction,
+  } = usePostReactions(post.id);
+
+  // Get top 3 reaction types for display
+  const topReactions = Object.entries(reactionCounts)
+    .sort(([, a], [, b]) => b - a)
+    .slice(0, 3)
+    .map(([type]) => REACTIONS.find((r) => r.type === type))
+    .filter(Boolean);
 
   // Parse media_urls - handle both string[] and {url, type}[] formats
   const mediaUrls = (post.media_urls || []).map((item) => {
@@ -167,12 +184,25 @@ export function SocialPostCard({ post }: SocialPostCardProps) {
       {/* Stats */}
       <div className="px-4 py-2 flex items-center justify-between text-sm text-muted-foreground">
         <div className="flex items-center gap-1">
-          <div className="flex -space-x-1">
-            <span className="text-base">❤️</span>
-            <span className="text-base">👍</span>
-            <span className="text-base">😍</span>
-          </div>
-          <span>{post.reactions_count || 0} người đã bày tỏ cảm xúc</span>
+          {topReactions.length > 0 ? (
+            <div className="flex -space-x-1">
+              {topReactions.map((reaction) => (
+                <motion.span
+                  key={reaction?.type}
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  className="text-base"
+                >
+                  {reaction?.emoji}
+                </motion.span>
+              ))}
+            </div>
+          ) : (
+            <div className="flex -space-x-1">
+              <span className="text-base">👍</span>
+            </div>
+          )}
+          <span>{totalReactions || post.reactions_count || 0} người đã bày tỏ cảm xúc</span>
         </div>
         <div className="flex items-center gap-4">
           <span>{post.comments_count || 0} Bình luận</span>
@@ -180,15 +210,13 @@ export function SocialPostCard({ post }: SocialPostCardProps) {
       </div>
 
       {/* Actions */}
-      <div className="px-4 py-2 border-t border-border flex items-center justify-around">
-        <Button variant="ghost" className="flex-1 gap-2 text-muted-foreground hover:text-secondary">
-          <Heart className="w-5 h-5" />
-          Thương thương
-        </Button>
-        <Button variant="ghost" className="flex-1 gap-2 text-muted-foreground hover:text-foreground">
-          <span className="text-lg">😊</span>
-          Nhong nhác
-        </Button>
+      <div className="px-4 py-2 border-t border-border flex items-center justify-around gap-1">
+        <FeedReactionPicker
+          currentReaction={userReaction}
+          onReact={(type) => addReaction.mutate(type)}
+          onRemoveReaction={() => removeReaction.mutate()}
+          isLoading={addReaction.isPending || removeReaction.isPending}
+        />
         <Button 
           variant="ghost" 
           className="flex-1 gap-2 text-muted-foreground hover:text-foreground"
