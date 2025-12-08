@@ -9,6 +9,7 @@ import { FriendRequestsSection } from "@/components/social/FriendRequestsSection
 import { CreatePostBox } from "@/components/social/CreatePostBox";
 import { SocialPostCard } from "@/components/social/SocialPostCard";
 import { FeedFilters } from "@/components/social/FeedFilters";
+import { PostCardSkeletonList, PostCardSkeleton } from "@/components/social/PostCardSkeleton";
 import { supabase } from "@/integrations/supabase/client";
 import { Helmet } from "react-helmet-async";
 import { 
@@ -124,10 +125,7 @@ export default function SocialFeed() {
                 {/* Posts Feed */}
                 <div className="space-y-6">
                   {postsLoading ? (
-                    <div className="flex flex-col items-center justify-center py-12">
-                      <Loader2 className="w-8 h-8 animate-spin text-secondary mb-4" />
-                      <p className="text-muted-foreground">Đang tải bài viết...</p>
-                    </div>
+                    <PostCardSkeletonList count={3} />
                   ) : posts && posts.length > 0 ? (
                     <>
                       {posts.map((post) => (
@@ -137,9 +135,7 @@ export default function SocialFeed() {
                       {/* Load More Trigger */}
                       <div ref={loadMoreRef} className="py-4">
                         {isFetchingNextPage && (
-                          <div className="flex justify-center">
-                            <Loader2 className="w-6 h-6 animate-spin text-secondary" />
-                          </div>
+                          <PostCardSkeleton />
                         )}
                         {!hasNextPage && posts.length > 0 && (
                           <p className="text-center text-sm text-muted-foreground">
