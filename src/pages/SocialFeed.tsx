@@ -10,6 +10,7 @@ import { CreatePostBox } from "@/components/social/CreatePostBox";
 import { SocialPostCard } from "@/components/social/SocialPostCard";
 import { FeedFilters } from "@/components/social/FeedFilters";
 import { PostCardSkeletonList, PostCardSkeleton } from "@/components/social/PostCardSkeleton";
+import { PullToRefresh } from "@/components/social/PullToRefresh";
 import { supabase } from "@/integrations/supabase/client";
 import { Helmet } from "react-helmet-async";
 import { 
@@ -17,7 +18,8 @@ import {
   useIntersectionObserver,
   FeedFilters as FeedFiltersType 
 } from "@/hooks/useFeedPosts";
-import { Loader2, SearchX } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
+import { SearchX } from "lucide-react";
 
 interface Profile {
   id: string;
@@ -32,6 +34,7 @@ export default function SocialFeed() {
   const [profileLoading, setProfileLoading] = useState(true);
   const [filters, setFilters] = useState<FeedFiltersType>({});
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   
   const { 
     posts, 
@@ -40,6 +43,11 @@ export default function SocialFeed() {
     hasNextPage,
     fetchNextPage,
   } = useInfiniteFeedPosts(filters);
+
+  // Pull to refresh handler
+  const handleRefresh = useCallback(async () => {
+    await queryClient.invalidateQueries({ queryKey: ["infinite-feed-posts"] });
+  }, [queryClient]);
 
   // Intersection observer callback for infinite scroll
   const loadMore = useCallback(() => {
@@ -113,60 +121,64 @@ export default function SocialFeed() {
               </div>
 
               {/* Main Feed */}
-              <div className="flex-1 max-w-2xl mx-auto lg:mx-0 space-y-6">
-                <StoriesSection />
-                <CreatePostBox profile={profile} />
-                
-                {/* Search & Filters */}
-                <FeedFilters filters={filters} onFiltersChange={setFilters} />
-                
-                <FriendRequestsSection />
-                
-                {/* Posts Feed */}
-                <div className="space-y-6">
-                  {postsLoading ? (
-                    <PostCardSkeletonList count={3} />
-                  ) : posts && posts.length > 0 ? (
-                    <>
-                      {posts.map((post) => (
-                        <SocialPostCard key={post.id} post={post} />
-                      ))}
-                      
-                      {/* Load More Trigger */}
-                      <div ref={loadMoreRef} className="py-4">
-                        {isFetchingNextPage && (
-                          <PostCardSkeleton />
-                        )}
-                        {!hasNextPage && posts.length > 0 && (
-                          <p className="text-center text-sm text-muted-foreground">
-                            Bạn đã xem hết tất cả bài viết 🎉
-                          </p>
-                        )}
-                      </div>
-                    </>
-                  ) : (
-                    <div className="glass-card p-12 text-center">
-                      {hasActiveFilters ? (
+              <div className="flex-1 max-w-2xl mx-auto lg:mx-0">
+                <PullToRefresh onRefresh={handleRefresh}>
+                  <div className="space-y-6">
+                    <StoriesSection />
+                    <CreatePostBox profile={profile} />
+                    
+                    {/* Search & Filters */}
+                    <FeedFilters filters={filters} onFiltersChange={setFilters} />
+                    
+                    <FriendRequestsSection />
+                    
+                    {/* Posts Feed */}
+                    <div className="space-y-6">
+                      {postsLoading ? (
+                        <PostCardSkeletonList count={3} />
+                      ) : posts && posts.length > 0 ? (
                         <>
-                          <SearchX className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                          <p className="text-muted-foreground mb-2">
-                            Không tìm thấy bài viết phù hợp với bộ lọc
-                          </p>
-                          <button 
-                            onClick={() => setFilters({})}
-                            className="text-secondary hover:underline text-sm"
-                          >
-                            Xóa bộ lọc
-                          </button>
+                          {posts.map((post) => (
+                            <SocialPostCard key={post.id} post={post} />
+                          ))}
+                          
+                          {/* Load More Trigger */}
+                          <div ref={loadMoreRef} className="py-4">
+                            {isFetchingNextPage && (
+                              <PostCardSkeleton />
+                            )}
+                            {!hasNextPage && posts.length > 0 && (
+                              <p className="text-center text-sm text-muted-foreground">
+                                Bạn đã xem hết tất cả bài viết 🎉
+                              </p>
+                            )}
+                          </div>
                         </>
                       ) : (
-                        <p className="text-muted-foreground">
-                          Chưa có bài viết nào. Hãy là người đầu tiên chia sẻ!
-                        </p>
+                        <div className="glass-card p-12 text-center">
+                          {hasActiveFilters ? (
+                            <>
+                              <SearchX className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                              <p className="text-muted-foreground mb-2">
+                                Không tìm thấy bài viết phù hợp với bộ lọc
+                              </p>
+                              <button 
+                                onClick={() => setFilters({})}
+                                className="text-secondary hover:underline text-sm"
+                              >
+                                Xóa bộ lọc
+                              </button>
+                            </>
+                          ) : (
+                            <p className="text-muted-foreground">
+                              Chưa có bài viết nào. Hãy là người đầu tiên chia sẻ!
+                            </p>
+                          )}
+                        </div>
                       )}
                     </div>
-                  )}
-                </div>
+                  </div>
+                </PullToRefresh>
               </div>
 
               {/* Right Sidebar - Hidden on mobile/tablet */}
