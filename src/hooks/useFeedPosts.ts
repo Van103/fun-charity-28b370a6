@@ -1,7 +1,7 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { useEffect } from "react";
+import { useEffect, useCallback, useRef } from "react";
 
 export type FeedPostType = "need" | "supply" | "update" | "story";
 export type UrgencyLevel = "low" | "medium" | "high" | "critical";
@@ -75,19 +75,55 @@ export interface FeedFilters {
   search?: string;
 }
 
-export function useFeedPosts(filters?: FeedFilters) {
+const PAGE_SIZE = 10;
+
+// Helper function to fetch posts with profiles
+async function fetchPostsWithData(posts: any[]): Promise<FeedPost[]> {
+  const postsWithData = await Promise.all(
+    posts.map(async (post) => {
+      const [profileResult, reactionsResult, commentsResult] = await Promise.all([
+        supabase
+          .from("profiles")
+          .select("full_name, avatar_url, reputation_score, is_verified")
+          .eq("user_id", post.user_id)
+          .maybeSingle(),
+        supabase
+          .from("feed_reactions")
+          .select("id", { count: "exact" })
+          .eq("feed_post_id", post.id),
+        supabase
+          .from("feed_comments")
+          .select("id", { count: "exact" })
+          .eq("feed_post_id", post.id),
+      ]);
+
+      return {
+        ...post,
+        media_urls: (post.media_urls as string[]) || [],
+        profiles: profileResult.data || undefined,
+        reactions_count: reactionsResult.count || 0,
+        comments_count: commentsResult.count || 0,
+      } as FeedPost;
+    })
+  );
+
+  return postsWithData;
+}
+
+// Infinite scroll hook
+export function useInfiniteFeedPosts(filters?: FeedFilters) {
   const queryClient = useQueryClient();
 
-  const query = useQuery({
-    queryKey: ["feed-posts", filters],
-    queryFn: async () => {
+  const query = useInfiniteQuery({
+    queryKey: ["feed-posts-infinite", filters],
+    queryFn: async ({ pageParam = 0 }) => {
       let baseQuery = supabase
         .from("feed_posts")
         .select("*")
         .eq("is_active", true)
-        .order("created_at", { ascending: false });
+        .order("created_at", { ascending: false })
+        .range(pageParam * PAGE_SIZE, (pageParam + 1) * PAGE_SIZE - 1);
 
-      // Apply filters
       if (filters?.postType) {
         baseQuery = baseQuery.eq("post_type", filters.postType);
       }
@@ -108,40 +144,112 @@ export function useFeedPosts(filters?: FeedFilters) {
 
       if (error) throw error;
       
-      // Get profiles and counts for each post
-      const postsWithData = await Promise.all(
-        (data || []).map(async (post) => {
-          const [profileResult, reactionsResult, commentsResult] = await Promise.all([
-            supabase
-              .from("profiles")
-              .select("full_name, avatar_url, reputation_score, is_verified")
-              .eq("user_id", post.user_id)
-              .maybeSingle(),
-            supabase
-              .from("feed_reactions")
-              .select("id", { count: "exact" })
-              .eq("feed_post_id", post.id),
-            supabase
-              .from("feed_comments")
-              .select("id", { count: "exact" })
-              .eq("feed_post_id", post.id),
-          ]);
+      const postsWithData = await fetchPostsWithData(data || []);
 
-          return {
-            ...post,
-            media_urls: (post.media_urls as string[]) || [],
-            profiles: profileResult.data || undefined,
-            reactions_count: reactionsResult.count || 0,
-            comments_count: commentsResult.count || 0,
-          } as FeedPost;
-        })
-      );
-
-      return postsWithData;
+      return {
+        posts: postsWithData,
+        nextPage: data && data.length === PAGE_SIZE ? pageParam + 1 : undefined,
+      };
     },
+    getNextPageParam: (lastPage) => lastPage.nextPage,
+    initialPageParam: 0,
   });
 
   // Real-time subscription
+  useEffect(() => {
+    const channel = supabase
+      .channel("feed-posts-infinite-changes")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "feed_posts",
+        },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ["feed-posts-infinite"] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [queryClient]);
+
+  const allPosts = query.data?.pages.flatMap((page) => page.posts) || [];
+
+  return {
+    ...query,
+    posts: allPosts,
+  };
+}
+
+// Intersection Observer hook for infinite scroll
+export function useIntersectionObserver(
+  callback: () => void,
+  options?: IntersectionObserverInit
+) {
+  const targetRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const target = targetRef.current;
+    if (!target) return;
+
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) {
+        callback();
+      }
+    }, options);
+
+    observer.observe(target);
+
+    return () => {
+      observer.unobserve(target);
+    };
+  }, [callback, options]);
+
+  return targetRef;
+}
+
+// Original hook for backward compatibility
+export function useFeedPosts(filters?: FeedFilters) {
+  const queryClient = useQueryClient();
+
+  const query = useQuery({
+    queryKey: ["feed-posts", filters],
+    queryFn: async () => {
+      let baseQuery = supabase
+        .from("feed_posts")
+        .select("*")
+        .eq("is_active", true)
+        .order("created_at", { ascending: false })
+        .limit(50);
+
+      if (filters?.postType) {
+        baseQuery = baseQuery.eq("post_type", filters.postType);
+      }
+      
+      if (filters?.category) {
+        baseQuery = baseQuery.eq("category", filters.category as any);
+      }
+      
+      if (filters?.location) {
+        baseQuery = baseQuery.ilike("location", `%${filters.location}%`);
+      }
+      
+      if (filters?.search) {
+        baseQuery = baseQuery.or(`title.ilike.%${filters.search}%,content.ilike.%${filters.search}%`);
+      }
+
+      const { data, error } = await baseQuery;
+
+      if (error) throw error;
+      
+      return await fetchPostsWithData(data || []);
+    },
+  });
+
   useEffect(() => {
     const channel = supabase
       .channel("feed-posts-changes")

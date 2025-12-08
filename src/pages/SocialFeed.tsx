@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
@@ -11,7 +11,11 @@ import { SocialPostCard } from "@/components/social/SocialPostCard";
 import { FeedFilters } from "@/components/social/FeedFilters";
 import { supabase } from "@/integrations/supabase/client";
 import { Helmet } from "react-helmet-async";
-import { useFeedPosts, FeedFilters as FeedFiltersType } from "@/hooks/useFeedPosts";
+import { 
+  useInfiniteFeedPosts, 
+  useIntersectionObserver,
+  FeedFilters as FeedFiltersType 
+} from "@/hooks/useFeedPosts";
 import { Loader2, SearchX } from "lucide-react";
 
 interface Profile {
@@ -28,7 +32,24 @@ export default function SocialFeed() {
   const [filters, setFilters] = useState<FeedFiltersType>({});
   const navigate = useNavigate();
   
-  const { data: posts, isLoading: postsLoading } = useFeedPosts(filters);
+  const { 
+    posts, 
+    isLoading: postsLoading,
+    isFetchingNextPage,
+    hasNextPage,
+    fetchNextPage,
+  } = useInfiniteFeedPosts(filters);
+
+  // Intersection observer callback for infinite scroll
+  const loadMore = useCallback(() => {
+    if (hasNextPage && !isFetchingNextPage) {
+      fetchNextPage();
+    }
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
+
+  const loadMoreRef = useIntersectionObserver(loadMore, {
+    rootMargin: "200px",
+  });
 
   useEffect(() => {
     fetchProfile();
@@ -108,9 +129,25 @@ export default function SocialFeed() {
                       <p className="text-muted-foreground">Đang tải bài viết...</p>
                     </div>
                   ) : posts && posts.length > 0 ? (
-                    posts.map((post) => (
-                      <SocialPostCard key={post.id} post={post} />
-                    ))
+                    <>
+                      {posts.map((post) => (
+                        <SocialPostCard key={post.id} post={post} />
+                      ))}
+                      
+                      {/* Load More Trigger */}
+                      <div ref={loadMoreRef} className="py-4">
+                        {isFetchingNextPage && (
+                          <div className="flex justify-center">
+                            <Loader2 className="w-6 h-6 animate-spin text-secondary" />
+                          </div>
+                        )}
+                        {!hasNextPage && posts.length > 0 && (
+                          <p className="text-center text-sm text-muted-foreground">
+                            Bạn đã xem hết tất cả bài viết 🎉
+                          </p>
+                        )}
+                      </div>
+                    </>
                   ) : (
                     <div className="glass-card p-12 text-center">
                       {hasActiveFilters ? (
