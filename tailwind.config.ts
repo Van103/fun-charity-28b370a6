@@ -1,5 +1,7 @@
 import type { Config } from "tailwindcss";
 
+// Note: Playfair Display font is loaded via Google Fonts in index.html
+
 export default {
   darkMode: ["class"],
   content: ["./pages/**/*.{ts,tsx}", "./components/**/*.{ts,tsx}", "./app/**/*.{ts,tsx}", "./src/**/*.{ts,tsx}"],

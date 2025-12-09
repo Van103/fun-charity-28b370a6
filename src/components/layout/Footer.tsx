@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import { Heart, Twitter, Github, Linkedin, Mail, Sparkles, Globe } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/brand/Logo";
-
+import { DivineMantrasCarousel } from "./DivineMantrasCarousel";
 const footerLinks = {
   "Nền Tảng": [
     { name: "Chiến Dịch", href: "/campaigns" },
@@ -39,6 +39,9 @@ const socialLinks = [
 export function Footer() {
   return (
     <footer className="bg-primary text-primary-foreground">
+      {/* Divine Mantras Carousel */}
+      <DivineMantrasCarousel />
+      
       <div className="container mx-auto px-4 py-16">
         <div className="grid grid-cols-2 md:grid-cols-6 gap-8">
           {/* Brand */}
