@@ -138,25 +138,25 @@ export function SocialPostCard({ post }: SocialPostCardProps) {
         </div>
       </div>
 
-      {/* Media */}
+      {/* Media - Compact size */}
       {mediaUrls.length > 0 && (
-        <div className="relative">
+        <div className="relative px-4 pb-3">
           {mediaUrls.length === 1 ? (
             mediaUrls[0].type === "video" ? (
               <video
                 src={mediaUrls[0].url}
                 controls
-                className="w-full max-h-[500px] object-cover"
+                className="w-full max-h-[300px] object-cover rounded-xl"
               />
             ) : (
               <img
                 src={mediaUrls[0].url}
                 alt=""
-                className="w-full max-h-[500px] object-cover"
+                className="w-full max-h-[300px] object-cover rounded-xl"
               />
             )
           ) : (
-            <div className={`grid gap-1 ${
+            <div className={`grid gap-1 rounded-xl overflow-hidden ${
               mediaUrls.length === 2 ? "grid-cols-2" :
               mediaUrls.length === 3 ? "grid-cols-2" :
               "grid-cols-2"
@@ -171,18 +171,22 @@ export function SocialPostCard({ post }: SocialPostCardProps) {
                   {item.type === "video" ? (
                     <video
                       src={item.url}
-                      className="w-full h-full object-cover aspect-square"
+                      className={`w-full object-cover ${
+                        mediaUrls.length === 3 && i === 0 ? "h-full" : "aspect-square max-h-[150px]"
+                      }`}
                     />
                   ) : (
                     <img
                       src={item.url}
                       alt=""
-                      className="w-full h-full object-cover aspect-square"
+                      className={`w-full object-cover ${
+                        mediaUrls.length === 3 && i === 0 ? "h-full" : "aspect-square max-h-[150px]"
+                      }`}
                     />
                   )}
                   {i === 3 && mediaUrls.length > 4 && (
                     <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                      <span className="text-white text-2xl font-bold">
+                      <span className="text-white text-xl font-bold">
                         +{mediaUrls.length - 4}
                       </span>
                     </div>
