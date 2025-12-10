@@ -18,6 +18,7 @@ import { usePostReactions } from "@/hooks/useFeedReactions";
 import { FeedComments } from "./FeedComments";
 import { SharePopover } from "./SharePopover";
 import { GiftDonateModal } from "./GiftDonateModal";
+import { ImageLightbox } from "./ImageLightbox";
 import { supabase } from "@/integrations/supabase/client";
 
 interface SocialPostCardProps {
@@ -27,6 +28,8 @@ interface SocialPostCardProps {
 export function SocialPostCard({ post }: SocialPostCardProps) {
   const [showComments, setShowComments] = useState(false);
   const [currentUserAvatar, setCurrentUserAvatar] = useState<string | null>(null);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [lightboxIndex, setLightboxIndex] = useState(0);
 
   // Fetch current user avatar
   useEffect(() => {
@@ -138,7 +141,7 @@ export function SocialPostCard({ post }: SocialPostCardProps) {
         </div>
       </div>
 
-      {/* Media - Compact size */}
+      {/* Media - Responsive size with click to open lightbox */}
       {mediaUrls.length > 0 && (
         <div className="relative px-4 pb-3">
           {mediaUrls.length === 1 ? (
@@ -146,13 +149,17 @@ export function SocialPostCard({ post }: SocialPostCardProps) {
               <video
                 src={mediaUrls[0].url}
                 controls
-                className="w-full max-h-[300px] object-cover rounded-xl"
+                className="w-full max-h-[200px] sm:max-h-[250px] md:max-h-[300px] lg:max-h-[350px] object-cover rounded-xl"
               />
             ) : (
               <img
                 src={mediaUrls[0].url}
                 alt=""
-                className="w-full max-h-[300px] object-cover rounded-xl"
+                onClick={() => {
+                  setLightboxIndex(0);
+                  setLightboxOpen(true);
+                }}
+                className="w-full max-h-[200px] sm:max-h-[250px] md:max-h-[300px] lg:max-h-[350px] object-cover rounded-xl cursor-pointer hover:opacity-95 transition-opacity"
               />
             )
           ) : (
@@ -172,21 +179,35 @@ export function SocialPostCard({ post }: SocialPostCardProps) {
                     <video
                       src={item.url}
                       className={`w-full object-cover ${
-                        mediaUrls.length === 3 && i === 0 ? "h-full" : "aspect-square max-h-[150px]"
+                        mediaUrls.length === 3 && i === 0 
+                          ? "h-full" 
+                          : "aspect-square max-h-[100px] sm:max-h-[120px] md:max-h-[150px]"
                       }`}
                     />
                   ) : (
                     <img
                       src={item.url}
                       alt=""
-                      className={`w-full object-cover ${
-                        mediaUrls.length === 3 && i === 0 ? "h-full" : "aspect-square max-h-[150px]"
+                      onClick={() => {
+                        setLightboxIndex(i);
+                        setLightboxOpen(true);
+                      }}
+                      className={`w-full object-cover cursor-pointer hover:opacity-95 transition-opacity ${
+                        mediaUrls.length === 3 && i === 0 
+                          ? "h-full" 
+                          : "aspect-square max-h-[100px] sm:max-h-[120px] md:max-h-[150px]"
                       }`}
                     />
                   )}
                   {i === 3 && mediaUrls.length > 4 && (
-                    <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                      <span className="text-white text-xl font-bold">
+                    <div 
+                      className="absolute inset-0 bg-black/50 flex items-center justify-center cursor-pointer"
+                      onClick={() => {
+                        setLightboxIndex(3);
+                        setLightboxOpen(true);
+                      }}
+                    >
+                      <span className="text-white text-lg sm:text-xl font-bold">
                         +{mediaUrls.length - 4}
                       </span>
                     </div>
@@ -197,6 +218,14 @@ export function SocialPostCard({ post }: SocialPostCardProps) {
           )}
         </div>
       )}
+
+      {/* Image Lightbox */}
+      <ImageLightbox
+        images={mediaUrls}
+        initialIndex={lightboxIndex}
+        isOpen={lightboxOpen}
+        onClose={() => setLightboxOpen(false)}
+      />
 
       {/* Stats */}
       <div className="px-4 py-2 flex items-center justify-between text-sm text-muted-foreground">
