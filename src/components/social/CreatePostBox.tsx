@@ -62,12 +62,17 @@ export function CreatePostBox({ profile, onPostCreated }: CreatePostBoxProps) {
   };
 
   const uploadFiles = async (): Promise<string[]> => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      throw new Error("Bạn cần đăng nhập để đăng bài");
+    }
+
     const uploadedUrls: string[] = [];
     
     for (const file of mediaFiles) {
       const fileExt = file.name.split(".").pop();
       const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
-      const filePath = `feed/${fileName}`;
+      const filePath = `${user.id}/${fileName}`;
 
       const { error: uploadError } = await supabase.storage
         .from("post-images")
