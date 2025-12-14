@@ -29,10 +29,10 @@ export function StoriesSection() {
     <div className="glass-card p-4">
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="grid w-full grid-cols-2 mb-4">
-          <TabsTrigger value="stories" className="data-[state=active]:bg-secondary data-[state=active]:text-secondary-foreground">
+          <TabsTrigger value="stories" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
             📖 Stories
           </TabsTrigger>
-          <TabsTrigger value="live" className="data-[state=active]:bg-secondary data-[state=active]:text-secondary-foreground">
+          <TabsTrigger value="live" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
             <Video className="w-4 h-4 mr-1" />
             Live
           </TabsTrigger>
@@ -46,9 +46,9 @@ export function StoriesSection() {
                 whileHover={{ scale: 1.02 }}
                 className="shrink-0 cursor-pointer"
               >
-                <div className="relative w-20 h-28 rounded-xl bg-gradient-to-br from-muted to-muted/50 border-2 border-dashed border-secondary/30 flex flex-col items-center justify-center gap-1 hover:border-secondary/50 transition-colors">
-                  <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center">
-                    <Plus className="w-4 h-4 text-secondary-foreground" />
+                <div className="relative w-20 h-28 rounded-xl bg-gradient-to-br from-muted to-muted/50 border-2 border-dashed border-primary/30 flex flex-col items-center justify-center gap-1 hover:border-primary/50 transition-colors">
+                  <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
+                    <Plus className="w-4 h-4 text-primary-foreground" />
                   </div>
                   <span className="text-[10px] text-center text-muted-foreground">Tạo tin</span>
                 </div>
@@ -72,12 +72,12 @@ export function StoriesSection() {
                     <div className="absolute inset-0 flex items-center justify-center">
                       <div className={`p-0.5 rounded-full ${
                         story.hasNew 
-                          ? "bg-gradient-to-br from-secondary via-secondary-light to-secondary" 
+                          ? "bg-gradient-to-br from-primary via-primary-light to-primary" 
                           : "bg-border"
                       }`}>
                         <Avatar className="w-12 h-12 border-2 border-background">
                           <AvatarImage src={story.avatar} />
-                          <AvatarFallback className="bg-secondary/20 text-sm">
+                          <AvatarFallback className="bg-primary/20 text-sm">
                             {story.userName.charAt(0)}
                           </AvatarFallback>
                         </Avatar>

@@ -72,21 +72,21 @@ export function RightSidebar() {
     <aside className="w-80 shrink-0 space-y-4 sticky top-20">
       {/* Honor Board */}
       <div className="glass-card overflow-hidden">
-        <div className="bg-gradient-to-r from-secondary to-secondary-light p-2.5">
-          <h3 className="text-xs font-bold text-secondary-foreground text-center tracking-wide">
+        <div className="bg-gradient-to-r from-primary to-primary-light p-2.5">
+          <h3 className="text-xs font-bold text-primary-foreground text-center tracking-wide">
             HONOR BOARD
           </h3>
         </div>
-        <div className="p-2.5 space-y-1.5 bg-secondary/5">
+        <div className="p-2.5 space-y-1.5 bg-primary/5">
           {honorStats.map((stat) => (
             <div key={stat.label} className="flex items-center gap-2">
               <span className="text-[9px] text-muted-foreground w-16 shrink-0 font-medium">{stat.label}</span>
               <div className="flex-1 h-4 bg-muted/30 rounded-sm overflow-hidden">
                 <div 
-                  className="h-full bg-gradient-to-r from-secondary/90 to-secondary flex items-center px-1"
+                  className="h-full bg-gradient-to-r from-primary/90 to-primary flex items-center px-1"
                   style={{ width: `${stat.barWidth}%` }}
                 >
-                  <span className="text-[8px] font-mono text-secondary-foreground tracking-widest font-bold">
+                  <span className="text-[8px] font-mono text-primary-foreground tracking-widest font-bold">
                     {stat.value}
                   </span>
                 </div>
@@ -98,8 +98,8 @@ export function RightSidebar() {
 
       {/* Top Ranking */}
       <div className="glass-card overflow-hidden">
-        <div className="bg-gradient-to-r from-secondary to-secondary-light p-2.5">
-          <h3 className="text-xs font-bold text-secondary-foreground text-center tracking-wide">
+        <div className="bg-gradient-to-r from-primary to-primary-light p-2.5">
+          <h3 className="text-xs font-bold text-primary-foreground text-center tracking-wide">
             TOP RANKING
           </h3>
         </div>
@@ -112,7 +112,7 @@ export function RightSidebar() {
               >
                 {/* Rank badge with avatar overlay */}
                 <div className="relative">
-                  <Avatar className="w-9 h-9 border-2 border-secondary/30">
+                  <Avatar className="w-9 h-9 border-2 border-primary/30">
                     <AvatarImage src={ranker.avatar} />
                     <AvatarFallback className="bg-primary/10 text-xs">
                       {ranker.name.charAt(0)}
@@ -126,12 +126,12 @@ export function RightSidebar() {
                   <div className="flex items-center gap-1">
                     <span className="text-xs font-semibold truncate">{ranker.name}</span>
                     {ranker.verified && (
-                      <span className="text-secondary text-[10px]">💜</span>
+                      <span className="text-primary text-[10px]">💜</span>
                     )}
                   </div>
                   <span className="text-[10px] text-muted-foreground">{ranker.location}</span>
                 </div>
-                <span className="text-xs font-bold text-secondary shrink-0">
+                <span className="text-xs font-bold text-primary shrink-0">
                   {ranker.amount}
                 </span>
               </div>
@@ -143,19 +143,19 @@ export function RightSidebar() {
       {/* Birthdays */}
       <div className="glass-card p-4">
         <div className="flex items-center gap-2 mb-3">
-          <Cake className="w-4 h-4 text-secondary" />
+          <Cake className="w-4 h-4 text-primary" />
           <h3 className="text-sm font-semibold">Sinh nhật</h3>
         </div>
         <p className="text-sm text-muted-foreground">
           Hôm nay là sinh nhật của <span className="font-medium text-foreground">Nhật Thống</span> và{" "}
-          <span className="text-secondary cursor-pointer hover:underline">6 người khác</span>
+          <span className="text-primary cursor-pointer hover:underline">6 người khác</span>
         </p>
       </div>
 
       {/* Contacts */}
       <div className="glass-card p-4">
         <div className="flex items-center gap-2 mb-3">
-          <Users className="w-4 h-4 text-secondary" />
+          <Users className="w-4 h-4 text-primary" />
           <h3 className="text-sm font-semibold">Người liên hệ</h3>
         </div>
         <div className="space-y-2">
@@ -178,13 +178,13 @@ export function RightSidebar() {
       {/* Group Chats */}
       <div className="glass-card p-4">
         <div className="flex items-center gap-2 mb-3">
-          <MessageCircle className="w-4 h-4 text-secondary" />
+          <MessageCircle className="w-4 h-4 text-primary" />
           <h3 className="text-sm font-semibold">Cuộc trò chuyện nhóm</h3>
         </div>
         <div className="space-y-2">
           <div className="flex items-center gap-3 p-2 -mx-2 rounded-lg hover:bg-muted/50 cursor-pointer transition-colors">
             <Avatar className="w-8 h-8">
-              <AvatarFallback className="bg-secondary/10 text-xs">N</AvatarFallback>
+              <AvatarFallback className="bg-primary/10 text-xs">N</AvatarFallback>
             </Avatar>
             <span className="text-sm">Nhóm Phụng Sự Mẹ Trái Đất</span>
           </div>

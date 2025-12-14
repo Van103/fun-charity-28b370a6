@@ -128,7 +128,7 @@ export function CreatePostBox({ profile, onPostCreated }: CreatePostBoxProps) {
     <>
       <div className="glass-card overflow-hidden">
         {/* Input area with purple gradient background */}
-        <div className="bg-gradient-to-r from-secondary/90 to-secondary p-3 flex items-center gap-3">
+        <div className="bg-gradient-to-r from-primary/90 to-primary p-3 flex items-center gap-3">
           <Avatar className="w-10 h-10 border-2 border-white/30">
             <AvatarImage src={profile?.avatar_url || ""} />
             <AvatarFallback className="bg-white/20 text-white">
@@ -213,7 +213,7 @@ export function CreatePostBox({ profile, onPostCreated }: CreatePostBoxProps) {
           </div>
           <Button 
             size="sm" 
-            className="bg-gradient-to-r from-secondary to-secondary-light text-secondary-foreground gap-2 px-4"
+            className="bg-gradient-to-r from-primary to-primary-light text-primary-foreground gap-2 px-4"
             onClick={() => setShowAdvancedModal(true)}
             disabled={isSubmitting}
           >

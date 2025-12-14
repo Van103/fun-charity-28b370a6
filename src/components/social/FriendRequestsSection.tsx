@@ -46,7 +46,7 @@ export function FriendRequestsSection() {
       <div className="glass-card p-4">
         <div className="flex items-center justify-between mb-4">
           <h3 className="font-semibold text-foreground">Lời mời kết bạn</h3>
-          <button className="text-sm text-secondary hover:underline flex items-center gap-1">
+          <button className="text-sm text-primary hover:underline flex items-center gap-1">
             Xem tất cả <ChevronRight className="w-4 h-4" />
           </button>
         </div>
@@ -64,7 +64,7 @@ export function FriendRequestsSection() {
               <div className={`h-12 ${getCoverStyle(index)} relative`}>
                 {/* Avatar positioned at bottom of cover */}
                 <div className="absolute -bottom-5 left-1/2 -translate-x-1/2">
-                  <div className="p-0.5 rounded-full bg-gradient-to-br from-secondary to-secondary-light">
+                  <div className="p-0.5 rounded-full bg-gradient-to-br from-primary to-primary-light">
                     <Avatar className="w-10 h-10 border-2 border-background">
                       <AvatarImage src={request.avatar} />
                       <AvatarFallback className="bg-primary/10 text-sm">
@@ -80,13 +80,13 @@ export function FriendRequestsSection() {
                   <span className="font-medium text-[11px] truncate max-w-full">
                     {request.userName}
                   </span>
-                  {request.verified && <span className="text-secondary text-[10px]">💜</span>}
+                  {request.verified && <span className="text-primary text-[10px]">💜</span>}
                 </div>
                 <span className="text-[10px] text-muted-foreground mb-1.5">
                   {request.mutualFriends} bạn chung
                 </span>
                 <div className="flex flex-col gap-1 w-full">
-                  <Button size="sm" className="w-full h-6 text-[10px] bg-secondary hover:bg-secondary/90 text-secondary-foreground">
+                  <Button size="sm" className="w-full h-6 text-[10px] bg-primary hover:bg-primary/90 text-primary-foreground">
                     Xác nhận
                   </Button>
                   <Button size="sm" variant="outline" className="w-full h-6 text-[10px]">
@@ -103,7 +103,7 @@ export function FriendRequestsSection() {
           </button>
         </div>
         
-        <button className="text-xs text-secondary hover:underline mt-2 mx-auto block">
+        <button className="text-xs text-primary hover:underline mt-2 mx-auto block">
           Xem tất cả
         </button>
       </div>
@@ -112,7 +112,7 @@ export function FriendRequestsSection() {
       <div className="glass-card p-4">
         <div className="flex items-center justify-between mb-4">
           <h3 className="font-semibold text-foreground">Những người bạn có thể biết</h3>
-          <button className="text-sm text-secondary hover:underline flex items-center gap-1">
+          <button className="text-sm text-primary hover:underline flex items-center gap-1">
             Xem tất cả <ChevronRight className="w-4 h-4" />
           </button>
         </div>
@@ -141,7 +141,7 @@ export function FriendRequestsSection() {
                 </div>
                 {/* Avatar positioned at bottom of cover */}
                 <div className="absolute -bottom-5 left-1/2 -translate-x-1/2">
-                  <div className="p-0.5 rounded-full bg-gradient-to-br from-secondary to-secondary-light">
+                  <div className="p-0.5 rounded-full bg-gradient-to-br from-primary to-primary-light">
                     <Avatar className="w-10 h-10 border-2 border-background">
                       <AvatarImage src={suggestion.avatar} />
                       <AvatarFallback className="bg-primary/10 text-sm">
@@ -157,7 +157,7 @@ export function FriendRequestsSection() {
                   <span className="font-medium text-[11px] truncate max-w-full">
                     {suggestion.userName}
                   </span>
-                  {suggestion.verified && <span className="text-secondary text-[10px]">💜</span>}
+                  {suggestion.verified && <span className="text-primary text-[10px]">💜</span>}
                 </div>
                 <span className="text-[10px] text-muted-foreground mb-1.5">
                   {suggestion.mutualFriends} bạn chung
@@ -176,7 +176,7 @@ export function FriendRequestsSection() {
           </button>
         </div>
         
-        <button className="text-xs text-secondary hover:underline mt-2 mx-auto block">
+        <button className="text-xs text-primary hover:underline mt-2 mx-auto block">
           Xem tất cả
         </button>
       </div>
