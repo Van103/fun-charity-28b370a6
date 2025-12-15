@@ -19,6 +19,11 @@ import Auth from "./pages/Auth";
 import UserProfile from "./pages/UserProfile";
 import SocialFeed from "./pages/SocialFeed";
 import Life from "./pages/Life";
+import Academy from "./pages/Academy";
+import Trading from "./pages/Trading";
+import Investment from "./pages/Investment";
+import Legal from "./pages/Legal";
+import Planet from "./pages/Planet";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -60,6 +65,11 @@ const App = () => (
               <Route path="/profile" element={<UserProfile />} />
               <Route path="/feed" element={<SocialFeed />} />
               <Route path="/life" element={<Life />} />
+              <Route path="/academy" element={<Academy />} />
+              <Route path="/trading" element={<Trading />} />
+              <Route path="/investment" element={<Investment />} />
+              <Route path="/legal" element={<Legal />} />
+              <Route path="/planet" element={<Planet />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>
