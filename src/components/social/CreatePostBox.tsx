@@ -6,6 +6,13 @@ import { useCreateFeedPost } from "@/hooks/useFeedPosts";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { CreatePostModal } from "./CreatePostModal";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 
 interface CreatePostBoxProps {
   profile?: {
@@ -21,11 +28,44 @@ export function CreatePostBox({ profile, onPostCreated }: CreatePostBoxProps) {
   const [mediaPreviews, setMediaPreviews] = useState<string[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const [showAdvancedModal, setShowAdvancedModal] = useState(false);
+  const [showAiModal, setShowAiModal] = useState(false);
+  const [aiTopic, setAiTopic] = useState("");
+  const [isGenerating, setIsGenerating] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
   
   const { toast } = useToast();
   const createPost = useCreateFeedPost();
+
+  const generateAiContent = async () => {
+    setIsGenerating(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("generate-post-content", {
+        body: { topic: aiTopic, style: "thân thiện, ấm áp, truyền cảm hứng" },
+      });
+
+      if (error) throw error;
+
+      if (data?.content) {
+        setContent(data.content);
+        setShowAiModal(false);
+        setAiTopic("");
+        toast({
+          title: "Tạo nội dung thành công! ✨",
+          description: "AI đã tạo nội dung cho bạn. Bạn có thể chỉnh sửa trước khi đăng.",
+        });
+      }
+    } catch (error: any) {
+      console.error("Error generating AI content:", error);
+      toast({
+        title: "Lỗi tạo nội dung",
+        description: error.message || "Không thể tạo nội dung. Vui lòng thử lại.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsGenerating(false);
+    }
+  };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>, type: "image" | "video") => {
     const files = Array.from(e.target.files || []);
@@ -219,7 +259,7 @@ export function CreatePostBox({ profile, onPostCreated }: CreatePostBoxProps) {
           <Button 
             size="sm" 
             className="bg-gradient-to-r from-primary to-primary-light text-primary-foreground gap-2 px-4"
-            onClick={() => setShowAdvancedModal(true)}
+            onClick={() => setShowAiModal(true)}
             disabled={isSubmitting}
           >
             <Sparkles className="w-4 h-4" />
@@ -227,6 +267,51 @@ export function CreatePostBox({ profile, onPostCreated }: CreatePostBoxProps) {
           </Button>
         </div>
       </div>
+
+      {/* AI Content Modal */}
+      <Dialog open={showAiModal} onOpenChange={setShowAiModal}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-primary" />
+              Enjoy AI - Tạo nội dung tự động
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div>
+              <label className="text-sm font-medium mb-2 block">
+                Chủ đề bạn muốn viết về (tùy chọn)
+              </label>
+              <Input
+                placeholder="Ví dụ: Giúp đỡ trẻ em vùng cao, bảo vệ môi trường..."
+                value={aiTopic}
+                onChange={(e) => setAiTopic(e.target.value)}
+                disabled={isGenerating}
+              />
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Để trống để AI tự tạo nội dung về hoạt động từ thiện
+            </p>
+            <Button
+              onClick={generateAiContent}
+              disabled={isGenerating}
+              className="w-full bg-gradient-to-r from-primary to-primary-light"
+            >
+              {isGenerating ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Đang tạo nội dung...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="w-4 h-4 mr-2" />
+                  Tạo nội dung với AI
+                </>
+              )}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Advanced Post Modal */}
       <CreatePostModal 
