@@ -18,6 +18,7 @@ import Reviews from "./pages/Reviews";
 import Auth from "./pages/Auth";
 import UserProfile from "./pages/UserProfile";
 import SocialFeed from "./pages/SocialFeed";
+import Life from "./pages/Life";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -58,7 +59,7 @@ const App = () => (
               <Route path="/auth" element={<Auth />} />
               <Route path="/profile" element={<UserProfile />} />
               <Route path="/feed" element={<SocialFeed />} />
-              <Route path="*" element={<NotFound />} />
+              <Route path="/life" element={<Life />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>
