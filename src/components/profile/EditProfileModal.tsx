@@ -1,5 +1,4 @@
 import { useState, useRef } from "react";
-import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -13,8 +12,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Camera, X, Upload, Loader2 } from "lucide-react";
+import { Camera, Upload, Loader2, Crop } from "lucide-react";
 import { z } from "zod";
+import { ImageCropper } from "./ImageCropper";
 
 interface Profile {
   id: string;
@@ -50,43 +50,50 @@ export function EditProfileModal({ isOpen, onClose, profile, onUpdate }: EditPro
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState<{ full_name?: string; bio?: string }>({});
   
+  // Cropper state
+  const [cropperOpen, setCropperOpen] = useState(false);
+  const [cropperImage, setCropperImage] = useState<string>("");
+  const [cropperType, setCropperType] = useState<"avatar" | "cover">("avatar");
+  
   const avatarInputRef = useRef<HTMLInputElement>(null);
   const coverInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
-  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>, type: "avatar" | "cover") => {
     const file = e.target.files?.[0];
     if (file) {
-      if (file.size > 5 * 1024 * 1024) {
+      const maxSize = type === "avatar" ? 5 * 1024 * 1024 : 10 * 1024 * 1024;
+      if (file.size > maxSize) {
         toast({
           title: "Lỗi",
-          description: "Kích thước ảnh tối đa 5MB",
+          description: `Kích thước ảnh tối đa ${type === "avatar" ? "5MB" : "10MB"}`,
           variant: "destructive",
         });
         return;
       }
-      setAvatarFile(file);
+      
       const reader = new FileReader();
-      reader.onloadend = () => setAvatarPreview(reader.result as string);
+      reader.onloadend = () => {
+        setCropperImage(reader.result as string);
+        setCropperType(type);
+        setCropperOpen(true);
+      };
       reader.readAsDataURL(file);
     }
+    // Reset input
+    e.target.value = "";
   };
 
-  const handleCoverChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      if (file.size > 10 * 1024 * 1024) {
-        toast({
-          title: "Lỗi",
-          description: "Kích thước ảnh bìa tối đa 10MB",
-          variant: "destructive",
-        });
-        return;
-      }
+  const handleCropComplete = (croppedBlob: Blob) => {
+    const file = new File([croppedBlob], `${cropperType}-${Date.now()}.jpg`, { type: "image/jpeg" });
+    const previewUrl = URL.createObjectURL(croppedBlob);
+    
+    if (cropperType === "avatar") {
+      setAvatarFile(file);
+      setAvatarPreview(previewUrl);
+    } else {
       setCoverFile(file);
-      const reader = new FileReader();
-      reader.onloadend = () => setCoverPreview(reader.result as string);
-      reader.readAsDataURL(file);
+      setCoverPreview(previewUrl);
     }
   };
 
@@ -175,126 +182,143 @@ export function EditProfileModal({ isOpen, onClose, profile, onUpdate }: EditPro
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="text-xl font-bold">Chỉnh Sửa Hồ Sơ</DialogTitle>
-        </DialogHeader>
+    <>
+      <Dialog open={isOpen} onOpenChange={onClose}>
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold">Chỉnh Sửa Hồ Sơ</DialogTitle>
+          </DialogHeader>
 
-        <div className="space-y-6 py-4">
-          {/* Cover Image */}
-          <div className="space-y-2">
-            <Label>Ảnh Bìa</Label>
-            <div
-              className="relative h-32 rounded-xl overflow-hidden bg-muted cursor-pointer group"
-              onClick={() => coverInputRef.current?.click()}
-            >
-              {coverPreview ? (
-                <img src={coverPreview} alt="Cover" className="w-full h-full object-cover" />
-              ) : (
-                <div className="w-full h-full bg-gradient-luxury" />
-              )}
-              <div className="absolute inset-0 bg-foreground/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                <Camera className="w-8 h-8 text-background" />
-              </div>
-            </div>
-            <input
-              ref={coverInputRef}
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={handleCoverChange}
-            />
-          </div>
-
-          {/* Avatar */}
-          <div className="space-y-2">
-            <Label>Ảnh Đại Diện</Label>
-            <div className="flex items-center gap-4">
+          <div className="space-y-6 py-4">
+            {/* Cover Image */}
+            <div className="space-y-2">
+              <Label>Ảnh Bìa</Label>
               <div
-                className="relative cursor-pointer group"
-                onClick={() => avatarInputRef.current?.click()}
+                className="relative h-32 rounded-xl overflow-hidden bg-muted cursor-pointer group"
+                onClick={() => coverInputRef.current?.click()}
               >
-                <Avatar className="w-20 h-20 border-2 border-border">
-                  <AvatarImage src={avatarPreview || ""} />
-                  <AvatarFallback className="text-2xl bg-secondary/20 text-secondary">
-                    {fullName?.charAt(0) || "U"}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="absolute inset-0 rounded-full bg-foreground/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                {coverPreview ? (
+                  <img src={coverPreview} alt="Cover" className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full bg-gradient-luxury" />
+                )}
+                <div className="absolute inset-0 bg-foreground/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
                   <Camera className="w-6 h-6 text-background" />
+                  <Crop className="w-6 h-6 text-background" />
                 </div>
               </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => avatarInputRef.current?.click()}
-              >
-                <Upload className="w-4 h-4 mr-2" />
-                Tải Ảnh Lên
+              <p className="text-xs text-muted-foreground">Nhấp để chọn ảnh và cắt</p>
+              <input
+                ref={coverInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => handleImageSelect(e, "cover")}
+              />
+            </div>
+
+            {/* Avatar */}
+            <div className="space-y-2">
+              <Label>Ảnh Đại Diện</Label>
+              <div className="flex items-center gap-4">
+                <div
+                  className="relative cursor-pointer group"
+                  onClick={() => avatarInputRef.current?.click()}
+                >
+                  <Avatar className="w-20 h-20 border-2 border-border">
+                    <AvatarImage src={avatarPreview || ""} />
+                    <AvatarFallback className="text-2xl bg-secondary/20 text-secondary">
+                      {fullName?.charAt(0) || "U"}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="absolute inset-0 rounded-full bg-foreground/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                    <Crop className="w-6 h-6 text-background" />
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => avatarInputRef.current?.click()}
+                  >
+                    <Upload className="w-4 h-4 mr-2" />
+                    Chọn & Cắt Ảnh
+                  </Button>
+                  <p className="text-xs text-muted-foreground">Tỉ lệ 1:1, tối đa 5MB</p>
+                </div>
+              </div>
+              <input
+                ref={avatarInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => handleImageSelect(e, "avatar")}
+              />
+            </div>
+
+            {/* Full Name */}
+            <div className="space-y-2">
+              <Label htmlFor="fullName">Họ và Tên</Label>
+              <Input
+                id="fullName"
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                placeholder="Nhập họ và tên"
+                maxLength={100}
+              />
+              {errors.full_name && (
+                <p className="text-sm text-destructive">{errors.full_name}</p>
+              )}
+            </div>
+
+            {/* Bio */}
+            <div className="space-y-2">
+              <Label htmlFor="bio">Tiểu Sử</Label>
+              <Textarea
+                id="bio"
+                value={bio}
+                onChange={(e) => setBio(e.target.value)}
+                placeholder="Giới thiệu về bản thân..."
+                rows={4}
+                maxLength={500}
+              />
+              <p className="text-xs text-muted-foreground text-right">
+                {bio.length}/500
+              </p>
+              {errors.bio && (
+                <p className="text-sm text-destructive">{errors.bio}</p>
+              )}
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex justify-end gap-3 pt-4 border-t border-border">
+              <Button variant="outline" onClick={onClose} disabled={saving}>
+                Hủy
+              </Button>
+              <Button variant="gold" onClick={handleSave} disabled={saving}>
+                {saving ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Đang Lưu...
+                  </>
+                ) : (
+                  "Lưu Thay Đổi"
+                )}
               </Button>
             </div>
-            <input
-              ref={avatarInputRef}
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={handleAvatarChange}
-            />
           </div>
+        </DialogContent>
+      </Dialog>
 
-          {/* Full Name */}
-          <div className="space-y-2">
-            <Label htmlFor="fullName">Họ và Tên</Label>
-            <Input
-              id="fullName"
-              value={fullName}
-              onChange={(e) => setFullName(e.target.value)}
-              placeholder="Nhập họ và tên"
-              maxLength={100}
-            />
-            {errors.full_name && (
-              <p className="text-sm text-destructive">{errors.full_name}</p>
-            )}
-          </div>
-
-          {/* Bio */}
-          <div className="space-y-2">
-            <Label htmlFor="bio">Tiểu Sử</Label>
-            <Textarea
-              id="bio"
-              value={bio}
-              onChange={(e) => setBio(e.target.value)}
-              placeholder="Giới thiệu về bản thân..."
-              rows={4}
-              maxLength={500}
-            />
-            <p className="text-xs text-muted-foreground text-right">
-              {bio.length}/500
-            </p>
-            {errors.bio && (
-              <p className="text-sm text-destructive">{errors.bio}</p>
-            )}
-          </div>
-
-          {/* Action Buttons */}
-          <div className="flex justify-end gap-3 pt-4 border-t border-border">
-            <Button variant="outline" onClick={onClose} disabled={saving}>
-              Hủy
-            </Button>
-            <Button variant="gold" onClick={handleSave} disabled={saving}>
-              {saving ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Đang Lưu...
-                </>
-              ) : (
-                "Lưu Thay Đổi"
-              )}
-            </Button>
-          </div>
-        </div>
-      </DialogContent>
-    </Dialog>
+      {/* Image Cropper Modal */}
+      <ImageCropper
+        isOpen={cropperOpen}
+        onClose={() => setCropperOpen(false)}
+        imageSrc={cropperImage}
+        aspectRatio={cropperType === "avatar" ? 1 : 16 / 9}
+        onCropComplete={handleCropComplete}
+        title={cropperType === "avatar" ? "Cắt ảnh đại diện" : "Cắt ảnh bìa"}
+      />
+    </>
   );
 }

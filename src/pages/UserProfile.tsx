@@ -3,6 +3,7 @@ import { useNavigate, Link } from "react-router-dom";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { ProfileIntroCard } from "@/components/profile/ProfileIntroCard";
+import { FriendsPreviewCard } from "@/components/profile/FriendsPreviewCard";
 import { CreatePostBox } from "@/components/social/CreatePostBox";
 import { SocialPostCard } from "@/components/social/SocialPostCard";
 import { PostCardSkeletonList, PostCardSkeleton } from "@/components/social/PostCardSkeleton";
@@ -283,27 +284,7 @@ export default function UserProfile() {
                 </div>
 
                 {/* Friends Preview Card */}
-                <div className="glass-card overflow-hidden">
-                  <div className="p-4 flex items-center justify-between">
-                    <div>
-                      <h3 className="text-lg font-bold text-foreground">Bạn bè</h3>
-                      <p className="text-sm text-muted-foreground">Kết nối với mọi người</p>
-                    </div>
-                    <Link to="/friends">
-                      <Button variant="ghost" size="sm" className="text-primary hover:text-primary/80">
-                        Xem tất cả
-                      </Button>
-                    </Link>
-                  </div>
-                  <div className="px-4 pb-4 grid grid-cols-3 gap-2">
-                    {[1,2,3,4,5,6,7,8,9].map((i) => (
-                      <Link to="/friends" key={i} className="text-center hover:opacity-80 transition-opacity">
-                        <div className="aspect-square bg-gradient-to-br from-secondary/20 to-primary/20 rounded-lg mb-1" />
-                        <p className="text-xs font-medium text-foreground truncate">Bạn bè {i}</p>
-                      </Link>
-                    ))}
-                  </div>
-                </div>
+                <FriendsPreviewCard userId={profile?.user_id || ""} />
               </div>
 
               {/* Right Column - Posts Feed */}

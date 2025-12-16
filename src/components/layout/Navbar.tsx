@@ -15,6 +15,7 @@ import { MotionToggle } from "@/components/background/MotionToggle";
 import { WalletConnectModal } from "@/components/wallet/WalletConnectModal";
 import { NotificationDropdown } from "./NotificationDropdown";
 import { SearchBar } from "./SearchBar";
+import { useFriendRequestNotifications } from "@/hooks/useFriendNotifications";
 import {
   Menu,
   X,
@@ -58,6 +59,9 @@ export function Navbar() {
   const [connectedWallet, setConnectedWallet] = useState<string | null>(null);
   const location = useLocation();
   const navigate = useNavigate();
+
+  // Enable realtime friend request notifications
+  useFriendRequestNotifications(user?.id || null);
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
