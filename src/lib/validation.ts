@@ -32,6 +32,9 @@ export const loginSchema = z.object({
 });
 
 // Helper to get first validation error message from a failed parse result
-export const getValidationError = (result: { success: false; error: { errors: { message: string }[] } }): string => {
-  return result.error.errors[0]?.message || 'Dữ liệu không hợp lệ';
+export const getValidationError = (result: z.SafeParseReturnType<unknown, unknown>): string => {
+  if (!result.success) {
+    return result.error.errors[0]?.message || 'Dữ liệu không hợp lệ';
+  }
+  return 'Dữ liệu không hợp lệ';
 };
