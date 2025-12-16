@@ -43,11 +43,11 @@ const platformItems = [
   { name: "Chiến Dịch", path: "/campaigns", icon: Newspaper },
   { name: "Bản Đồ Nhu Cầu", path: "/needs-map", icon: MapPin },
   { name: "Tổng Quan", path: "/dashboard", icon: LayoutDashboard },
+  { name: "Đánh Giá", path: "/reviews", icon: Star },
 ];
 
 const navItems = [
   { name: "Hồ Sơ", path: "/profiles", icon: Users },
-  { name: "Đánh Giá", path: "/reviews", icon: Star },
 ];
 
 export function Navbar() {
@@ -188,33 +188,6 @@ export function Navbar() {
               </PopoverContent>
             </Popover>
             
-            {connectedWallet ? (
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="wallet" size="sm" className="gap-2">
-                    <Check className="w-4 h-4 text-success" />
-                    <span className="font-mono text-xs">{shortenAddress(connectedWallet)}</span>
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent align="end" className="p-0 w-auto">
-                  <WalletQuickView 
-                    walletAddress={connectedWallet} 
-                    onChangeWallet={() => setWalletModalOpen(true)} 
-                  />
-                </PopoverContent>
-              </Popover>
-            ) : (
-              <Button 
-                variant="wallet" 
-                size="sm" 
-                className="gap-2"
-                onClick={() => setWalletModalOpen(true)}
-              >
-                <Wallet className="w-4 h-4" />
-                <span className="font-mono text-xs">Kết Nối Ví</span>
-              </Button>
-            )}
-
             <WalletConnectModal 
               open={walletModalOpen} 
               onOpenChange={setWalletModalOpen}
@@ -223,23 +196,48 @@ export function Navbar() {
 
             <div className="flex items-center gap-2 pl-3 border-l border-border">
               {user ? (
-                <>
-                  <Link to="/profile" className="flex items-center gap-2 text-sm hover:opacity-80 transition-opacity cursor-pointer">
-                    <Avatar className="w-8 h-8 border-2 border-secondary/50">
-                      <AvatarImage src={avatarUrl || undefined} alt="Avatar" />
-                      <AvatarFallback className="bg-secondary/20">
-                        <UserIcon className="w-4 h-4 text-secondary" />
-                      </AvatarFallback>
-                    </Avatar>
-                    <span className="navbar-username max-w-[120px] truncate font-semibold">
-                      {user.user_metadata?.full_name || user.email?.split('@')[0]}
-                    </span>
-                  </Link>
-                  <Button variant="outline" size="sm" onClick={handleLogout}>
-                    <LogOut className="w-4 h-4 mr-1" />
-                    Đăng Xuất
-                  </Button>
-                </>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button className="flex items-center gap-2 text-sm hover:opacity-80 transition-opacity cursor-pointer focus:outline-none">
+                      <Avatar className="w-8 h-8 border-2 border-secondary/50">
+                        <AvatarImage src={avatarUrl || undefined} alt="Avatar" />
+                        <AvatarFallback className="bg-secondary/20">
+                          <UserIcon className="w-4 h-4 text-secondary" />
+                        </AvatarFallback>
+                      </Avatar>
+                      <span className="navbar-username max-w-[120px] truncate font-semibold">
+                        {user.user_metadata?.full_name || user.email?.split('@')[0]}
+                      </span>
+                      <ChevronDown className="w-3 h-3" />
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-56">
+                    <DropdownMenuItem asChild>
+                      <Link to="/profile" className="flex items-center gap-2 cursor-pointer">
+                        <UserIcon className="w-4 h-4" />
+                        Hồ sơ cá nhân
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem 
+                      onClick={() => setWalletModalOpen(true)}
+                      className="flex items-center gap-2 cursor-pointer"
+                    >
+                      <Wallet className="w-4 h-4" />
+                      {connectedWallet ? (
+                        <span>Ví: {shortenAddress(connectedWallet)}</span>
+                      ) : (
+                        <span>Kết nối ví</span>
+                      )}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem 
+                      onClick={handleLogout}
+                      className="flex items-center gap-2 cursor-pointer text-destructive focus:text-destructive"
+                    >
+                      <LogOut className="w-4 h-4" />
+                      Đăng xuất
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               ) : (
                 <>
                   <Link to="/auth">
