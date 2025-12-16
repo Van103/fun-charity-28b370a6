@@ -18,7 +18,9 @@ import Profiles from "./pages/Profiles";
 import Reviews from "./pages/Reviews";
 import Auth from "./pages/Auth";
 import UserProfile from "./pages/UserProfile";
+import PublicProfile from "./pages/PublicProfile";
 import SocialFeed from "./pages/SocialFeed";
+import Messages from "./pages/Messages";
 import Life from "./pages/Life";
 import Academy from "./pages/Academy";
 import Trading from "./pages/Trading";
@@ -66,6 +68,8 @@ const App = () => (
               <Route path="/reviews" element={<Reviews />} />
               <Route path="/auth" element={<Auth />} />
               <Route path="/profile" element={<UserProfile />} />
+              <Route path="/user/:userId" element={<PublicProfile />} />
+              <Route path="/messages" element={<Messages />} />
               <Route path="/feed" element={<SocialFeed />} />
               <Route path="/social" element={<SocialFeed />} />
               <Route path="/life" element={<Life />} />

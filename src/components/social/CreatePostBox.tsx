@@ -1,4 +1,5 @@
 import { useState, useRef } from "react";
+import { Link } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Image, Video, Sparkles, X, Loader2, Send } from "lucide-react";
@@ -18,6 +19,7 @@ interface CreatePostBoxProps {
   profile?: {
     full_name: string | null;
     avatar_url: string | null;
+    user_id?: string;
   } | null;
   onPostCreated?: () => void;
 }
@@ -230,25 +232,25 @@ export function CreatePostBox({ profile, onPostCreated }: CreatePostBoxProps) {
       <div className="glass-card overflow-hidden">
         {/* Main input area - Clean white */}
         <div className="p-4">
-          <div className="flex items-start gap-3">
-            {/* User Avatar with gold ring */}
-            <div className="p-0.5 rounded-full bg-gradient-to-br from-gold-champagne to-gold-light">
+          <div className="flex items-center gap-3">
+            {/* User Avatar with gold ring - clickable to profile */}
+            <Link to="/profile" className="p-0.5 rounded-full bg-gradient-to-br from-gold-champagne to-gold-light flex-shrink-0">
               <Avatar className="w-10 h-10 border-2 border-card">
                 <AvatarImage src={profile?.avatar_url || ""} />
                 <AvatarFallback className={`bg-gradient-to-br ${getAvatarGradient(profile?.full_name || "U")} text-white font-medium`}>
                   {profile?.full_name?.charAt(0) || "U"}
                 </AvatarFallback>
               </Avatar>
-            </div>
+            </Link>
             
-            {/* Input */}
+            {/* Input - shorter height */}
             <div className="flex-1">
-              <textarea
+              <input
+                type="text"
                 placeholder="Bạn đang nghĩ gì?"
                 value={content}
                 onChange={(e) => setContent(e.target.value)}
-                rows={2}
-                className="w-full bg-muted/30 border border-border rounded-xl px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50 resize-none transition-all"
+                className="w-full bg-muted/30 border border-border rounded-full px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50 transition-all"
                 disabled={isSubmitting}
               />
             </div>

@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -8,6 +9,7 @@ import {
   MapPin,
   Pencil,
   Trash2,
+  Loader2,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { FeedPost } from "@/hooks/useFeedPosts";
@@ -19,13 +21,26 @@ import { FeedComments } from "./FeedComments";
 import { SharePopover } from "./SharePopover";
 import { GiftDonateModal } from "./GiftDonateModal";
 import { ImageLightbox } from "./ImageLightbox";
+import { EditFeedPostModal } from "./EditFeedPostModal";
 import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface SocialPostCardProps {
   post: FeedPost;
@@ -46,14 +61,22 @@ const getAvatarGradient = (name: string) => {
 
 export function SocialPostCard({ post }: SocialPostCardProps) {
   const [showComments, setShowComments] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [currentUserAvatar, setCurrentUserAvatar] = useState<string | null>(null);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
 
-  // Fetch current user avatar
+  // Fetch current user
   useEffect(() => {
     supabase.auth.getUser().then(async ({ data }) => {
       if (data.user) {
+        setCurrentUserId(data.user.id);
         const { data: profile } = await supabase
           .from("profiles")
           .select("avatar_url")
@@ -63,6 +86,8 @@ export function SocialPostCard({ post }: SocialPostCardProps) {
       }
     });
   }, []);
+
+  const isOwnPost = currentUserId === post.user_id;
 
   // Reactions hook
   const {
@@ -96,6 +121,30 @@ export function SocialPostCard({ post }: SocialPostCardProps) {
 
   const userName = post.profiles?.full_name || "Người dùng";
 
+  const handleDelete = async () => {
+    setIsDeleting(true);
+    try {
+      const { error } = await supabase
+        .from("feed_posts")
+        .delete()
+        .eq("id", post.id);
+
+      if (error) throw error;
+
+      toast({ title: "Đã xóa bài viết" });
+      queryClient.invalidateQueries({ queryKey: ["feed-posts"] });
+    } catch (error: any) {
+      toast({
+        title: "Lỗi",
+        description: error.message || "Không thể xóa bài viết",
+        variant: "destructive"
+      });
+    } finally {
+      setIsDeleting(false);
+      setShowDeleteDialog(false);
+    }
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -106,20 +155,26 @@ export function SocialPostCard({ post }: SocialPostCardProps) {
       <div className="p-4 pb-3">
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-3">
-            {/* Avatar with gold ring */}
-            <div className="p-0.5 rounded-full bg-gradient-to-br from-gold-champagne to-gold-light">
+            {/* Avatar with gold ring - clickable to profile */}
+            <Link 
+              to={isOwnPost ? "/profile" : `/user/${post.user_id}`}
+              className="p-0.5 rounded-full bg-gradient-to-br from-gold-champagne to-gold-light"
+            >
               <Avatar className="w-11 h-11 border-2 border-card">
                 <AvatarImage src={post.profiles?.avatar_url || ""} />
                 <AvatarFallback className={`bg-gradient-to-br ${getAvatarGradient(userName)} text-white font-semibold`}>
                   {userName.charAt(0)}
                 </AvatarFallback>
               </Avatar>
-            </div>
+            </Link>
             <div>
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="font-semibold text-foreground hover:underline cursor-pointer">
+                <Link 
+                  to={isOwnPost ? "/profile" : `/user/${post.user_id}`}
+                  className="font-semibold text-foreground hover:underline"
+                >
                   {userName}
-                </span>
+                </Link>
                 {post.profiles?.is_verified && (
                   <span className="text-primary text-sm">✓</span>
                 )}
@@ -138,29 +193,37 @@ export function SocialPostCard({ post }: SocialPostCardProps) {
           </div>
 
           <div className="flex items-center gap-2">
-            {/* Earned amount badge */}
+            {/* Earned amount badge - shows total gifts received */}
             <Badge variant="outline" className="bg-gold-champagne/10 text-gold-dark border-gold-champagne/30 gap-1 text-xs font-medium">
-              +{(post.fulfilled_amount || 99999).toLocaleString()}₫
+              +{(post.fulfilled_amount || 0).toLocaleString()}₫
             </Badge>
             
-            {/* More options dropdown */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full hover:bg-muted">
-                  <MoreHorizontal className="w-4 h-4 text-muted-foreground" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-40">
-                <DropdownMenuItem className="gap-2 cursor-pointer">
-                  <Pencil className="w-4 h-4" />
-                  Chỉnh sửa
-                </DropdownMenuItem>
-                <DropdownMenuItem className="gap-2 cursor-pointer text-destructive focus:text-destructive">
-                  <Trash2 className="w-4 h-4" />
-                  Xóa bài
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            {/* More options dropdown - only show for own posts */}
+            {isOwnPost && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full hover:bg-muted">
+                    <MoreHorizontal className="w-4 h-4 text-muted-foreground" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-40">
+                  <DropdownMenuItem 
+                    className="gap-2 cursor-pointer"
+                    onClick={() => setShowEditModal(true)}
+                  >
+                    <Pencil className="w-4 h-4" />
+                    Chỉnh sửa
+                  </DropdownMenuItem>
+                  <DropdownMenuItem 
+                    className="gap-2 cursor-pointer text-destructive focus:text-destructive"
+                    onClick={() => setShowDeleteDialog(true)}
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    Xóa bài
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
           </div>
         </div>
       </div>
@@ -323,6 +386,46 @@ export function SocialPostCard({ post }: SocialPostCardProps) {
       {showComments && (
         <FeedComments postId={post.id} currentUserAvatar={currentUserAvatar} />
       )}
+
+      {/* Edit Post Modal */}
+      {showEditModal && (
+        <EditFeedPostModal
+          open={showEditModal}
+          onOpenChange={setShowEditModal}
+          post={{
+            id: post.id,
+            user_id: post.user_id,
+            content: post.content,
+            media_urls: mediaUrls,
+          }}
+          onSaved={() => {
+            queryClient.invalidateQueries({ queryKey: ["feed-posts"] });
+          }}
+        />
+      )}
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Xóa bài viết?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Bạn có chắc chắn muốn xóa bài viết này? Hành động này không thể hoàn tác.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Hủy</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              disabled={isDeleting}
+              className="bg-destructive hover:bg-destructive/90"
+            >
+              {isDeleting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+              Xóa
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </motion.div>
   );
 }
