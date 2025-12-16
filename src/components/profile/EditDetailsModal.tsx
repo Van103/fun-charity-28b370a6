@@ -1,87 +1,186 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
-import { Edit2, Plus, X } from "lucide-react";
+import { Edit2, Plus, Trash2, Loader2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 interface DetailItem {
   id: string;
-  text: string;
-  enabled: boolean;
+  detail_type: string;
+  title: string;
+  subtitle: string | null;
+  is_visible: boolean;
+  is_current: boolean;
+  display_order: number;
+  isNew?: boolean;
 }
 
 interface EditDetailsModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave?: (data: { work: DetailItem[]; education: DetailItem[] }) => void;
+  onSave?: () => void;
 }
 
 export function EditDetailsModal({ isOpen, onClose, onSave }: EditDetailsModalProps) {
-  const [workItems, setWorkItems] = useState<DetailItem[]>([
-    { id: "1", text: "Làm việc tại GEIN Academy", enabled: true },
-    { id: "2", text: "Làm việc tại Công Ty Cổ Phần Sáng Kiến Giáo Dục Toàn Cầu Gein", enabled: true },
-    { id: "3", text: "Làm việc tại Leader tại Renaissance Team", enabled: true },
-    { id: "4", text: "Làm việc tại Kế toán tài chính", enabled: true },
-  ]);
-
-  const [educationItems, setEducationItems] = useState<DetailItem[]>([
-    { id: "1", text: "Từng học tại Nâng Đoàn Kim Cương", enabled: true },
-    { id: "2", text: "Từng học tại Thấu Hiểu Nội Tâm - Kiến Tạo An Vui", enabled: true },
-    { id: "3", text: "Từng học tại Sức Mạnh Tiềm Thức", enabled: true },
-    { id: "4", text: "Từng học tại Hành Trình Tìm Lại Chính Mình", enabled: true },
-    { id: "5", text: "Từng học tại 7 Ngày Khơi Nguồn Hạnh Phúc", enabled: true },
-  ]);
-
+  const [workItems, setWorkItems] = useState<DetailItem[]>([]);
+  const [educationItems, setEducationItems] = useState<DetailItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [editingItem, setEditingItem] = useState<{ type: 'work' | 'education'; id: string } | null>(null);
+  const { toast } = useToast();
 
-  const toggleWork = (id: string) => {
-    setWorkItems(items => items.map(item => 
-      item.id === id ? { ...item, enabled: !item.enabled } : item
-    ));
+  useEffect(() => {
+    if (isOpen) {
+      fetchDetails();
+    }
+  }, [isOpen]);
+
+  const fetchDetails = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data, error } = await supabase
+        .from("profile_details")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("display_order", { ascending: true });
+
+      if (error) throw error;
+
+      const work = (data || []).filter(d => d.detail_type === 'work');
+      const education = (data || []).filter(d => d.detail_type === 'education');
+
+      setWorkItems(work);
+      setEducationItems(education);
+    } catch (error) {
+      console.error("Error fetching details:", error);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const toggleEducation = (id: string) => {
-    setEducationItems(items => items.map(item => 
-      item.id === id ? { ...item, enabled: !item.enabled } : item
-    ));
-  };
-
-  const updateItemText = (type: 'work' | 'education', id: string, text: string) => {
+  const toggleVisibility = (type: 'work' | 'education', id: string) => {
     if (type === 'work') {
       setWorkItems(items => items.map(item => 
-        item.id === id ? { ...item, text } : item
+        item.id === id ? { ...item, is_visible: !item.is_visible } : item
       ));
     } else {
       setEducationItems(items => items.map(item => 
-        item.id === id ? { ...item, text } : item
+        item.id === id ? { ...item, is_visible: !item.is_visible } : item
       ));
     }
   };
 
-  const handleSave = () => {
-    onSave?.({ work: workItems, education: educationItems });
-    onClose();
+  const updateItemText = (type: 'work' | 'education', id: string, title: string) => {
+    if (type === 'work') {
+      setWorkItems(items => items.map(item => 
+        item.id === id ? { ...item, title } : item
+      ));
+    } else {
+      setEducationItems(items => items.map(item => 
+        item.id === id ? { ...item, title } : item
+      ));
+    }
+  };
+
+  const addNewItem = (type: 'work' | 'education') => {
+    const newItem: DetailItem = {
+      id: `new-${Date.now()}`,
+      detail_type: type,
+      title: type === 'work' ? 'Làm việc tại ' : 'Học tại ',
+      subtitle: null,
+      is_visible: true,
+      is_current: true,
+      display_order: type === 'work' ? workItems.length : educationItems.length,
+      isNew: true,
+    };
+
+    if (type === 'work') {
+      setWorkItems([...workItems, newItem]);
+    } else {
+      setEducationItems([...educationItems, newItem]);
+    }
+    setEditingItem({ type, id: newItem.id });
+  };
+
+  const deleteItem = (type: 'work' | 'education', id: string) => {
+    if (type === 'work') {
+      setWorkItems(items => items.filter(item => item.id !== id));
+    } else {
+      setEducationItems(items => items.filter(item => item.id !== id));
+    }
+  };
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+
+      // Delete all existing details for this user
+      await supabase
+        .from("profile_details")
+        .delete()
+        .eq("user_id", user.id);
+
+      // Insert all current items
+      const allItems = [...workItems, ...educationItems].map((item, index) => ({
+        user_id: user.id,
+        detail_type: item.detail_type,
+        title: item.title,
+        subtitle: item.subtitle,
+        is_visible: item.is_visible,
+        is_current: item.is_current,
+        display_order: index,
+      }));
+
+      if (allItems.length > 0) {
+        const { error } = await supabase
+          .from("profile_details")
+          .insert(allItems);
+
+        if (error) throw error;
+      }
+
+      toast({
+        title: "Thành công",
+        description: "Đã lưu thông tin chi tiết",
+      });
+      
+      onSave?.();
+      onClose();
+    } catch (error: any) {
+      toast({
+        title: "Lỗi",
+        description: error.message || "Không thể lưu thông tin",
+        variant: "destructive",
+      });
+    } finally {
+      setSaving(false);
+    }
   };
 
   const renderDetailItem = (
     item: DetailItem, 
     type: 'work' | 'education',
-    onToggle: (id: string) => void
   ) => {
     const isEditing = editingItem?.type === type && editingItem?.id === item.id;
 
     return (
-      <div key={item.id} className="flex items-center gap-3 py-2">
+      <div key={item.id} className="flex items-center gap-3 py-2 group">
         <Switch 
-          checked={item.enabled} 
-          onCheckedChange={() => onToggle(item.id)}
+          checked={item.is_visible} 
+          onCheckedChange={() => toggleVisibility(type, item.id)}
           className="data-[state=checked]:bg-primary"
         />
         <div className="flex-1 min-w-0">
           {isEditing ? (
             <Input
-              value={item.text}
+              value={item.title}
               onChange={(e) => updateItemText(type, item.id, e.target.value)}
               onBlur={() => setEditingItem(null)}
               onKeyDown={(e) => e.key === 'Enter' && setEditingItem(null)}
@@ -89,7 +188,7 @@ export function EditDetailsModal({ isOpen, onClose, onSave }: EditDetailsModalPr
               className="h-8"
             />
           ) : (
-            <span className="text-sm text-foreground truncate block">{item.text}</span>
+            <span className="text-sm text-foreground truncate block">{item.title}</span>
           )}
         </div>
         <button 
@@ -97,6 +196,12 @@ export function EditDetailsModal({ isOpen, onClose, onSave }: EditDetailsModalPr
           className="p-2 hover:bg-muted rounded-full transition-colors shrink-0"
         >
           <Edit2 className="w-4 h-4 text-muted-foreground" />
+        </button>
+        <button 
+          onClick={() => deleteItem(type, item.id)}
+          className="p-2 hover:bg-destructive/10 rounded-full transition-colors shrink-0 opacity-0 group-hover:opacity-100"
+        >
+          <Trash2 className="w-4 h-4 text-destructive" />
         </button>
       </div>
     );
@@ -113,58 +218,53 @@ export function EditDetailsModal({ isOpen, onClose, onSave }: EditDetailsModalPr
           Thông tin bạn chọn sẽ ở chế độ Công khai và hiển thị ở đầu trang cá nhân của bạn.
         </p>
 
-        <div className="space-y-6 py-4">
-          {/* Danh xưng */}
-          <div>
-            <h4 className="font-semibold text-foreground mb-3">Danh xưng</h4>
-            <button className="flex items-center gap-2 text-primary hover:underline text-sm">
-              <Plus className="w-4 h-4" />
-              Thêm danh xưng
-            </button>
+        {loading ? (
+          <div className="flex items-center justify-center py-8">
+            <Loader2 className="w-6 h-6 animate-spin text-primary" />
           </div>
-
-          {/* Công việc */}
-          <div>
-            <h4 className="font-semibold text-foreground mb-3">Công việc</h4>
-            <div className="space-y-1">
-              {workItems.map(item => renderDetailItem(item, 'work', toggleWork))}
+        ) : (
+          <div className="space-y-6 py-4">
+            {/* Công việc */}
+            <div>
+              <h4 className="font-semibold text-foreground mb-3">Công việc</h4>
+              <div className="space-y-1">
+                {workItems.map(item => renderDetailItem(item, 'work'))}
+              </div>
+              <button 
+                onClick={() => addNewItem('work')}
+                className="flex items-center gap-2 text-primary hover:underline text-sm mt-3"
+              >
+                <Plus className="w-4 h-4" />
+                Thêm nơi làm việc
+              </button>
             </div>
-            <button className="flex items-center gap-2 text-primary hover:underline text-sm mt-3">
-              <Plus className="w-4 h-4" />
-              Thêm nơi làm việc
-            </button>
-          </div>
 
-          {/* Học vấn */}
-          <div>
-            <h4 className="font-semibold text-foreground mb-3">Học vấn</h4>
-            <div className="space-y-1">
-              {educationItems.map(item => renderDetailItem(item, 'education', toggleEducation))}
+            {/* Học vấn */}
+            <div>
+              <h4 className="font-semibold text-foreground mb-3">Học vấn</h4>
+              <div className="space-y-1">
+                {educationItems.map(item => renderDetailItem(item, 'education'))}
+              </div>
+              <button 
+                onClick={() => addNewItem('education')}
+                className="flex items-center gap-2 text-primary hover:underline text-sm mt-3"
+              >
+                <Plus className="w-4 h-4" />
+                Thêm trường học
+              </button>
             </div>
-            <button className="flex items-center gap-2 text-primary hover:underline text-sm mt-3">
-              <Plus className="w-4 h-4" />
-              Thêm trường trung học
-            </button>
-            <button className="flex items-center gap-2 text-primary hover:underline text-sm mt-2">
-              <Plus className="w-4 h-4" />
-              Thêm trường cao đẳng/đại học
-            </button>
           </div>
-        </div>
+        )}
 
         {/* Footer */}
-        <div className="flex items-center justify-between pt-4 border-t border-border">
-          <button className="text-primary hover:underline text-sm font-medium">
-            Cập nhật thông tin
-          </button>
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={onClose}>
-              Hủy
-            </Button>
-            <Button onClick={handleSave}>
-              Lưu
-            </Button>
-          </div>
+        <div className="flex items-center justify-end gap-2 pt-4 border-t border-border">
+          <Button variant="outline" onClick={onClose} disabled={saving}>
+            Hủy
+          </Button>
+          <Button onClick={handleSave} disabled={saving}>
+            {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+            Lưu
+          </Button>
         </div>
       </DialogContent>
     </Dialog>

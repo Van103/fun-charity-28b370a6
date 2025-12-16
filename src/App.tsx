@@ -25,6 +25,7 @@ import Trading from "./pages/Trading";
 import Investment from "./pages/Investment";
 import Legal from "./pages/Legal";
 import Planet from "./pages/Planet";
+import Friends from "./pages/Friends";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -73,6 +74,7 @@ const App = () => (
               <Route path="/investment" element={<Investment />} />
               <Route path="/legal" element={<Legal />} />
               <Route path="/planet" element={<Planet />} />
+              <Route path="/friends" element={<Friends />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>

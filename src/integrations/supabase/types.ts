@@ -929,6 +929,45 @@ export type Database = {
         }
         Relationships: []
       }
+      profile_details: {
+        Row: {
+          created_at: string
+          detail_type: string
+          display_order: number | null
+          id: string
+          is_current: boolean | null
+          is_visible: boolean | null
+          subtitle: string | null
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          detail_type: string
+          display_order?: number | null
+          id?: string
+          is_current?: boolean | null
+          is_visible?: boolean | null
+          subtitle?: string | null
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          detail_type?: string
+          display_order?: number | null
+          id?: string
+          is_current?: boolean | null
+          is_visible?: boolean | null
+          subtitle?: string | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
