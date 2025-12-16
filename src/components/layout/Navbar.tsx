@@ -109,11 +109,21 @@ export function Navbar() {
     <nav className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border/50">
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
-          {/* Logo + Search */}
-          <div className="flex items-center gap-3">
+          {/* Logo + Home + Search */}
+          <div className="flex items-center gap-2">
             <Link to="/social" className="flex items-center gap-2 group">
               <Logo size="md" />
             </Link>
+            
+            {/* Home Button - Desktop */}
+            <Link
+              to="/social"
+              className="hidden lg:flex items-center justify-center w-10 h-10 rounded-full bg-muted/50 hover:bg-muted transition-colors"
+              title="Trang chủ"
+            >
+              <Home className="w-5 h-5 text-foreground" />
+            </Link>
+            
             <SearchBar />
           </div>
 

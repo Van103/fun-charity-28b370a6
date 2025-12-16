@@ -1,7 +1,5 @@
 import { useState, useEffect, useRef } from "react";
 import { Search, X, User, Newspaper, FileText } from "lucide-react";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { supabase } from "@/integrations/supabase/client";
@@ -17,26 +15,18 @@ interface SearchResult {
 }
 
 export function SearchBar() {
-  const [isExpanded, setIsExpanded] = useState(false);
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchResult[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isFocused, setIsFocused] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (isExpanded && inputRef.current) {
-      inputRef.current.focus();
-    }
-  }, [isExpanded]);
-
-  useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
-        setIsExpanded(false);
-        setQuery("");
-        setResults([]);
+        setIsFocused(false);
       }
     };
 
@@ -61,7 +51,6 @@ export function SearchBar() {
     const allResults: SearchResult[] = [];
 
     try {
-      // Search profiles
       const { data: profiles } = await supabase
         .from("profiles")
         .select("user_id, full_name, avatar_url")
@@ -79,7 +68,6 @@ export function SearchBar() {
         });
       }
 
-      // Search campaigns
       const { data: campaigns } = await supabase
         .from("campaigns")
         .select("id, title, short_description, cover_image_url")
@@ -99,7 +87,6 @@ export function SearchBar() {
         });
       }
 
-      // Search feed posts
       const { data: posts } = await supabase
         .from("feed_posts")
         .select("id, title, content")
@@ -127,9 +114,9 @@ export function SearchBar() {
   };
 
   const handleResultClick = (result: SearchResult) => {
-    setIsExpanded(false);
     setQuery("");
     setResults([]);
+    setIsFocused(false);
 
     switch (result.type) {
       case "user":
@@ -157,70 +144,45 @@ export function SearchBar() {
     }
   };
 
+  const showResults = isFocused && (query.length >= 2 || results.length > 0);
+
   return (
-    <div ref={containerRef} className="relative">
-      <AnimatePresence mode="wait">
-        {!isExpanded ? (
-          <motion.div
-            key="button"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+    <div ref={containerRef} className="relative hidden md:block">
+      {/* Facebook-style always visible search input */}
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+        <input
+          ref={inputRef}
+          type="text"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          onFocus={() => setIsFocused(true)}
+          placeholder="Tìm kiếm trên FUN Charity"
+          className="w-[240px] h-10 pl-10 pr-9 bg-muted/50 rounded-full text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:bg-background transition-all border-0"
+        />
+        {query && (
+          <button
+            onClick={() => {
+              setQuery("");
+              setResults([]);
+            }}
+            className="absolute right-3 top-1/2 -translate-y-1/2 p-1 hover:bg-muted rounded-full transition-colors"
           >
-            <Button
-              variant="ghost"
-              size="icon"
-              className="rounded-full bg-muted/50 hover:bg-muted"
-              onClick={() => setIsExpanded(true)}
-            >
-              <Search className="w-4 h-4" />
-            </Button>
-          </motion.div>
-        ) : (
-          <motion.div
-            key="input"
-            initial={{ width: 40, opacity: 0 }}
-            animate={{ width: 280, opacity: 1 }}
-            exit={{ width: 40, opacity: 0 }}
-            transition={{ duration: 0.2 }}
-            className="relative"
-          >
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input
-              ref={inputRef}
-              type="text"
-              placeholder="Tìm kiếm người dùng, chiến dịch..."
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              className="pl-9 pr-8 h-9 bg-muted/50 border-0 focus-visible:ring-1"
-            />
-            {query && (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="absolute right-1 top-1/2 -translate-y-1/2 w-6 h-6"
-                onClick={() => {
-                  setQuery("");
-                  setResults([]);
-                }}
-              >
-                <X className="w-3 h-3" />
-              </Button>
-            )}
-          </motion.div>
+            <X className="w-3 h-3 text-muted-foreground" />
+          </button>
         )}
-      </AnimatePresence>
+      </div>
 
       {/* Search Results Dropdown */}
       <AnimatePresence>
-        {isExpanded && (query.length >= 2 || results.length > 0) && (
+        {showResults && (
           <motion.div
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
-            className="absolute top-full left-0 right-0 mt-2 bg-popover border border-border rounded-lg shadow-lg overflow-hidden z-50"
+            className="absolute top-full left-0 mt-2 w-[320px] bg-popover border border-border rounded-xl shadow-lg overflow-hidden z-50"
           >
-            <ScrollArea className="max-h-[300px]">
+            <ScrollArea className="max-h-[400px]">
               {isLoading ? (
                 <div className="p-4 text-center text-muted-foreground text-sm">
                   Đang tìm kiếm...
@@ -230,20 +192,20 @@ export function SearchBar() {
                   Không tìm thấy kết quả
                 </div>
               ) : (
-                <div className="py-1">
+                <div className="py-2">
                   {results.map((result, index) => (
                     <div
                       key={`${result.type}-${result.id}-${index}`}
-                      className="px-3 py-2 hover:bg-muted cursor-pointer transition-colors flex items-center gap-3"
+                      className="px-3 py-2.5 hover:bg-muted cursor-pointer transition-colors flex items-center gap-3"
                       onClick={() => handleResultClick(result)}
                     >
                       {result.type === "user" && result.image ? (
-                        <Avatar className="w-8 h-8">
+                        <Avatar className="w-9 h-9">
                           <AvatarImage src={result.image} />
                           <AvatarFallback>{result.title[0]}</AvatarFallback>
                         </Avatar>
                       ) : (
-                        <div className="w-8 h-8 bg-muted rounded-full flex items-center justify-center">
+                        <div className="w-9 h-9 bg-muted rounded-full flex items-center justify-center">
                           {getIcon(result.type)}
                         </div>
                       )}
@@ -255,9 +217,6 @@ export function SearchBar() {
                           </p>
                         )}
                       </div>
-                      <span className="text-xs text-muted-foreground capitalize">
-                        {result.type === "user" ? "Người dùng" : result.type === "campaign" ? "Chiến dịch" : "Bài viết"}
-                      </span>
                     </div>
                   ))}
                 </div>
