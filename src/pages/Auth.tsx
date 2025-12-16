@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { signupSchema, loginSchema, getValidationError } from "@/lib/validation";
 import {
   Heart,
   Users,
@@ -53,10 +54,12 @@ const Auth = () => {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!email || !password) {
+    // Validate input with zod
+    const result = loginSchema.safeParse({ email, password });
+    if (!result.success) {
       toast({
-        title: "Lỗi",
-        description: "Vui lòng nhập email và mật khẩu",
+        title: "Lỗi xác thực",
+        description: getValidationError(result),
         variant: "destructive",
       });
       return;
@@ -65,8 +68,8 @@ const Auth = () => {
     setLoading(true);
     
     const { error } = await supabase.auth.signInWithPassword({
-      email: email.trim(),
-      password,
+      email: result.data.email.trim(),
+      password: result.data.password,
     });
 
     setLoading(false);
@@ -96,19 +99,12 @@ const Auth = () => {
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!email || !password || !fullName) {
+    // Validate input with zod
+    const result = signupSchema.safeParse({ email, password, fullName });
+    if (!result.success) {
       toast({
-        title: "Lỗi",
-        description: "Vui lòng điền đầy đủ thông tin",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (password.length < 6) {
-      toast({
-        title: "Lỗi",
-        description: "Mật khẩu phải có ít nhất 6 ký tự",
+        title: "Lỗi xác thực",
+        description: getValidationError(result),
         variant: "destructive",
       });
       return;
@@ -119,12 +115,12 @@ const Auth = () => {
     const redirectUrl = `${window.location.origin}/`;
     
     const { error } = await supabase.auth.signUp({
-      email: email.trim(),
-      password,
+      email: result.data.email.trim(),
+      password: result.data.password,
       options: {
         emailRedirectTo: redirectUrl,
         data: {
-          full_name: fullName,
+          full_name: result.data.fullName,
           role: userType,
         },
       },
