@@ -114,7 +114,7 @@ export function Navbar() {
             <Link to="/" className="flex items-center gap-2 group">
               <Logo size="md" />
             </Link>
-            <Link to="/social">
+            <Link to="/profile">
               <Button variant="ghost" size="sm" className="gap-1">
                 <Home className="w-4 h-4" />
                 Trang Chủ
@@ -223,23 +223,34 @@ export function Navbar() {
 
             <div className="flex items-center gap-2 pl-3 border-l border-border">
               {user ? (
-                <>
-                  <Link to="/profile" className="flex items-center gap-2 text-sm hover:opacity-80 transition-opacity cursor-pointer">
-                    <Avatar className="w-8 h-8 border-2 border-secondary/50">
-                      <AvatarImage src={avatarUrl || undefined} alt="Avatar" />
-                      <AvatarFallback className="bg-secondary/20">
-                        <UserIcon className="w-4 h-4 text-secondary" />
-                      </AvatarFallback>
-                    </Avatar>
-                    <span className="navbar-username max-w-[120px] truncate font-semibold">
-                      {user.user_metadata?.full_name || user.email?.split('@')[0]}
-                    </span>
-                  </Link>
-                  <Button variant="outline" size="sm" onClick={handleLogout}>
-                    <LogOut className="w-4 h-4 mr-1" />
-                    Đăng Xuất
-                  </Button>
-                </>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button className="flex items-center gap-2 text-sm hover:opacity-80 transition-opacity cursor-pointer">
+                      <Avatar className="w-8 h-8 border-2 border-secondary/50">
+                        <AvatarImage src={avatarUrl || undefined} alt="Avatar" />
+                        <AvatarFallback className="bg-secondary/20">
+                          <UserIcon className="w-4 h-4 text-secondary" />
+                        </AvatarFallback>
+                      </Avatar>
+                      <span className="navbar-username max-w-[120px] truncate font-semibold">
+                        {user.user_metadata?.full_name || user.email?.split('@')[0]}
+                      </span>
+                      <ChevronDown className="w-3 h-3" />
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-48">
+                    <DropdownMenuItem asChild>
+                      <Link to="/profile" className="flex items-center gap-2">
+                        <UserIcon className="w-4 h-4" />
+                        Hồ sơ cá nhân
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={handleLogout} className="text-destructive">
+                      <LogOut className="w-4 h-4 mr-2" />
+                      Đăng xuất
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               ) : (
                 <>
                   <Link to="/auth">
@@ -279,7 +290,7 @@ export function Navbar() {
             className="lg:hidden bg-background border-b border-border"
           >
             <div className="container mx-auto px-4 py-4 space-y-2">
-              <Link to="/social" onClick={() => setIsOpen(false)}>
+              <Link to="/profile" onClick={() => setIsOpen(false)}>
                 <Button variant="ghost" className="w-full justify-start gap-3">
                   <Home className="w-5 h-5" />
                   Trang Chủ
