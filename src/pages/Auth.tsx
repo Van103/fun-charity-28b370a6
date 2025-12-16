@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { signupSchema, loginSchema, getValidationError } from "@/lib/validation";
+import { signupSchema, loginSchema } from "@/lib/validation";
 import {
   Heart,
   Users,
@@ -59,7 +59,7 @@ const Auth = () => {
     if (!result.success) {
       toast({
         title: "Lỗi xác thực",
-        description: getValidationError(result),
+        description: result.error.errors[0]?.message || 'Dữ liệu không hợp lệ',
         variant: "destructive",
       });
       return;
@@ -104,7 +104,7 @@ const Auth = () => {
     if (!result.success) {
       toast({
         title: "Lỗi xác thực",
-        description: getValidationError(result),
+        description: result.error.errors[0]?.message || 'Dữ liệu không hợp lệ',
         variant: "destructive",
       });
       return;

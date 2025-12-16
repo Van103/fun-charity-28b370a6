@@ -31,7 +31,7 @@ export const loginSchema = z.object({
     .max(128, 'Mật khẩu quá dài')
 });
 
-// Helper to get first validation error message
-export const getValidationError = (result: z.SafeParseError<unknown>): string => {
+// Helper to get first validation error message from a failed parse result
+export const getValidationError = (result: { success: false; error: { errors: { message: string }[] } }): string => {
   return result.error.errors[0]?.message || 'Dữ liệu không hợp lệ';
 };
