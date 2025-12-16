@@ -13,11 +13,11 @@ import {
 } from "@/components/ui/popover";
 import { MotionToggle } from "@/components/background/MotionToggle";
 import { WalletConnectModal } from "@/components/wallet/WalletConnectModal";
-import { WalletQuickView } from "@/components/wallet/WalletQuickView";
+import { NotificationDropdown } from "./NotificationDropdown";
+import { SearchBar } from "./SearchBar";
 import {
   Menu,
   X,
-  Bell,
   Wallet,
   LayoutDashboard,
   MapPin,
@@ -109,17 +109,12 @@ export function Navbar() {
     <nav className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border/50">
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
-          {/* Logo + Home Button */}
-          <div className="flex items-center gap-2">
-            <Link to="/" className="flex items-center gap-2 group">
+          {/* Logo + Search */}
+          <div className="flex items-center gap-3">
+            <Link to="/social" className="flex items-center gap-2 group">
               <Logo size="md" />
             </Link>
-            <Link to="/social">
-              <Button variant="ghost" size="sm" className="gap-1">
-                <Home className="w-4 h-4" />
-                Trang Chủ
-              </Button>
-            </Link>
+            <SearchBar />
           </div>
 
           {/* Desktop Navigation */}
@@ -168,10 +163,7 @@ export function Navbar() {
 
           {/* Right Actions */}
           <div className="hidden md:flex items-center gap-3">
-            <Button variant="ghost" size="icon" className="relative">
-              <Bell className="w-5 h-5" />
-              <span className="absolute top-1 right-1 w-2 h-2 bg-secondary rounded-full animate-pulse" />
-            </Button>
+            <NotificationDropdown />
 
             {/* Settings Popover */}
             <Popover>
