@@ -7,12 +7,18 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, Send, ArrowLeft, Search, Image as ImageIcon, X } from "lucide-react";
+import { 
+  Loader2, Send, ArrowLeft, Search, Image as ImageIcon, X, 
+  Phone, Video, Users, Plus 
+} from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { vi } from "date-fns/locale";
 import { usePresence, getOnlineStatus } from "@/hooks/usePresence";
 import { useMessageNotifications } from "@/hooks/useMessageNotifications";
+import { useTypingIndicator } from "@/hooks/useTypingIndicator";
 import { ChatStickerPicker } from "@/components/chat/ChatStickerPicker";
+import { VideoCallModal } from "@/components/chat/VideoCallModal";
+import { CreateGroupModal } from "@/components/chat/CreateGroupModal";
 import { useToast } from "@/hooks/use-toast";
 
 interface Conversation {
@@ -20,11 +26,19 @@ interface Conversation {
   participant1_id: string;
   participant2_id: string;
   last_message_at: string;
+  is_group?: boolean;
+  name?: string;
+  created_by?: string;
   otherUser?: {
     user_id: string;
     full_name: string | null;
     avatar_url: string | null;
   };
+  participants?: Array<{
+    user_id: string;
+    full_name: string | null;
+    avatar_url: string | null;
+  }>;
   lastMessage?: string;
   isOnline?: boolean;
 }
@@ -37,6 +51,10 @@ interface Message {
   image_url: string | null;
   is_read: boolean;
   created_at: string;
+  senderProfile?: {
+    full_name: string | null;
+    avatar_url: string | null;
+  };
 }
 
 export default function Messages() {
@@ -54,6 +72,9 @@ export default function Messages() {
   const [searchQuery, setSearchQuery] = useState("");
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
+  const [showVideoCall, setShowVideoCall] = useState(false);
+  const [callType, setCallType] = useState<"video" | "audio">("video");
+  const [showCreateGroup, setShowCreateGroup] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -62,6 +83,12 @@ export default function Messages() {
   
   // Setup message notifications
   useMessageNotifications(currentUserId, activeConversation?.id || null);
+  
+  // Setup typing indicator
+  const { typingUsers, handleTyping, setTyping } = useTypingIndicator(
+    activeConversation?.id || null,
+    currentUserId
+  );
 
   // Scroll to bottom when messages change
   useEffect(() => {
@@ -96,16 +123,43 @@ export default function Messages() {
 
     if (!convos) return;
 
-    // Load other user profiles and online status
-    const otherUserIds = convos.map(c => 
-      c.participant1_id === userId ? c.participant2_id : c.participant1_id
-    );
-    
-    const onlineStatusMap = await getOnlineStatus(otherUserIds);
-
     const enrichedConvos = await Promise.all(
       convos.map(async (convo) => {
+        // Check if group chat
+        if (convo.is_group) {
+          // Load all participants for group
+          const { data: participants } = await supabase
+            .from("conversation_participants")
+            .select("user_id")
+            .eq("conversation_id", convo.id);
+
+          const participantIds = participants?.map(p => p.user_id).filter(id => id !== userId) || [];
+          
+          const { data: profiles } = await supabase
+            .from("profiles")
+            .select("user_id, full_name, avatar_url")
+            .in("user_id", participantIds);
+
+          const { data: lastMsg } = await supabase
+            .from("messages")
+            .select("content, image_url")
+            .eq("conversation_id", convo.id)
+            .order("created_at", { ascending: false })
+            .limit(1)
+            .maybeSingle();
+
+          return {
+            ...convo,
+            participants: profiles || [],
+            lastMessage: lastMsg?.image_url ? "📷 Hình ảnh" : lastMsg?.content || "",
+            isOnline: false
+          };
+        }
+
+        // Direct message
         const otherUserId = convo.participant1_id === userId ? convo.participant2_id : convo.participant1_id;
+        
+        const onlineStatusMap = await getOnlineStatus([otherUserId]);
         
         const { data: profile } = await supabase
           .from("profiles")
@@ -137,6 +191,7 @@ export default function Messages() {
     const { data: existing } = await supabase
       .from("conversations")
       .select("*")
+      .eq("is_group", false)
       .or(`and(participant1_id.eq.${myId},participant2_id.eq.${theirId}),and(participant1_id.eq.${theirId},participant2_id.eq.${myId})`)
       .maybeSingle();
 
@@ -145,11 +200,26 @@ export default function Messages() {
     if (!convo) {
       const { data: newConvo } = await supabase
         .from("conversations")
-        .insert({ participant1_id: myId, participant2_id: theirId })
+        .insert({ 
+          participant1_id: myId, 
+          participant2_id: theirId,
+          is_group: false
+        })
         .select()
         .single();
       
       convo = newConvo;
+
+      // Add participants for new conversation
+      if (newConvo) {
+        await supabase
+          .from("conversation_participants")
+          .insert([
+            { conversation_id: newConvo.id, user_id: myId },
+            { conversation_id: newConvo.id, user_id: theirId }
+          ]);
+      }
+      
       await loadConversations(myId);
     }
 
@@ -179,7 +249,26 @@ export default function Messages() {
       .eq("conversation_id", conversationId)
       .order("created_at", { ascending: true });
 
-    setMessages(data || []);
+    if (!data) {
+      setMessages([]);
+      return;
+    }
+
+    // For group chats, load sender profiles
+    const senderIds = [...new Set(data.map(m => m.sender_id))];
+    const { data: profiles } = await supabase
+      .from("profiles")
+      .select("user_id, full_name, avatar_url")
+      .in("user_id", senderIds);
+
+    const profileMap = new Map(profiles?.map(p => [p.user_id, p]) || []);
+
+    const enrichedMessages = data.map(msg => ({
+      ...msg,
+      senderProfile: profileMap.get(msg.sender_id)
+    }));
+
+    setMessages(enrichedMessages);
 
     if (currentUserId) {
       await supabase
@@ -224,15 +313,20 @@ export default function Messages() {
     setNewMessage(prev => prev + sticker);
   };
 
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setNewMessage(e.target.value);
+    handleTyping();
+  };
+
   const sendMessage = async () => {
     if ((!newMessage.trim() && !imageFile) || !activeConversation || !currentUserId) return;
     
     setIsSending(true);
+    setTyping(false);
     
     try {
       let imageUrl = null;
 
-      // Upload image if exists
       if (imageFile) {
         const fileExt = imageFile.name.split(".").pop();
         const filePath = `${currentUserId}/${Date.now()}.${fileExt}`;
@@ -279,6 +373,11 @@ export default function Messages() {
     } finally {
       setIsSending(false);
     }
+  };
+
+  const startCall = (type: "video" | "audio") => {
+    setCallType(type);
+    setShowVideoCall(true);
   };
 
   // Realtime subscription for messages
@@ -341,9 +440,24 @@ export default function Messages() {
     );
   }
 
-  const filteredConversations = conversations.filter(c => 
-    c.otherUser?.full_name?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredConversations = conversations.filter(c => {
+    if (c.is_group) {
+      return c.name?.toLowerCase().includes(searchQuery.toLowerCase());
+    }
+    return c.otherUser?.full_name?.toLowerCase().includes(searchQuery.toLowerCase());
+  });
+
+  const getConversationName = (convo: Conversation) => {
+    if (convo.is_group) return convo.name || "Nhóm chat";
+    return convo.otherUser?.full_name || "Người dùng";
+  };
+
+  const getConversationAvatar = (convo: Conversation) => {
+    if (convo.is_group) {
+      return null; // Will show group icon
+    }
+    return convo.otherUser?.avatar_url;
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -357,7 +471,17 @@ export default function Messages() {
           {/* Conversations List */}
           <div className={`w-full md:w-80 border-r border-border flex flex-col ${activeConversation ? 'hidden md:flex' : ''}`}>
             <div className="p-4 border-b border-border">
-              <h2 className="text-lg font-semibold mb-3">Tin nhắn</h2>
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="text-lg font-semibold">Tin nhắn</h2>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setShowCreateGroup(true)}
+                  title="Tạo nhóm chat"
+                >
+                  <Plus className="w-5 h-5" />
+                </Button>
+              </div>
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
@@ -384,17 +508,24 @@ export default function Messages() {
                     }`}
                   >
                     <div className="relative">
-                      <Avatar>
-                        <AvatarImage src={convo.otherUser?.avatar_url || ""} />
-                        <AvatarFallback>{convo.otherUser?.full_name?.charAt(0) || "U"}</AvatarFallback>
-                      </Avatar>
-                      {/* Online indicator */}
-                      <span className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-card ${
-                        convo.isOnline ? 'bg-green-500' : 'bg-muted-foreground'
-                      }`} />
+                      {convo.is_group ? (
+                        <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                          <Users className="w-5 h-5 text-primary" />
+                        </div>
+                      ) : (
+                        <Avatar>
+                          <AvatarImage src={getConversationAvatar(convo) || ""} />
+                          <AvatarFallback>{getConversationName(convo).charAt(0)}</AvatarFallback>
+                        </Avatar>
+                      )}
+                      {!convo.is_group && (
+                        <span className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-card ${
+                          convo.isOnline ? 'bg-green-500' : 'bg-muted-foreground'
+                        }`} />
+                      )}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="font-medium truncate">{convo.otherUser?.full_name || "Người dùng"}</p>
+                      <p className="font-medium truncate">{getConversationName(convo)}</p>
                       <p className="text-xs text-muted-foreground truncate">{convo.lastMessage}</p>
                     </div>
                     <span className="text-xs text-muted-foreground">
@@ -411,39 +542,80 @@ export default function Messages() {
             {activeConversation ? (
               <>
                 {/* Chat Header */}
-                <div className="p-4 border-b border-border flex items-center gap-3">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="md:hidden"
-                    onClick={() => setActiveConversation(null)}
-                  >
-                    <ArrowLeft className="w-5 h-5" />
-                  </Button>
-                  <Link to={`/user/${activeConversation.otherUser?.user_id}`} className="relative">
-                    <Avatar>
-                      <AvatarImage src={activeConversation.otherUser?.avatar_url || ""} />
-                      <AvatarFallback>{activeConversation.otherUser?.full_name?.charAt(0) || "U"}</AvatarFallback>
-                    </Avatar>
-                    <span className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-card ${
-                      activeConversation.isOnline ? 'bg-green-500' : 'bg-muted-foreground'
-                    }`} />
-                  </Link>
-                  <div>
-                    <Link 
-                      to={`/user/${activeConversation.otherUser?.user_id}`}
-                      className="font-medium hover:underline"
+                <div className="p-4 border-b border-border flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="md:hidden"
+                      onClick={() => setActiveConversation(null)}
                     >
-                      {activeConversation.otherUser?.full_name || "Người dùng"}
-                    </Link>
-                    <p className="text-xs text-muted-foreground">
-                      {activeConversation.isOnline ? (
-                        <span className="text-green-500">● Đang hoạt động</span>
-                      ) : (
-                        "Ngoại tuyến"
-                      )}
-                    </p>
+                      <ArrowLeft className="w-5 h-5" />
+                    </Button>
+                    
+                    {activeConversation.is_group ? (
+                      <>
+                        <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                          <Users className="w-5 h-5 text-primary" />
+                        </div>
+                        <div>
+                          <p className="font-medium">{activeConversation.name || "Nhóm chat"}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {(activeConversation.participants?.length || 0) + 1} thành viên
+                          </p>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <Link to={`/user/${activeConversation.otherUser?.user_id}`} className="relative">
+                          <Avatar>
+                            <AvatarImage src={activeConversation.otherUser?.avatar_url || ""} />
+                            <AvatarFallback>{activeConversation.otherUser?.full_name?.charAt(0) || "U"}</AvatarFallback>
+                          </Avatar>
+                          <span className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-card ${
+                            activeConversation.isOnline ? 'bg-green-500' : 'bg-muted-foreground'
+                          }`} />
+                        </Link>
+                        <div>
+                          <Link 
+                            to={`/user/${activeConversation.otherUser?.user_id}`}
+                            className="font-medium hover:underline"
+                          >
+                            {activeConversation.otherUser?.full_name || "Người dùng"}
+                          </Link>
+                          <p className="text-xs text-muted-foreground">
+                            {activeConversation.isOnline ? (
+                              <span className="text-green-500">● Đang hoạt động</span>
+                            ) : (
+                              "Ngoại tuyến"
+                            )}
+                          </p>
+                        </div>
+                      </>
+                    )}
                   </div>
+
+                  {/* Call buttons - only for direct messages */}
+                  {!activeConversation.is_group && activeConversation.otherUser && (
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => startCall("audio")}
+                        title="Gọi thoại"
+                      >
+                        <Phone className="w-5 h-5" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => startCall("video")}
+                        title="Gọi video"
+                      >
+                        <Video className="w-5 h-5" />
+                      </Button>
+                    </div>
+                  )}
                 </div>
 
                 {/* Messages */}
@@ -454,36 +626,66 @@ export default function Messages() {
                         key={msg.id}
                         className={`flex ${msg.sender_id === currentUserId ? 'justify-end' : 'justify-start'}`}
                       >
-                        <div
-                          className={`max-w-[70%] rounded-2xl overflow-hidden ${
-                            msg.sender_id === currentUserId
-                              ? 'bg-primary text-primary-foreground'
-                              : 'bg-muted'
-                          }`}
-                        >
-                          {/* Image message */}
-                          {msg.image_url && (
-                            <img 
-                              src={msg.image_url} 
-                              alt="Shared image" 
-                              className="max-w-full max-h-60 object-cover cursor-pointer"
-                              onClick={() => window.open(msg.image_url!, '_blank')}
-                            />
+                        {/* Show avatar for group messages from others */}
+                        {activeConversation.is_group && msg.sender_id !== currentUserId && (
+                          <Avatar className="w-8 h-8 mr-2 flex-shrink-0">
+                            <AvatarImage src={msg.senderProfile?.avatar_url || ""} />
+                            <AvatarFallback className="text-xs">
+                              {msg.senderProfile?.full_name?.charAt(0) || "U"}
+                            </AvatarFallback>
+                          </Avatar>
+                        )}
+                        <div className="flex flex-col">
+                          {/* Show sender name in group */}
+                          {activeConversation.is_group && msg.sender_id !== currentUserId && (
+                            <span className="text-xs text-muted-foreground mb-1">
+                              {msg.senderProfile?.full_name || "Người dùng"}
+                            </span>
                           )}
-                          {/* Text content */}
-                          {msg.content && (
-                            <div className="px-4 py-2">
-                              <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
-                            </div>
-                          )}
-                          <p className={`text-xs px-4 pb-2 ${
-                            msg.sender_id === currentUserId ? 'text-primary-foreground/70' : 'text-muted-foreground'
-                          }`}>
-                            {formatDistanceToNow(new Date(msg.created_at), { locale: vi })}
-                          </p>
+                          <div
+                            className={`max-w-[70%] rounded-2xl overflow-hidden ${
+                              msg.sender_id === currentUserId
+                                ? 'bg-primary text-primary-foreground'
+                                : 'bg-muted'
+                            }`}
+                          >
+                            {msg.image_url && (
+                              <img 
+                                src={msg.image_url} 
+                                alt="Shared image" 
+                                className="max-w-full max-h-60 object-cover cursor-pointer"
+                                onClick={() => window.open(msg.image_url!, '_blank')}
+                              />
+                            )}
+                            {msg.content && (
+                              <div className="px-4 py-2">
+                                <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                              </div>
+                            )}
+                            <p className={`text-xs px-4 pb-2 ${
+                              msg.sender_id === currentUserId ? 'text-primary-foreground/70' : 'text-muted-foreground'
+                            }`}>
+                              {formatDistanceToNow(new Date(msg.created_at), { locale: vi })}
+                            </p>
+                          </div>
                         </div>
                       </div>
                     ))}
+                    
+                    {/* Typing indicator */}
+                    {typingUsers.length > 0 && (
+                      <div className="flex items-center gap-2 text-muted-foreground text-sm">
+                        <div className="flex gap-1">
+                          <span className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
+                          <span className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
+                          <span className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
+                        </div>
+                        <span>
+                          {typingUsers.map(u => u.name).join(", ")} đang nhập...
+                        </span>
+                      </div>
+                    )}
+                    
                     <div ref={messagesEndRef} />
                   </div>
                 </ScrollArea>
@@ -532,7 +734,7 @@ export default function Messages() {
                     <Input
                       placeholder="Nhập tin nhắn..."
                       value={newMessage}
-                      onChange={(e) => setNewMessage(e.target.value)}
+                      onChange={handleInputChange}
                       disabled={isSending}
                       className="flex-1"
                     />
@@ -554,6 +756,35 @@ export default function Messages() {
           </div>
         </div>
       </main>
+
+      {/* Video/Audio Call Modal */}
+      {showVideoCall && activeConversation?.otherUser && currentUserId && (
+        <VideoCallModal
+          open={showVideoCall}
+          onClose={() => setShowVideoCall(false)}
+          conversationId={activeConversation.id}
+          currentUserId={currentUserId}
+          otherUser={activeConversation.otherUser}
+          callType={callType}
+        />
+      )}
+
+      {/* Create Group Modal */}
+      {currentUserId && (
+        <CreateGroupModal
+          open={showCreateGroup}
+          onClose={() => setShowCreateGroup(false)}
+          currentUserId={currentUserId}
+          onGroupCreated={async (conversationId) => {
+            await loadConversations(currentUserId);
+            const newConvo = conversations.find(c => c.id === conversationId);
+            if (newConvo) {
+              setActiveConversation(newConvo);
+              await loadMessages(conversationId);
+            }
+          }}
+        />
+      )}
     </div>
   );
 }

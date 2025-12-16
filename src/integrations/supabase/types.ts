@@ -83,6 +83,47 @@ export type Database = {
         }
         Relationships: []
       }
+      call_sessions: {
+        Row: {
+          call_type: string
+          caller_id: string
+          conversation_id: string
+          ended_at: string | null
+          id: string
+          signaling_data: Json | null
+          started_at: string
+          status: string
+        }
+        Insert: {
+          call_type: string
+          caller_id: string
+          conversation_id: string
+          ended_at?: string | null
+          id?: string
+          signaling_data?: Json | null
+          started_at?: string
+          status?: string
+        }
+        Update: {
+          call_type?: string
+          caller_id?: string
+          conversation_id?: string
+          ended_at?: string | null
+          id?: string
+          signaling_data?: Json | null
+          started_at?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "call_sessions_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       campaign_audits: {
         Row: {
           action: string
@@ -320,25 +361,63 @@ export type Database = {
           },
         ]
       }
+      conversation_participants: {
+        Row: {
+          conversation_id: string
+          id: string
+          joined_at: string
+          user_id: string
+        }
+        Insert: {
+          conversation_id: string
+          id?: string
+          joined_at?: string
+          user_id: string
+        }
+        Update: {
+          conversation_id?: string
+          id?: string
+          joined_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversation_participants_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       conversations: {
         Row: {
           created_at: string
+          created_by: string | null
           id: string
+          is_group: boolean | null
           last_message_at: string | null
+          name: string | null
           participant1_id: string
           participant2_id: string
         }
         Insert: {
           created_at?: string
+          created_by?: string | null
           id?: string
+          is_group?: boolean | null
           last_message_at?: string | null
+          name?: string | null
           participant1_id: string
           participant2_id: string
         }
         Update: {
           created_at?: string
+          created_by?: string | null
           id?: string
+          is_group?: boolean | null
           last_message_at?: string | null
+          name?: string | null
           participant1_id?: string
           participant2_id?: string
         }
