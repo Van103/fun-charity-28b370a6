@@ -38,6 +38,7 @@ export function CreatePostBox({ profile, onPostCreated }: CreatePostBoxProps) {
   const [content, setContent] = useState("");
   const [mediaFiles, setMediaFiles] = useState<File[]>([]);
   const [mediaPreviews, setMediaPreviews] = useState<string[]>([]);
+  const [aiGeneratedImage, setAiGeneratedImage] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [showAdvancedModal, setShowAdvancedModal] = useState(false);
   const [showAiModal, setShowAiModal] = useState(false);
@@ -60,11 +61,19 @@ export function CreatePostBox({ profile, onPostCreated }: CreatePostBoxProps) {
 
       if (data?.content) {
         setContent(data.content);
+        
+        // Handle AI-generated image
+        if (data?.image) {
+          setAiGeneratedImage(data.image);
+        }
+        
         setShowAiModal(false);
         setAiTopic("");
         toast({
           title: "Tạo nội dung thành công! ✨",
-          description: "AI đã tạo nội dung cho bạn. Bạn có thể chỉnh sửa trước khi đăng.",
+          description: data?.image 
+            ? "AI đã tạo nội dung và hình ảnh cho bạn. Bạn có thể chỉnh sửa trước khi đăng."
+            : "AI đã tạo nội dung cho bạn. Bạn có thể chỉnh sửa trước khi đăng.",
         });
       }
     } catch (error: any) {
@@ -77,6 +86,10 @@ export function CreatePostBox({ profile, onPostCreated }: CreatePostBoxProps) {
     } finally {
       setIsGenerating(false);
     }
+  };
+
+  const removeAiImage = () => {
+    setAiGeneratedImage(null);
   };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>, type: "image" | "video") => {
@@ -113,6 +126,13 @@ export function CreatePostBox({ profile, onPostCreated }: CreatePostBoxProps) {
     setMediaPreviews(prev => prev.filter((_, i) => i !== index));
   };
 
+  // Convert base64 to File for upload
+  const base64ToFile = async (base64: string, filename: string): Promise<File> => {
+    const res = await fetch(base64);
+    const blob = await res.blob();
+    return new File([blob], filename, { type: blob.type || 'image/png' });
+  };
+
   const uploadFiles = async (): Promise<string[]> => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
@@ -121,6 +141,7 @@ export function CreatePostBox({ profile, onPostCreated }: CreatePostBoxProps) {
 
     const uploadedUrls: string[] = [];
     
+    // Upload regular media files
     for (const file of mediaFiles) {
       const fileExt = file.name.split(".").pop();
       const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
@@ -141,11 +162,32 @@ export function CreatePostBox({ profile, onPostCreated }: CreatePostBoxProps) {
       uploadedUrls.push(urlData.publicUrl);
     }
 
+    // Upload AI-generated image if exists
+    if (aiGeneratedImage) {
+      const aiFile = await base64ToFile(aiGeneratedImage, `ai-generated-${Date.now()}.png`);
+      const fileName = `${Date.now()}-ai-generated.png`;
+      const filePath = `${user.id}/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from("post-images")
+        .upload(filePath, aiFile);
+
+      if (uploadError) {
+        console.error("Failed to upload AI image:", uploadError);
+      } else {
+        const { data: urlData } = supabase.storage
+          .from("post-images")
+          .getPublicUrl(filePath);
+
+        uploadedUrls.push(urlData.publicUrl);
+      }
+    }
+
     return uploadedUrls;
   };
 
   const handleSubmit = async () => {
-    if (!content.trim() && mediaFiles.length === 0) {
+    if (!content.trim() && mediaFiles.length === 0 && !aiGeneratedImage) {
       toast({
         title: "Nội dung trống",
         description: "Vui lòng nhập nội dung hoặc thêm hình ảnh",
@@ -158,7 +200,7 @@ export function CreatePostBox({ profile, onPostCreated }: CreatePostBoxProps) {
 
     try {
       let mediaUrls: string[] = [];
-      if (mediaFiles.length > 0) {
+      if (mediaFiles.length > 0 || aiGeneratedImage) {
         mediaUrls = await uploadFiles();
       }
 
@@ -171,6 +213,7 @@ export function CreatePostBox({ profile, onPostCreated }: CreatePostBoxProps) {
       setContent("");
       setMediaFiles([]);
       setMediaPreviews([]);
+      setAiGeneratedImage(null);
       onPostCreated?.();
     } catch (error) {
       console.error("Error creating post:", error);
@@ -180,7 +223,7 @@ export function CreatePostBox({ profile, onPostCreated }: CreatePostBoxProps) {
   };
 
   const isSubmitting = isUploading || createPost.isPending;
-  const canSubmit = content.trim() || mediaFiles.length > 0;
+  const canSubmit = content.trim() || mediaFiles.length > 0 || aiGeneratedImage;
 
   return (
     <>
@@ -213,8 +256,28 @@ export function CreatePostBox({ profile, onPostCreated }: CreatePostBoxProps) {
         </div>
 
         {/* Media Previews */}
-        {mediaPreviews.length > 0 && (
+        {(mediaPreviews.length > 0 || aiGeneratedImage) && (
           <div className="px-4 pb-3 grid grid-cols-2 sm:grid-cols-3 gap-2">
+            {/* AI Generated Image */}
+            {aiGeneratedImage && (
+              <div className="relative aspect-square rounded-xl overflow-hidden bg-muted border-2 border-primary/50">
+                <img src={aiGeneratedImage} alt="AI Generated" className="w-full h-full object-cover" />
+                <div className="absolute top-2 left-2 bg-primary/90 text-primary-foreground text-xs px-2 py-1 rounded-full flex items-center gap-1">
+                  <Sparkles className="w-3 h-3" />
+                  AI
+                </div>
+                <Button
+                  variant="destructive"
+                  size="icon"
+                  className="absolute top-2 right-2 h-6 w-6 rounded-full shadow-lg"
+                  onClick={removeAiImage}
+                  disabled={isSubmitting}
+                >
+                  <X className="w-3 h-3" />
+                </Button>
+              </div>
+            )}
+            {/* User uploaded media */}
             {mediaPreviews.map((preview, index) => (
               <div key={index} className="relative aspect-square rounded-xl overflow-hidden bg-muted border border-border">
                 {mediaFiles[index]?.type.startsWith("video/") ? (

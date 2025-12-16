@@ -27,7 +27,9 @@ Nội dung phải ngắn gọn (tối đa 200 từ), có emoji phù hợp và k�
       ? `Viết một bài đăng về chủ đề: ${topic}`
       : `Viết một bài đăng truyền cảm hứng về hoạt động từ thiện, giúp đỡ cộng đồng`;
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    // Step 1: Generate text content
+    console.log("Generating text content...");
+    const textResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
         Authorization: `Bearer ${LOVABLE_API_KEY}`,
@@ -42,28 +44,67 @@ Nội dung phải ngắn gọn (tối đa 200 từ), có emoji phù hợp và k�
       }),
     });
 
-    if (!response.ok) {
-      if (response.status === 429) {
+    if (!textResponse.ok) {
+      if (textResponse.status === 429) {
         return new Response(JSON.stringify({ error: "Quá nhiều yêu cầu, vui lòng thử lại sau." }), {
           status: 429,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-      if (response.status === 402) {
+      if (textResponse.status === 402) {
         return new Response(JSON.stringify({ error: "Cần nạp thêm credits để sử dụng AI." }), {
           status: 402,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-      const errorText = await response.text();
-      console.error("AI gateway error:", response.status, errorText);
+      const errorText = await textResponse.text();
+      console.error("AI gateway error (text):", textResponse.status, errorText);
       throw new Error("AI gateway error");
     }
 
-    const data = await response.json();
-    const generatedContent = data.choices?.[0]?.message?.content || "";
+    const textData = await textResponse.json();
+    const generatedContent = textData.choices?.[0]?.message?.content || "";
+    console.log("Text content generated successfully");
 
-    return new Response(JSON.stringify({ content: generatedContent }), {
+    // Step 2: Generate image based on the content
+    console.log("Generating image...");
+    const imagePrompt = topic 
+      ? `Create a beautiful, heartwarming illustration for a Vietnamese charity social media post about: ${topic}. Style: warm, hopeful, colorful, showing people helping each other, community spirit. No text in the image.`
+      : `Create a beautiful, heartwarming illustration for a Vietnamese charity social media post about helping the community. Style: warm, hopeful, colorful, showing people helping each other, community spirit. No text in the image.`;
+
+    const imageResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "google/gemini-2.5-flash-image-preview",
+        messages: [
+          { role: "user", content: imagePrompt },
+        ],
+        modalities: ["image", "text"],
+      }),
+    });
+
+    let generatedImage = null;
+    
+    if (imageResponse.ok) {
+      const imageData = await imageResponse.json();
+      const imageUrl = imageData.choices?.[0]?.message?.images?.[0]?.image_url?.url;
+      if (imageUrl) {
+        generatedImage = imageUrl;
+        console.log("Image generated successfully");
+      }
+    } else {
+      console.error("Image generation failed:", imageResponse.status);
+      // Continue without image if image generation fails
+    }
+
+    return new Response(JSON.stringify({ 
+      content: generatedContent,
+      image: generatedImage 
+    }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error) {

@@ -115,15 +115,6 @@ export function Navbar() {
               <Logo size="md" />
             </Link>
             
-            {/* Home Button - Desktop */}
-            <Link
-              to="/social"
-              className="hidden lg:flex items-center justify-center w-10 h-10 rounded-full bg-muted/50 hover:bg-muted transition-colors"
-              title="Trang chủ"
-            >
-              <Home className="w-5 h-5 text-foreground" />
-            </Link>
-            
             <SearchBar />
           </div>
 
