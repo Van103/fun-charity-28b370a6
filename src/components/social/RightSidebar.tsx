@@ -65,11 +65,11 @@ interface HonorStat {
 }
 
 const honorStats: HonorStat[] = [
-  { label: "Tổng Quyên Góp USDT", value: "5M" },
-  { label: "Tổng Quyên Góp Camly", value: "10M" },
-  { label: "Tổng VND", value: "500M" },
-  { label: "Tổng Số Lần Quyên Góp", value: "1.2K" },
-  { label: "Tổng Số Người Quyên Góp", value: "5.7K" },
+  { label: "Total USDT Donations", value: "5M" },
+  { label: "Total Camly Donations", value: "10M" },
+  { label: "Total VND", value: "500M" },
+  { label: "Total Donations", value: "1.2K" },
+  { label: "Total Donors", value: "5.7K" },
 ];
 
 export function RightSidebar() {
@@ -156,11 +156,11 @@ export function RightSidebar() {
       <div className="glass-card p-4 hover-luxury-glow">
         <div className="flex items-center gap-2 mb-3">
           <Cake className="w-4 h-4 text-gold-champagne" />
-          <h3 className="text-sm font-semibold text-foreground">Sinh nhật</h3>
+          <h3 className="text-sm font-semibold text-foreground">Birthdays</h3>
         </div>
         <p className="text-sm text-muted-foreground">
-          Hôm nay là sinh nhật của <span className="font-medium text-foreground">Nhật Thống</span> và{" "}
-          <span className="text-primary cursor-pointer hover:underline">6 người khác</span>
+          Today is the birthday of <span className="font-medium text-foreground">Nhật Thống</span> and{" "}
+          <span className="text-primary cursor-pointer hover:underline">6 others</span>
         </p>
       </div>
 
@@ -168,7 +168,7 @@ export function RightSidebar() {
       <div className="glass-card p-4 hover-luxury-glow">
         <div className="flex items-center gap-2 mb-3">
           <Users className="w-4 h-4 text-primary" />
-          <h3 className="text-sm font-semibold text-foreground">Người liên hệ</h3>
+          <h3 className="text-sm font-semibold text-foreground">Contacts</h3>
         </div>
         <div className="space-y-1">
           {contacts.map((name, index) => (
@@ -194,20 +194,20 @@ export function RightSidebar() {
       <div className="glass-card p-4 hover-luxury-glow">
         <div className="flex items-center gap-2 mb-3">
           <MessageCircle className="w-4 h-4 text-primary" />
-          <h3 className="text-sm font-semibold text-foreground">Cuộc trò chuyện nhóm</h3>
+          <h3 className="text-sm font-semibold text-foreground">Group Chats</h3>
         </div>
         <div className="space-y-1">
           <div className="flex items-center gap-3 p-2 -mx-2 rounded-xl hover:bg-muted/50 cursor-pointer transition-colors">
             <Avatar className="w-8 h-8">
-              <AvatarFallback className="bg-gradient-to-br from-purple-soft to-purple-light text-white text-xs">N</AvatarFallback>
+              <AvatarFallback className="bg-gradient-to-br from-purple-soft to-purple-light text-white text-xs">M</AvatarFallback>
             </Avatar>
-            <span className="text-sm text-foreground">Nhóm Phụng Sự Mẹ Trái Đất</span>
+            <span className="text-sm text-foreground">Mother Earth Service Group</span>
           </div>
           <button className="flex items-center gap-3 p-2 -mx-2 rounded-xl hover:bg-muted/50 w-full text-left transition-colors">
             <div className="w-8 h-8 rounded-full border-2 border-dashed border-muted-foreground/50 flex items-center justify-center">
               <Plus className="w-4 h-4 text-muted-foreground" />
             </div>
-            <span className="text-sm text-muted-foreground">Thêm nhóm mới</span>
+            <span className="text-sm text-muted-foreground">Add new group</span>
           </button>
         </div>
       </div>
