@@ -10,9 +10,14 @@ const ALLOWED_ORIGINS = [
 ];
 
 function getCorsHeaders(origin: string | null) {
-  const allowedOrigin = ALLOWED_ORIGINS.includes(origin || '') 
-    ? origin 
-    : ALLOWED_ORIGINS[0];
+  // Allow all subdomains of lovable.app (including preview URLs)
+  const isLovableOrigin = origin && (
+    ALLOWED_ORIGINS.includes(origin) ||
+    origin.endsWith('.lovable.app') ||
+    origin.endsWith('.lovableproject.com')
+  );
+  
+  const allowedOrigin = isLovableOrigin ? origin : ALLOWED_ORIGINS[0];
   
   return {
     'Access-Control-Allow-Origin': allowedOrigin!,
