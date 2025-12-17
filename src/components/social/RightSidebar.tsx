@@ -79,23 +79,23 @@ export function RightSidebar() {
   return (
     <aside className="w-80 shrink-0 space-y-4 sticky top-20">
       {/* Honor Board */}
-      <div className="rounded-2xl overflow-hidden relative" style={{ backgroundImage: 'url(/images/purple-galaxy-bg.jpg)', backgroundSize: 'cover', backgroundPosition: 'center' }}>
-        <div className="absolute inset-0 bg-black/30 backdrop-blur-[1px]" />
-        <div className="relative p-3 border-b border-white/20">
-          <h3 className="text-xs font-bold text-white text-center tracking-wider drop-shadow-sm">
+      <div className="rounded-2xl overflow-hidden relative" style={{ backgroundImage: 'url(/images/purple-sparkle-bg.jpg)', backgroundSize: 'cover', backgroundPosition: 'center' }}>
+        <div className="absolute inset-0 bg-black/40 backdrop-blur-[1px]" />
+        <div className="relative p-3 border-b border-secondary/30">
+          <h3 className="text-sm font-bold text-secondary text-center tracking-wider drop-shadow-lg">
             ✨ HONOR BOARD ✨
           </h3>
         </div>
         <div className="relative p-3 space-y-2">
           {honorStats.map((stat) => (
             <div key={stat.label} className="flex items-center gap-2">
-              <span className="text-[10px] text-white/80 w-16 shrink-0 font-medium">{stat.label}</span>
-              <div className="flex-1 h-5 bg-black/20 rounded overflow-hidden backdrop-blur-sm">
+              <span className="text-xs text-secondary font-semibold w-20 shrink-0 drop-shadow-md">{stat.label}</span>
+              <div className="flex-1 h-6 bg-black/30 rounded overflow-hidden backdrop-blur-sm border border-secondary/20">
                 <div 
-                  className="h-full bg-gradient-to-r from-white/30 to-white/50 flex items-center px-2"
+                  className="h-full bg-gradient-to-r from-secondary/40 to-secondary/60 flex items-center px-2"
                   style={{ width: `${stat.barWidth}%` }}
                 >
-                  <span className="text-[9px] font-mono text-white tracking-widest font-bold drop-shadow-sm">
+                  <span className="text-xs font-mono text-secondary tracking-widest font-bold drop-shadow-lg">
                     {stat.value}
                   </span>
                 </div>
@@ -106,44 +106,44 @@ export function RightSidebar() {
       </div>
 
       {/* Top Ranking */}
-      <div className="rounded-2xl overflow-hidden relative" style={{ backgroundImage: 'url(/images/purple-galaxy-bg.jpg)', backgroundSize: 'cover', backgroundPosition: 'center' }}>
-        <div className="absolute inset-0 bg-black/30 backdrop-blur-[1px]" />
-        <div className="relative p-3 border-b border-white/20">
-          <h3 className="text-xs font-bold text-white text-center tracking-wider drop-shadow-sm">
+      <div className="rounded-2xl overflow-hidden relative" style={{ backgroundImage: 'url(/images/purple-sparkle-bg.jpg)', backgroundSize: 'cover', backgroundPosition: 'center' }}>
+        <div className="absolute inset-0 bg-black/40 backdrop-blur-[1px]" />
+        <div className="relative p-3 border-b border-secondary/30">
+          <h3 className="text-sm font-bold text-secondary text-center tracking-wider drop-shadow-lg">
             👑 TOP RANKING 👑
           </h3>
         </div>
-        <ScrollArea className="h-[300px]">
+        <ScrollArea className="h-[320px]">
           <div className="relative p-2 space-y-1">
             {topRankers.map((ranker) => (
               <div
                 key={ranker.rank}
-                className="flex items-center gap-2 px-2 py-2 rounded-xl hover:bg-white/10 transition-colors cursor-pointer"
+                className="flex items-center gap-2 px-2 py-2 rounded-xl hover:bg-secondary/10 transition-colors cursor-pointer"
               >
                 {/* Rank badge with avatar */}
                 <div className="relative">
-                  <div className="p-0.5 rounded-full bg-gradient-to-br from-white/50 to-white/30">
-                    <Avatar className="w-9 h-9 border-2 border-white/30">
+                  <div className="p-0.5 rounded-full bg-gradient-to-br from-secondary/60 to-secondary/30">
+                    <Avatar className="w-10 h-10 border-2 border-secondary/40">
                       <AvatarImage src={ranker.avatar} />
-                      <AvatarFallback className={`bg-gradient-to-br ${getAvatarGradient(ranker.name)} text-white text-xs font-medium`}>
+                      <AvatarFallback className={`bg-gradient-to-br ${getAvatarGradient(ranker.name)} text-white text-sm font-medium`}>
                         {ranker.name.charAt(0)}
                       </AvatarFallback>
                     </Avatar>
                   </div>
-                  <div className={`absolute -bottom-1 -left-1 w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold shadow-sm ${getRankBadgeStyle(ranker.rank)}`}>
+                  <div className={`absolute -bottom-1 -left-1 w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold shadow-md ${getRankBadgeStyle(ranker.rank)}`}>
                     #{ranker.rank}
                   </div>
                 </div>
                 <div className="flex-1 min-w-0 ml-1">
                   <div className="flex items-center gap-1">
-                    <span className="text-xs font-semibold truncate text-white">{ranker.name}</span>
+                    <span className="text-sm font-bold truncate text-secondary drop-shadow-md">{ranker.name}</span>
                     {ranker.verified && (
-                      <span className="text-secondary text-[10px]">✓</span>
+                      <span className="text-secondary text-xs">✓</span>
                     )}
                   </div>
-                  <span className="text-[10px] text-white/70">{ranker.location}</span>
+                  <span className="text-xs text-secondary/80 drop-shadow-sm">{ranker.location}</span>
                 </div>
-                <span className="text-xs font-bold text-secondary shrink-0 drop-shadow-sm">
+                <span className="text-sm font-bold text-secondary shrink-0 drop-shadow-lg">
                   {ranker.amount}
                 </span>
               </div>
