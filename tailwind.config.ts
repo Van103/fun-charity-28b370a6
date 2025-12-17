@@ -75,11 +75,12 @@ export default {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
-        // Brand specific colors - Luxury Purple + Champagne Gold
+        // Brand specific colors - Vibrant Energy Purple + Champagne Gold
         purple: {
-          soft: "#7A5AF8",
-          light: "#B9A6FF",
-          dark: "#5B3FD9",
+          soft: "#9333EA",
+          light: "#A855F7",
+          dark: "#7C3AED",
+          vibrant: "#8B5CF6",
         },
         gold: {
           champagne: "#F5C77A",
@@ -89,7 +90,12 @@ export default {
         // Additional luxury colors
         lavender: {
           soft: "#F5F3FF",
-          DEFAULT: "#E6E1FA",
+          DEFAULT: "#E9E3FF",
+        },
+        violet: {
+          energy: "#9333EA",
+          bright: "#A855F7",
+          deep: "#7C3AED",
         },
       },
       borderRadius: {
@@ -103,6 +109,9 @@ export default {
       boxShadow: {
         'glow': 'var(--shadow-glow)',
         'glow-purple': 'var(--shadow-glow-purple)',
+        'purple-sm': '0 2px 8px hsl(270 91% 56% / 0.25)',
+        'purple-md': '0 4px 14px hsl(270 91% 56% / 0.35)',
+        'purple-lg': '0 8px 24px hsl(270 91% 56% / 0.4)',
       },
       keyframes: {
         "accordion-down": {
@@ -137,6 +146,10 @@ export default {
           "0%, 100%": { opacity: "0.3", transform: "scale(0.8)" },
           "50%": { opacity: "1", transform: "scale(1.2)" },
         },
+        "pulse-glow": {
+          "0%, 100%": { boxShadow: "0 0 15px hsl(270 91% 56% / 0.4)" },
+          "50%": { boxShadow: "0 0 25px hsl(270 91% 56% / 0.6)" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -147,6 +160,7 @@ export default {
         "slide-in-right": "slide-in-right 0.4s ease-out forwards",
         "shimmer": "shimmer 3s ease-in-out infinite",
         "sparkle": "sparkle 2s ease-in-out infinite",
+        "pulse-glow": "pulse-glow 2s ease-in-out infinite",
       },
     },
   },

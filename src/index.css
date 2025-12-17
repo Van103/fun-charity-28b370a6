@@ -11,121 +11,121 @@
 
 @layer base {
   :root {
-    /* Luxury Color System - Soft Royal Purple + Champagne Gold */
-    --background: 252 100% 98%;
-    --foreground: 252 60% 20%;
+    /* Vibrant Energy Purple Color System */
+    --background: 270 100% 99%;
+    --foreground: 270 50% 15%;
 
     --card: 0 0% 100%;
-    --card-foreground: 252 60% 20%;
+    --card-foreground: 270 50% 15%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 252 60% 20%;
+    --popover-foreground: 270 50% 15%;
 
-    /* Primary - Royal Purple #7A5AF8 */
-    --primary: 252 91% 66%;
+    /* Primary - Vibrant Energy Purple #9333EA / #8B5CF6 */
+    --primary: 270 91% 56%;
     --primary-foreground: 0 0% 100%;
-    --primary-light: 252 85% 75%;
-    --primary-dark: 252 91% 55%;
+    --primary-light: 270 85% 68%;
+    --primary-dark: 270 91% 48%;
 
     /* Secondary - Champagne Gold #F5C77A */
     --secondary: 38 86% 72%;
-    --secondary-foreground: 252 60% 20%;
+    --secondary-foreground: 270 50% 15%;
     --secondary-light: 38 86% 82%;
     --secondary-dark: 38 86% 62%;
 
     /* Accent - Warm Champagne */
     --accent: 38 86% 72%;
-    --accent-foreground: 252 60% 20%;
+    --accent-foreground: 270 50% 15%;
 
     /* Muted - Soft Lavender */
-    --muted: 252 30% 96%;
-    --muted-foreground: 252 20% 50%;
+    --muted: 270 40% 96%;
+    --muted-foreground: 270 20% 45%;
 
     /* Status colors */
     --success: 152 60% 42%;
     --success-foreground: 0 0% 100%;
     --warning: 38 92% 55%;
-    --warning-foreground: 252 60% 20%;
+    --warning-foreground: 270 50% 15%;
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
 
-    /* Light border - #E6E1FA */
-    --border: 252 40% 92%;
-    --input: 252 40% 92%;
-    --ring: 252 91% 66%;
+    /* Light border */
+    --border: 270 30% 92%;
+    --input: 270 30% 92%;
+    --ring: 270 91% 56%;
 
     --radius: 0.75rem;
 
-    /* Luxury Gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(252 91% 66%) 0%, hsl(252 85% 75%) 60%, hsl(38 86% 72%) 100%);
+    /* Vibrant Gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(270 91% 56%) 0%, hsl(270 85% 68%) 50%, hsl(38 86% 72%) 100%);
     --gradient-secondary: linear-gradient(135deg, hsl(38 86% 72%), hsl(38 86% 82%));
     --gradient-gold: linear-gradient(135deg, hsl(38 86% 70%), hsl(38 86% 80%), hsl(38 86% 72%));
-    --gradient-luxury: linear-gradient(135deg, hsl(252 91% 66%) 0%, hsl(252 85% 75%) 60%, hsl(38 86% 72%) 100%);
-    --gradient-hero: linear-gradient(135deg, hsl(252 100% 98%), hsl(252 50% 95%));
-    --gradient-card: linear-gradient(180deg, hsl(0 0% 100%), hsl(252 100% 99%));
+    --gradient-luxury: linear-gradient(135deg, hsl(270 91% 56%) 0%, hsl(270 85% 68%) 50%, hsl(38 86% 72%) 100%);
+    --gradient-hero: linear-gradient(135deg, hsl(270 100% 99%), hsl(270 50% 97%));
+    --gradient-card: linear-gradient(180deg, hsl(0 0% 100%), hsl(270 100% 99%));
     --gradient-glass: linear-gradient(135deg, hsl(0 0% 100% / 0.95), hsl(0 0% 100% / 0.85));
     --gradient-shimmer: linear-gradient(90deg, transparent, hsl(38 86% 72% / 0.4), transparent);
 
     /* Soft Shadows */
-    --shadow-sm: 0 1px 3px hsl(252 60% 20% / 0.04);
+    --shadow-sm: 0 1px 3px hsl(270 50% 15% / 0.04);
     --shadow-md: 0 4px 16px hsl(0 0% 0% / 0.05);
     --shadow-lg: 0 8px 24px hsl(0 0% 0% / 0.08);
     --shadow-xl: 0 16px 48px hsl(0 0% 0% / 0.1);
     --shadow-glow: 0 0 40px hsl(38 86% 72% / 0.4);
-    --shadow-glow-purple: 0 0 40px hsl(252 91% 66% / 0.3);
+    --shadow-glow-purple: 0 0 40px hsl(270 91% 56% / 0.35);
 
-    /* Sidebar - Clean White */
+    /* Sidebar - Clean White with Purple accent */
     --sidebar-background: 0 0% 100%;
-    --sidebar-foreground: 252 60% 20%;
-    --sidebar-primary: 252 91% 66%;
+    --sidebar-foreground: 270 50% 15%;
+    --sidebar-primary: 270 91% 56%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 252 100% 98%;
-    --sidebar-accent-foreground: 252 60% 20%;
-    --sidebar-border: 252 40% 92%;
-    --sidebar-ring: 252 91% 66%;
+    --sidebar-accent: 270 100% 97%;
+    --sidebar-accent-foreground: 270 50% 15%;
+    --sidebar-border: 270 30% 92%;
+    --sidebar-ring: 270 91% 56%;
   }
 
   .dark {
-    --background: 252 50% 6%;
+    --background: 270 50% 6%;
     --foreground: 38 50% 95%;
 
-    --card: 252 50% 10%;
+    --card: 270 50% 10%;
     --card-foreground: 38 50% 95%;
 
-    --popover: 252 50% 10%;
+    --popover: 270 50% 10%;
     --popover-foreground: 38 50% 95%;
 
-    --primary: 252 91% 70%;
-    --primary-foreground: 252 50% 10%;
+    --primary: 270 91% 65%;
+    --primary-foreground: 270 50% 10%;
 
     --secondary: 38 86% 72%;
-    --secondary-foreground: 252 50% 10%;
+    --secondary-foreground: 270 50% 10%;
 
     --accent: 38 86% 72%;
-    --accent-foreground: 252 50% 10%;
+    --accent-foreground: 270 50% 10%;
 
-    --muted: 252 40% 15%;
-    --muted-foreground: 252 20% 65%;
+    --muted: 270 40% 15%;
+    --muted-foreground: 270 20% 65%;
 
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 252 40% 20%;
-    --input: 252 40% 20%;
-    --ring: 252 91% 70%;
+    --border: 270 40% 20%;
+    --input: 270 40% 20%;
+    --ring: 270 91% 65%;
 
-    --gradient-hero: linear-gradient(135deg, hsl(252 50% 8%), hsl(252 60% 15%));
-    --gradient-card: linear-gradient(180deg, hsl(252 50% 12%), hsl(252 50% 8%));
-    --gradient-glass: linear-gradient(135deg, hsl(252 50% 15% / 0.8), hsl(252 50% 12% / 0.4));
+    --gradient-hero: linear-gradient(135deg, hsl(270 50% 8%), hsl(270 60% 15%));
+    --gradient-card: linear-gradient(180deg, hsl(270 50% 12%), hsl(270 50% 8%));
+    --gradient-glass: linear-gradient(135deg, hsl(270 50% 15% / 0.8), hsl(270 50% 12% / 0.4));
 
-    --sidebar-background: 252 50% 8%;
+    --sidebar-background: 270 50% 8%;
     --sidebar-foreground: 38 50% 95%;
-    --sidebar-primary: 252 91% 70%;
-    --sidebar-primary-foreground: 252 50% 10%;
-    --sidebar-accent: 252 60% 20%;
+    --sidebar-primary: 270 91% 65%;
+    --sidebar-primary-foreground: 270 50% 10%;
+    --sidebar-accent: 270 60% 20%;
     --sidebar-accent-foreground: 38 50% 95%;
-    --sidebar-border: 252 40% 20%;
-    --sidebar-ring: 252 91% 70%;
+    --sidebar-border: 270 40% 20%;
+    --sidebar-ring: 270 91% 65%;
   }
 }
 
@@ -173,12 +173,12 @@
 
   .gradient-text {
     @apply bg-clip-text text-transparent;
-    background-image: linear-gradient(135deg, hsl(252 91% 66%) 0%, hsl(252 85% 75%) 60%, hsl(38 86% 72%) 100%);
+    background-image: linear-gradient(135deg, hsl(270 91% 56%) 0%, hsl(270 85% 68%) 50%, hsl(38 86% 72%) 100%);
   }
 
   .gradient-text-luxury {
     @apply bg-clip-text text-transparent;
-    background-image: linear-gradient(135deg, hsl(252 91% 66%) 0%, hsl(252 85% 75%) 60%, hsl(38 86% 72%) 100%);
+    background-image: linear-gradient(135deg, hsl(270 91% 56%) 0%, hsl(270 85% 68%) 50%, hsl(38 86% 72%) 100%);
   }
 
   /* Glowing slogan text */
@@ -213,16 +213,16 @@
     @apply bg-clip-text text-transparent font-bold;
     background-image: linear-gradient(
       90deg,
-      hsl(252 91% 66%) 0%,
-      hsl(252 85% 75%) 20%,
+      hsl(270 91% 56%) 0%,
+      hsl(270 85% 68%) 20%,
       hsl(38 86% 72%) 40%,
       hsl(38 86% 80%) 60%,
-      hsl(252 85% 75%) 80%,
-      hsl(252 91% 66%) 100%
+      hsl(270 85% 68%) 80%,
+      hsl(270 91% 56%) 100%
     );
     background-size: 300% 100%;
     animation: logo-shimmer 4s ease-in-out infinite;
-    filter: drop-shadow(0 0 10px hsl(38 86% 72% / 0.5)) drop-shadow(0 0 20px hsl(252 91% 66% / 0.3));
+    filter: drop-shadow(0 0 10px hsl(38 86% 72% / 0.5)) drop-shadow(0 0 20px hsl(270 91% 56% / 0.3));
   }
 
   @keyframes logo-shimmer {
@@ -251,8 +251,8 @@
     @apply bg-clip-text text-transparent;
     background-image: linear-gradient(
       90deg,
-      hsl(252 91% 66%) 0%,
-      hsl(252 85% 75%) 30%,
+      hsl(270 91% 56%) 0%,
+      hsl(270 85% 68%) 30%,
       hsl(38 86% 72%) 70%,
       hsl(38 86% 80%) 100%
     );
@@ -295,18 +295,18 @@
 
   /* Soft purple background */
   .bg-soft-purple {
-    background-color: hsl(252 100% 98%);
+    background-color: hsl(270 100% 98%);
   }
 
-  /* Luxury Sparkle Card - Purple to Gold gradient with bokeh */
+  /* Luxury Sparkle Card - Vibrant Purple to Gold gradient with bokeh */
   .luxury-sparkle-card {
     position: relative;
     background: linear-gradient(
       135deg,
-      hsl(252 60% 25%) 0%,
-      hsl(252 70% 40%) 25%,
-      hsl(252 80% 50%) 40%,
-      hsl(38 86% 60%) 70%,
+      hsl(270 80% 45%) 0%,
+      hsl(270 85% 55%) 25%,
+      hsl(270 91% 60%) 50%,
+      hsl(38 86% 65%) 75%,
       hsl(38 86% 72%) 100%
     );
     overflow: hidden;
@@ -362,13 +362,25 @@
   .hover-luxury-glow:hover {
     background: linear-gradient(
       135deg,
-      hsl(252 60% 25% / 0.08) 0%,
+      hsl(270 80% 45% / 0.08) 0%,
       hsl(38 86% 72% / 0.12) 100%
     );
     box-shadow: 
-      0 0 20px hsl(252 91% 66% / 0.15),
+      0 0 20px hsl(270 91% 56% / 0.15),
       0 0 40px hsl(38 86% 72% / 0.1);
     border-color: hsl(38 86% 72% / 0.3);
+  }
+
+  /* Vibrant purple button glow */
+  .btn-purple-glow {
+    @apply bg-primary text-primary-foreground;
+    box-shadow: 0 4px 14px hsl(270 91% 56% / 0.4);
+    transition: all 0.3s ease;
+  }
+
+  .btn-purple-glow:hover {
+    box-shadow: 0 6px 20px hsl(270 91% 56% / 0.5);
+    transform: translateY(-1px);
   }
 }
 
