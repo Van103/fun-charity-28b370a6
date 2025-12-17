@@ -22,11 +22,23 @@ export function useFriendRequestNotifications(currentUserId: string | null) {
     return data;
   }, []);
 
+  const playNotificationSound = useCallback(() => {
+    try {
+      const audio = new Audio('/sounds/notification.mp3');
+      audio.volume = 0.5;
+      audio.play().catch(err => console.log('Audio play failed:', err));
+    } catch (error) {
+      console.log('Could not play notification sound:', error);
+    }
+  }, []);
+
   const createNotification = useCallback(async (
     userId: string,
     title: string,
     message: string,
-    type: "friend_request"
+    type: "friend_request",
+    senderId?: string,
+    senderAvatarUrl?: string | null
   ) => {
     try {
       await supabase.from("notifications").insert({
@@ -35,6 +47,7 @@ export function useFriendRequestNotifications(currentUserId: string | null) {
         message,
         type,
         is_read: false,
+        data: senderId ? { sender_id: senderId, sender_avatar_url: senderAvatarUrl } : {},
       });
     } catch (error) {
       console.error("Error creating notification:", error);
@@ -62,18 +75,23 @@ export function useFriendRequestNotifications(currentUserId: string | null) {
             const sender = await fetchSenderProfile(friendship.user_id);
             const senderName = sender?.full_name || "Ai đó";
             
+            // Play notification sound
+            playNotificationSound();
+            
             // Show toast notification
             toast({
               title: "Lời mời kết bạn mới",
               description: `${senderName} đã gửi lời mời kết bạn`,
             });
 
-            // Create persistent notification
+            // Create persistent notification with sender info
             await createNotification(
               currentUserId,
               "Lời mời kết bạn mới",
               `${senderName} đã gửi lời mời kết bạn cho bạn`,
-              "friend_request"
+              "friend_request",
+              friendship.user_id,
+              sender?.avatar_url
             );
           }
         }
@@ -121,5 +139,5 @@ export function useFriendRequestNotifications(currentUserId: string | null) {
       supabase.removeChannel(friendRequestChannel);
       supabase.removeChannel(friendAcceptChannel);
     };
-  }, [currentUserId, toast, fetchSenderProfile, createNotification]);
+  }, [currentUserId, toast, fetchSenderProfile, createNotification, playNotificationSound]);
 }

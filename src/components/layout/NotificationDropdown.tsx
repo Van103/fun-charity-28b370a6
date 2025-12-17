@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Bell, Check, Gift, MessageCircle, Users, Award, Heart, AlertCircle, UserCheck, UserX, Loader2 } from "lucide-react";
+import { Bell, Check, Gift, MessageCircle, Users, Award, Heart, AlertCircle, UserCheck, UserX, Loader2, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Popover,
@@ -7,6 +7,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { supabase } from "@/integrations/supabase/client";
 import { formatDistanceToNow } from "date-fns";
 import { vi } from "date-fns/locale";
@@ -297,9 +298,19 @@ export function NotificationDropdown() {
                   onClick={() => markAsRead(notification.id)}
                 >
                   <div className="flex gap-3">
-                    <div className="flex-shrink-0 w-8 h-8 bg-muted rounded-full flex items-center justify-center">
-                      {getIcon(notification.type)}
-                    </div>
+                    {/* Show avatar for friend requests, icon for others */}
+                    {notification.type === "friend_request" && notification.data?.sender_avatar_url ? (
+                      <Avatar className="w-8 h-8 flex-shrink-0">
+                        <AvatarImage src={notification.data.sender_avatar_url} />
+                        <AvatarFallback className="bg-blue-100">
+                          <User className="w-4 h-4 text-blue-500" />
+                        </AvatarFallback>
+                      </Avatar>
+                    ) : (
+                      <div className="flex-shrink-0 w-8 h-8 bg-muted rounded-full flex items-center justify-center">
+                        {getIcon(notification.type)}
+                      </div>
+                    )}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between gap-2">
                         <p className={`text-sm ${!notification.is_read ? "font-semibold" : ""}`}>
