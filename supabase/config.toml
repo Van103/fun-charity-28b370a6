@@ -2,3 +2,6 @@ project_id = "rsmppgcxrdywybxorvla"
 
 [functions.matching-engine]
 verify_jwt = true
+
+[functions.generate-post-content]
+verify_jwt = false
