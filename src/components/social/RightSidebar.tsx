@@ -32,9 +32,9 @@ const topRankers: TopRanker[] = [
 // Rank badge colors
 const getRankBadgeStyle = (rank: number) => {
   switch (rank) {
-    case 1: return "bg-gradient-to-br from-gold-champagne to-gold-dark text-white";
-    case 2: return "bg-gradient-to-br from-gray-300 to-gray-500 text-white";
-    case 3: return "bg-gradient-to-br from-amber-600 to-amber-800 text-white";
+    case 1: return "bg-gradient-to-br from-yellow-300 via-gold-champagne to-yellow-500 text-white glow-gold";
+    case 2: return "bg-gradient-to-br from-gray-200 via-gray-300 to-gray-400 text-gray-800 glow-silver";
+    case 3: return "bg-gradient-to-br from-amber-500 via-amber-600 to-amber-700 text-white glow-bronze";
     default: return "bg-muted text-foreground";
   }
 };
@@ -83,7 +83,7 @@ export function RightSidebar() {
         <div className="absolute inset-0 bg-black/40 backdrop-blur-[1px]" />
         <div className="relative border-b border-yellow-400/30">
           <h3 className="py-3 px-4 text-sm font-bold text-center tracking-wider drop-shadow-lg w-full bg-gradient-to-r from-purple-900/70 via-purple-800/80 to-purple-900/70" style={{ color: '#FFD700' }}>
-            ✨ HONOR BOARD ✨
+            <span className="animate-sparkle inline-block">✨</span> HONOR BOARD <span className="animate-sparkle-delay inline-block">✨</span>
           </h3>
         </div>
         <div className="relative p-3 space-y-2">
@@ -110,7 +110,7 @@ export function RightSidebar() {
         <div className="absolute inset-0 bg-black/40 backdrop-blur-[1px]" />
         <div className="relative border-b border-yellow-400/30">
           <h3 className="py-3 px-4 text-sm font-bold text-center tracking-wider drop-shadow-lg w-full bg-gradient-to-r from-purple-900/70 via-purple-800/80 to-purple-900/70" style={{ color: '#FFD700' }}>
-            👑 TOP RANKING 👑
+            <span className="animate-sparkle inline-block">👑</span> TOP RANKING <span className="animate-sparkle-delay inline-block">👑</span>
           </h3>
         </div>
         <ScrollArea className="h-[320px]">
