@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Bell, Check, Gift, MessageCircle, Users, Award, Heart, AlertCircle } from "lucide-react";
+import { Bell, Check, Gift, MessageCircle, Users, Award, Heart, AlertCircle, UserCheck, UserX, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Popover,
@@ -10,6 +10,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { supabase } from "@/integrations/supabase/client";
 import { formatDistanceToNow } from "date-fns";
 import { vi } from "date-fns/locale";
+import { useToast } from "@/hooks/use-toast";
 
 interface Notification {
   id: string;
@@ -35,8 +36,18 @@ export function NotificationDropdown() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [isOpen, setIsOpen] = useState(false);
+  const [processingIds, setProcessingIds] = useState<Set<string>>(new Set());
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const { toast } = useToast();
 
   useEffect(() => {
+    const getCurrentUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        setCurrentUserId(user.id);
+      }
+    };
+    getCurrentUser();
     fetchNotifications();
 
     // Set up realtime subscription
@@ -103,6 +114,135 @@ export function NotificationDropdown() {
     setUnreadCount(0);
   };
 
+  const handleAcceptFriendRequest = async (notification: Notification, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!currentUserId) return;
+
+    setProcessingIds(prev => new Set(prev).add(notification.id));
+
+    try {
+      // Find the pending friend request where current user is the friend_id
+      const { data: friendRequest, error: findError } = await supabase
+        .from("friendships")
+        .select("*")
+        .eq("friend_id", currentUserId)
+        .eq("status", "pending")
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (findError || !friendRequest) {
+        toast({
+          title: "Lỗi",
+          description: "Không tìm thấy lời mời kết bạn",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Update the friendship status to accepted
+      const { error: updateError } = await supabase
+        .from("friendships")
+        .update({ status: "accepted" })
+        .eq("id", friendRequest.id);
+
+      if (updateError) {
+        toast({
+          title: "Lỗi",
+          description: "Không thể chấp nhận lời mời",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      toast({
+        title: "Thành công",
+        description: "Đã chấp nhận lời mời kết bạn",
+      });
+
+      // Mark notification as read and remove it from list
+      await markAsRead(notification.id);
+      setNotifications(prev => prev.filter(n => n.id !== notification.id));
+    } catch (error) {
+      console.error("Error accepting friend request:", error);
+      toast({
+        title: "Lỗi",
+        description: "Đã có lỗi xảy ra",
+        variant: "destructive",
+      });
+    } finally {
+      setProcessingIds(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(notification.id);
+        return newSet;
+      });
+    }
+  };
+
+  const handleDeclineFriendRequest = async (notification: Notification, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!currentUserId) return;
+
+    setProcessingIds(prev => new Set(prev).add(notification.id));
+
+    try {
+      // Find and delete the pending friend request
+      const { data: friendRequest, error: findError } = await supabase
+        .from("friendships")
+        .select("*")
+        .eq("friend_id", currentUserId)
+        .eq("status", "pending")
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (findError || !friendRequest) {
+        toast({
+          title: "Lỗi",
+          description: "Không tìm thấy lời mời kết bạn",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const { error: deleteError } = await supabase
+        .from("friendships")
+        .delete()
+        .eq("id", friendRequest.id);
+
+      if (deleteError) {
+        toast({
+          title: "Lỗi",
+          description: "Không thể từ chối lời mời",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      toast({
+        title: "Đã từ chối",
+        description: "Đã từ chối lời mời kết bạn",
+      });
+
+      // Mark notification as read and remove it
+      await markAsRead(notification.id);
+      setNotifications(prev => prev.filter(n => n.id !== notification.id));
+    } catch (error) {
+      console.error("Error declining friend request:", error);
+      toast({
+        title: "Lỗi",
+        description: "Đã có lỗi xảy ra",
+        variant: "destructive",
+      });
+    } finally {
+      setProcessingIds(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(notification.id);
+        return newSet;
+      });
+    }
+  };
+
   const getIcon = (type: string) => {
     return notificationIcons[type] || notificationIcons.system;
   };
@@ -110,6 +250,8 @@ export function NotificationDropdown() {
   const formatTime = (dateStr: string) => {
     return formatDistanceToNow(new Date(dateStr), { addSuffix: true, locale: vi });
   };
+
+  const isProcessing = (id: string) => processingIds.has(id);
 
   return (
     <Popover open={isOpen} onOpenChange={setIsOpen}>
@@ -175,6 +317,43 @@ export function NotificationDropdown() {
                       <p className="text-xs text-muted-foreground mt-1">
                         {formatTime(notification.created_at)}
                       </p>
+
+                      {/* Friend request action buttons */}
+                      {notification.type === "friend_request" && !notification.is_read && (
+                        <div className="flex gap-2 mt-2">
+                          <Button
+                            size="sm"
+                            className="h-7 text-xs"
+                            onClick={(e) => handleAcceptFriendRequest(notification, e)}
+                            disabled={isProcessing(notification.id)}
+                          >
+                            {isProcessing(notification.id) ? (
+                              <Loader2 className="w-3 h-3 animate-spin" />
+                            ) : (
+                              <>
+                                <UserCheck className="w-3 h-3 mr-1" />
+                                Chấp nhận
+                              </>
+                            )}
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-7 text-xs"
+                            onClick={(e) => handleDeclineFriendRequest(notification, e)}
+                            disabled={isProcessing(notification.id)}
+                          >
+                            {isProcessing(notification.id) ? (
+                              <Loader2 className="w-3 h-3 animate-spin" />
+                            ) : (
+                              <>
+                                <UserX className="w-3 h-3 mr-1" />
+                                Từ chối
+                              </>
+                            )}
+                          </Button>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
