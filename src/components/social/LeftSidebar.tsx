@@ -44,7 +44,7 @@ export function LeftSidebar({ profile }: LeftSidebarProps) {
     <aside className="w-64 shrink-0 space-y-4 sticky top-20">
       {/* Platform Ecosystem */}
       <div className="glass-card p-4 hover-luxury-glow">
-        <h3 className="text-sm font-semibold text-foreground mb-1">
+        <h3 className="font-semibold text-foreground mb-1" style={{ fontSize: '20px' }}>
           Các Platform F.U. Ecosystem
         </h3>
         <p className="text-xs text-muted-foreground mb-4">Coming soon</p>
@@ -63,7 +63,7 @@ export function LeftSidebar({ profile }: LeftSidebarProps) {
                 }`}
               >
                 <item.icon className={`w-4 h-4 ${isActive ? "text-white" : "text-primary"}`} />
-                <span className="text-sm">{item.label}</span>
+                <span style={{ fontSize: '18px' }}>{item.label}</span>
               </Link>
             );
           })}
