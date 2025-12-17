@@ -141,11 +141,20 @@
     line-height: 1.6;
   }
 
-  h1, h2, h3, h4, h5, h6 {
-    font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
-    font-size: 18px;
-    @apply font-semibold tracking-tight;
-  }
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+  font-size: 18px;
+  @apply font-semibold tracking-tight;
+}
+
+/* Font weight 500 for important text elements */
+.font-medium,
+nav a,
+button,
+label,
+.text-important {
+  font-weight: 500;
+}
 
   /* High contrast text for animated backgrounds - WCAG AA compliance */
   .text-high-contrast {

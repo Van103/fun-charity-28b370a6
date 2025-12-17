@@ -81,21 +81,21 @@ export function RightSidebar() {
       {/* Honor Board */}
       <div className="rounded-2xl overflow-hidden relative" style={{ backgroundImage: 'url(/images/purple-sparkle-bg.jpg)', backgroundSize: 'cover', backgroundPosition: 'center' }}>
         <div className="absolute inset-0 bg-black/40 backdrop-blur-[1px]" />
-        <div className="relative p-3 border-b border-secondary/30">
-          <h3 className="text-sm font-bold text-secondary text-center tracking-wider drop-shadow-lg">
+        <div className="relative border-b border-yellow-400/30">
+          <h3 className="py-3 px-4 text-sm font-bold text-center tracking-wider drop-shadow-lg w-full bg-gradient-to-r from-purple-900/70 via-purple-800/80 to-purple-900/70" style={{ color: '#FFD700' }}>
             ✨ HONOR BOARD ✨
           </h3>
         </div>
         <div className="relative p-3 space-y-2">
           {honorStats.map((stat) => (
             <div key={stat.label} className="flex items-center gap-2">
-              <span className="text-xs text-secondary font-semibold w-20 shrink-0 drop-shadow-md">{stat.label}</span>
-              <div className="flex-1 h-6 bg-black/30 rounded overflow-hidden backdrop-blur-sm border border-secondary/20">
+              <span className="text-xs font-semibold w-20 shrink-0 drop-shadow-md" style={{ color: '#FFD700' }}>{stat.label}</span>
+              <div className="flex-1 h-6 bg-black/30 rounded overflow-hidden backdrop-blur-sm border border-yellow-400/20">
                 <div 
-                  className="h-full bg-gradient-to-r from-secondary/40 to-secondary/60 flex items-center px-2"
+                  className="h-full bg-gradient-to-r from-yellow-500/40 to-yellow-400/60 flex items-center px-2"
                   style={{ width: `${stat.barWidth}%` }}
                 >
-                  <span className="text-xs font-mono text-secondary tracking-widest font-bold drop-shadow-lg">
+                  <span className="text-xs font-mono tracking-widest font-bold drop-shadow-lg" style={{ color: '#FFDF00' }}>
                     {stat.value}
                   </span>
                 </div>
@@ -108,8 +108,8 @@ export function RightSidebar() {
       {/* Top Ranking */}
       <div className="rounded-2xl overflow-hidden relative" style={{ backgroundImage: 'url(/images/purple-sparkle-bg.jpg)', backgroundSize: 'cover', backgroundPosition: 'center' }}>
         <div className="absolute inset-0 bg-black/40 backdrop-blur-[1px]" />
-        <div className="relative p-3 border-b border-secondary/30">
-          <h3 className="text-sm font-bold text-secondary text-center tracking-wider drop-shadow-lg">
+        <div className="relative border-b border-yellow-400/30">
+          <h3 className="py-3 px-4 text-sm font-bold text-center tracking-wider drop-shadow-lg w-full bg-gradient-to-r from-purple-900/70 via-purple-800/80 to-purple-900/70" style={{ color: '#FFD700' }}>
             👑 TOP RANKING 👑
           </h3>
         </div>
@@ -122,8 +122,8 @@ export function RightSidebar() {
               >
                 {/* Rank badge with avatar */}
                 <div className="relative">
-                  <div className="p-0.5 rounded-full bg-gradient-to-br from-secondary/60 to-secondary/30">
-                    <Avatar className="w-10 h-10 border-2 border-secondary/40">
+                  <div className="p-0.5 rounded-full bg-gradient-to-br from-yellow-400/60 to-yellow-500/30">
+                    <Avatar className="w-10 h-10 border-2 border-yellow-400/40">
                       <AvatarImage src={ranker.avatar} />
                       <AvatarFallback className={`bg-gradient-to-br ${getAvatarGradient(ranker.name)} text-white text-sm font-medium`}>
                         {ranker.name.charAt(0)}
@@ -136,14 +136,14 @@ export function RightSidebar() {
                 </div>
                 <div className="flex-1 min-w-0 ml-1">
                   <div className="flex items-center gap-1">
-                    <span className="text-sm font-bold truncate text-secondary drop-shadow-md">{ranker.name}</span>
+                    <span className="text-sm font-bold truncate drop-shadow-md" style={{ color: '#FFD700' }}>{ranker.name}</span>
                     {ranker.verified && (
-                      <span className="text-secondary text-xs">✓</span>
+                      <span className="text-xs" style={{ color: '#FFD700' }}>✓</span>
                     )}
                   </div>
-                  <span className="text-xs text-secondary/80 drop-shadow-sm">{ranker.location}</span>
+                  <span className="text-xs drop-shadow-sm" style={{ color: '#FFDF00', opacity: 0.85 }}>{ranker.location}</span>
                 </div>
-                <span className="text-sm font-bold text-secondary shrink-0 drop-shadow-lg">
+                <span className="text-sm font-bold shrink-0 drop-shadow-lg" style={{ color: '#FFDF00' }}>
                   {ranker.amount}
                 </span>
               </div>
