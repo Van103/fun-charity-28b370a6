@@ -2,7 +2,7 @@ import { useState, useRef } from "react";
 import { Link } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Image, Video, Sparkles, X, Loader2, Send } from "lucide-react";
+import { Image, Video, Sparkles, X, Loader2, Send, RefreshCw, AlertCircle } from "lucide-react";
 import { useCreateFeedPost } from "@/hooks/useFeedPosts";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -14,6 +14,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface CreatePostBoxProps {
   profile?: {
@@ -46,20 +47,56 @@ export function CreatePostBox({ profile, onPostCreated }: CreatePostBoxProps) {
   const [showAiModal, setShowAiModal] = useState(false);
   const [aiTopic, setAiTopic] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
+  const [aiError, setAiError] = useState<string | null>(null);
+  const [generationProgress, setGenerationProgress] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
   
   const { toast } = useToast();
+  const { t } = useLanguage();
   const createPost = useCreateFeedPost();
 
   const generateAiContent = async () => {
     setIsGenerating(true);
+    setAiError(null);
+    setGenerationProgress(0);
+    
+    // Simulate progress for better UX
+    const progressInterval = setInterval(() => {
+      setGenerationProgress(prev => Math.min(prev + 10, 90));
+    }, 500);
+    
     try {
       const { data, error } = await supabase.functions.invoke("generate-post-content", {
         body: { topic: aiTopic, style: "thân thiện, ấm áp, truyền cảm hứng" },
       });
 
-      if (error) throw error;
+      clearInterval(progressInterval);
+      setGenerationProgress(100);
+
+      if (error) {
+        // Handle specific error codes
+        const errorMessage = error.message || "";
+        if (errorMessage.includes("429") || error.status === 429) {
+          setAiError(t("ai.errorRateLimit"));
+          toast({
+            title: t("ai.error"),
+            description: t("ai.errorRateLimit"),
+            variant: "destructive",
+          });
+          return;
+        }
+        if (errorMessage.includes("402") || error.status === 402) {
+          setAiError(t("ai.errorPayment"));
+          toast({
+            title: t("ai.error"),
+            description: t("ai.errorPayment"),
+            variant: "destructive",
+          });
+          return;
+        }
+        throw error;
+      }
 
       if (data?.content) {
         setContent(data.content);
@@ -71,22 +108,27 @@ export function CreatePostBox({ profile, onPostCreated }: CreatePostBoxProps) {
         
         setShowAiModal(false);
         setAiTopic("");
+        setAiError(null);
         toast({
-          title: "Tạo nội dung thành công! ✨",
-          description: data?.image 
-            ? "AI đã tạo nội dung và hình ảnh cho bạn. Bạn có thể chỉnh sửa trước khi đăng."
-            : "AI đã tạo nội dung cho bạn. Bạn có thể chỉnh sửa trước khi đăng.",
+          title: t("ai.success"),
+          description: data?.image ? t("ai.successWithImage") : t("ai.successDesc"),
         });
       }
     } catch (error: any) {
+      clearInterval(progressInterval);
       console.error("Error generating AI content:", error);
+      
+      const errorMsg = error.message || t("ai.errorGeneric");
+      setAiError(errorMsg);
+      
       toast({
-        title: "Lỗi tạo nội dung",
-        description: error.message || "Không thể tạo nội dung. Vui lòng thử lại.",
+        title: t("ai.error"),
+        description: errorMsg,
         variant: "destructive",
       });
     } finally {
       setIsGenerating(false);
+      setGenerationProgress(0);
     }
   };
 
@@ -376,21 +418,27 @@ export function CreatePostBox({ profile, onPostCreated }: CreatePostBoxProps) {
       </div>
 
       {/* AI Content Modal */}
-      <Dialog open={showAiModal} onOpenChange={setShowAiModal}>
+      <Dialog open={showAiModal} onOpenChange={(open) => {
+        setShowAiModal(open);
+        if (!open) {
+          setAiError(null);
+          setGenerationProgress(0);
+        }
+      }}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Sparkles className="w-5 h-5 text-primary" />
-              Enjoy AI - Tạo nội dung tự động
+              {t("ai.title")}
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div>
               <label className="text-sm font-medium mb-2 block">
-                Chủ đề bạn muốn viết về (tùy chọn)
+                {t("ai.topic")}
               </label>
               <Input
-                placeholder="Ví dụ: Giúp đỡ trẻ em vùng cao, bảo vệ môi trường..."
+                placeholder={t("ai.placeholder")}
                 value={aiTopic}
                 onChange={(e) => setAiTopic(e.target.value)}
                 disabled={isGenerating}
@@ -398,22 +446,58 @@ export function CreatePostBox({ profile, onPostCreated }: CreatePostBoxProps) {
               />
             </div>
             <p className="text-xs text-muted-foreground">
-              Để trống để AI tự tạo nội dung về hoạt động từ thiện
+              {t("ai.empty")}
             </p>
+            
+            {/* Error State with Retry */}
+            {aiError && (
+              <div className="flex items-start gap-3 p-3 bg-destructive/10 border border-destructive/30 rounded-lg">
+                <AlertCircle className="w-5 h-5 text-destructive shrink-0 mt-0.5" />
+                <div className="flex-1 space-y-2">
+                  <p className="text-sm text-destructive font-medium">{aiError}</p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={generateAiContent}
+                    disabled={isGenerating}
+                    className="gap-2"
+                  >
+                    <RefreshCw className="w-3 h-3" />
+                    {t("ai.retry")}
+                  </Button>
+                </div>
+              </div>
+            )}
+            
+            {/* Progress Bar */}
+            {isGenerating && (
+              <div className="space-y-2">
+                <div className="h-2 bg-muted rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-gradient-to-r from-primary to-gold-champagne transition-all duration-300"
+                    style={{ width: `${generationProgress}%` }}
+                  />
+                </div>
+                <p className="text-xs text-muted-foreground text-center">
+                  {generationProgress < 50 ? "Đang tạo nội dung văn bản..." : "Đang tạo hình ảnh AI..."}
+                </p>
+              </div>
+            )}
+            
             <Button
               onClick={generateAiContent}
               disabled={isGenerating}
-              className="w-full bg-gradient-to-r from-primary to-primary-light hover:from-primary-dark hover:to-primary rounded-lg"
+              className="w-full bg-gradient-to-r from-primary to-primary-light hover:from-primary-dark hover:to-primary rounded-lg h-11"
             >
               {isGenerating ? (
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Đang tạo nội dung...
+                  {t("ai.generating")}
                 </>
               ) : (
                 <>
                   <Sparkles className="w-4 h-4 mr-2" />
-                  Tạo nội dung với AI
+                  {t("ai.generate")}
                 </>
               )}
             </Button>

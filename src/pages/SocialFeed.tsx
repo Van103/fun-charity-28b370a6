@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { LeftSidebar } from "@/components/social/LeftSidebar";
@@ -29,8 +29,20 @@ interface Profile {
 export default function SocialFeed() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [profileLoading, setProfileLoading] = useState(true);
+  const [highlightPostId, setHighlightPostId] = useState<string | null>(null);
   const navigate = useNavigate();
+  const location = useLocation();
   const queryClient = useQueryClient();
+
+  // Get scrollToPostId from navigation state
+  useEffect(() => {
+    const state = location.state as { scrollToPostId?: string } | null;
+    if (state?.scrollToPostId) {
+      setHighlightPostId(state.scrollToPostId);
+      // Clear the state after getting the ID
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state]);
   
   const { 
     posts, 
@@ -130,7 +142,11 @@ export default function SocialFeed() {
                       ) : posts && posts.length > 0 ? (
                         <>
                           {posts.map((post) => (
-                            <SocialPostCard key={post.id} post={post} />
+                            <SocialPostCard 
+                              key={post.id} 
+                              post={post} 
+                              highlightPostId={highlightPostId}
+                            />
                           ))}
                           
                           {/* Load More Trigger */}

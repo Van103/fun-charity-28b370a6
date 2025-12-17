@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { useState, useEffect, useRef } from "react";
+import { Link, useLocation } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -44,6 +44,7 @@ import {
 
 interface SocialPostCardProps {
   post: FeedPost;
+  highlightPostId?: string | null;
 }
 
 // Soft gradient backgrounds for letter avatars
@@ -59,7 +60,7 @@ const getAvatarGradient = (name: string) => {
   return gradients[index];
 };
 
-export function SocialPostCard({ post }: SocialPostCardProps) {
+export function SocialPostCard({ post, highlightPostId }: SocialPostCardProps) {
   const [showComments, setShowComments] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [currentUserAvatar, setCurrentUserAvatar] = useState<string | null>(null);
@@ -68,9 +69,24 @@ export function SocialPostCard({ post }: SocialPostCardProps) {
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isHighlighted, setIsHighlighted] = useState(false);
   
+  const cardRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  // Handle highlight and scroll
+  useEffect(() => {
+    if (highlightPostId === post.id && cardRef.current) {
+      // Scroll into view
+      setTimeout(() => {
+        cardRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+        setIsHighlighted(true);
+        // Remove highlight after 3 seconds
+        setTimeout(() => setIsHighlighted(false), 3000);
+      }, 100);
+    }
+  }, [highlightPostId, post.id]);
 
   // Fetch current user
   useEffect(() => {
@@ -147,9 +163,12 @@ export function SocialPostCard({ post }: SocialPostCardProps) {
 
   return (
     <motion.div
+      ref={cardRef}
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="glass-card overflow-hidden"
+      className={`glass-card overflow-hidden transition-all duration-500 ${
+        isHighlighted ? "ring-4 ring-primary/50 shadow-lg shadow-primary/20" : ""
+      }`}
     >
       {/* Header */}
       <div className="p-4 pb-3">

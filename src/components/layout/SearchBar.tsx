@@ -126,7 +126,8 @@ export function SearchBar() {
         navigate(`/campaigns/${result.id}`);
         break;
       case "post":
-        navigate(`/social#post-${result.id}`);
+        // Navigate to social feed with post ID in state for scroll + highlight
+        navigate("/social", { state: { scrollToPostId: result.id } });
         break;
     }
   };

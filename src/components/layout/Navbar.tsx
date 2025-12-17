@@ -15,6 +15,7 @@ import { MotionToggle } from "@/components/background/MotionToggle";
 import { WalletConnectModal } from "@/components/wallet/WalletConnectModal";
 import { NotificationDropdown } from "./NotificationDropdown";
 import { SearchBar } from "./SearchBar";
+import { LanguageToggle } from "./LanguageToggle";
 import { useFriendRequestNotifications } from "@/hooks/useFriendNotifications";
 import {
   Menu,
@@ -167,7 +168,8 @@ export function Navbar() {
           </div>
 
           {/* Right Actions */}
-          <div className="hidden md:flex items-center gap-3">
+          <div className="hidden md:flex items-center gap-2">
+            <LanguageToggle />
             <NotificationDropdown />
 
             {/* Settings Popover */}
