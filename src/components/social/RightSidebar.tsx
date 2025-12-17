@@ -10,23 +10,22 @@ import {
 interface TopRanker {
   rank: number;
   name: string;
-  location: string;
   amount: string;
   avatar?: string;
   verified?: boolean;
 }
 
 const topRankers: TopRanker[] = [
-  { rank: 1, name: "Camly Duong", location: "Viet Nam", amount: "8B ₫", verified: true },
-  { rank: 2, name: "Elon Musk", location: "South Africa", amount: "7B ₫" },
-  { rank: 3, name: "Lê Minh Trí", location: "Viet Nam", amount: "2B ₫", verified: true },
-  { rank: 4, name: "Diệu Ngọc", location: "Viet Nam", amount: "1B ₫" },
-  { rank: 5, name: "Vinh Hào", location: "Viet Nam", amount: "1M ₫" },
-  { rank: 6, name: "Trang Huyền", location: "Viet Nam", amount: "1M ₫" },
-  { rank: 7, name: "Tinna Tinh", location: "Viet Nam", amount: "100M ₫" },
-  { rank: 8, name: "Khôi Phan", location: "Viet Nam", amount: "1M ₫" },
-  { rank: 9, name: "Thu Thanh Hoàng", location: "Viet Nam", amount: "1M ₫", verified: true },
-  { rank: 10, name: "Nông Liên", location: "Viet Nam", amount: "1M ₫", verified: true },
+  { rank: 1, name: "Camly Duong", amount: "8.000.000.000 ₫", verified: true },
+  { rank: 2, name: "Elon Musk", amount: "7.000.000.000 ₫" },
+  { rank: 3, name: "Lê Minh Trí", amount: "2.000.000.000 ₫", verified: true },
+  { rank: 4, name: "Diệu Ngọc", amount: "1.000.000.000 ₫" },
+  { rank: 5, name: "Vinh Hào", amount: "500.000.000 ₫" },
+  { rank: 6, name: "Trang Huyền", amount: "300.000.000 ₫" },
+  { rank: 7, name: "Tinna Tinh", amount: "100.000.000 ₫" },
+  { rank: 8, name: "Khôi Phan", amount: "50.000.000 ₫" },
+  { rank: 9, name: "Thu Thanh Hoàng", amount: "30.000.000 ₫", verified: true },
+  { rank: 10, name: "Nông Liên", amount: "10.000.000 ₫", verified: true },
 ];
 
 // Rank badge colors
@@ -63,24 +62,22 @@ const contacts = [
 interface HonorStat {
   label: string;
   value: string;
-  barWidth: number;
 }
 
 const honorStats: HonorStat[] = [
-  { label: "TOP PROFILE", value: "1 1 1 1 1 1 1 1 1", barWidth: 100 },
-  { label: "THU NHẬP", value: "9 9 9 9 9 9 9 9 9", barWidth: 95 },
-  { label: "BÀI VIẾT", value: "9 9 9", barWidth: 40 },
-  { label: "VIDEO", value: "9 9 9", barWidth: 40 },
-  { label: "BẠN BÈ", value: "1 1 1 1 1 1 1 1 1", barWidth: 100 },
-  { label: "SỐ NFT", value: "1 1 1 1 1 1 1 1 1", barWidth: 100 },
+  { label: "Tổng Quyên Góp USDT", value: "5.000.000" },
+  { label: "Tổng Quyên Góp Camly", value: "9.999.999" },
+  { label: "Tổng VND", value: "500.000.000" },
+  { label: "Tổng Số Lần Quyên Góp", value: "1.234" },
+  { label: "Tổng Số Người Quyên Góp", value: "5.678" },
 ];
 
 export function RightSidebar() {
   return (
     <aside className="w-80 shrink-0 space-y-4 sticky top-20">
       {/* Honor Board */}
-      <div className="rounded-2xl overflow-hidden relative" style={{ backgroundImage: 'url(/images/purple-light-sparkle-bg.jpg)', backgroundSize: 'cover', backgroundPosition: 'center' }}>
-        <div className="absolute inset-0 bg-purple-900/30 backdrop-blur-[1px]" />
+      <div className="rounded-2xl overflow-hidden relative" style={{ backgroundImage: 'url(/images/purple-light-bg.jpg)', backgroundSize: 'cover', backgroundPosition: 'center' }}>
+        <div className="absolute inset-0 bg-purple-900/20 backdrop-blur-[1px]" />
         <div className="relative border-b border-yellow-400/30">
           <h3 className="py-3 px-2 font-extrabold text-center tracking-widest drop-shadow-lg w-full bg-gradient-to-r from-purple-900/70 via-purple-800/80 to-purple-900/70" style={{ color: '#FFD700', fontSize: '22px' }}>
             <span className="animate-sparkle inline-block">✨</span> HONOR BOARD <span className="animate-sparkle-delay inline-block">✨</span>
@@ -88,62 +85,57 @@ export function RightSidebar() {
         </div>
         <div className="relative p-3 space-y-2">
           {honorStats.map((stat) => (
-            <div key={stat.label} className="flex items-center gap-2">
-              <span className="text-xs font-semibold w-20 shrink-0 drop-shadow-md" style={{ color: '#FFD700' }}>{stat.label}</span>
-              <div className="flex-1 h-6 bg-black/30 rounded overflow-hidden backdrop-blur-sm border border-yellow-400/20">
-                <div 
-                  className="h-full bg-gradient-to-r from-yellow-500/40 to-yellow-400/60 flex items-center px-2"
-                  style={{ width: `${stat.barWidth}%` }}
-                >
-                  <span className="text-xs font-mono tracking-widest font-bold drop-shadow-lg" style={{ color: '#FFDF00' }}>
-                    {stat.value}
-                  </span>
-                </div>
-              </div>
+            <div 
+              key={stat.label} 
+              className="flex items-center justify-between gap-3 px-4 py-3 rounded-xl border border-yellow-400/50 bg-black/20 hover:bg-black/30 transition-colors"
+            >
+              <span className="font-bold drop-shadow-md" style={{ color: '#FFD700', fontSize: '20px' }}>{stat.label}</span>
+              <span className="font-bold drop-shadow-lg" style={{ color: '#FFDF00', fontSize: '20px' }}>
+                {stat.value}
+              </span>
             </div>
           ))}
         </div>
       </div>
 
       {/* Top Ranking */}
-      <div className="rounded-2xl overflow-hidden relative" style={{ backgroundImage: 'url(/images/purple-light-sparkle-bg.jpg)', backgroundSize: 'cover', backgroundPosition: 'center' }}>
-        <div className="absolute inset-0 bg-purple-900/30 backdrop-blur-[1px]" />
+      <div className="rounded-2xl overflow-hidden relative" style={{ backgroundImage: 'url(/images/purple-light-bg.jpg)', backgroundSize: 'cover', backgroundPosition: 'center' }}>
+        <div className="absolute inset-0 bg-purple-900/20 backdrop-blur-[1px]" />
         <div className="relative border-b border-yellow-400/30">
           <h3 className="py-3 px-2 font-extrabold text-center tracking-widest drop-shadow-lg w-full bg-gradient-to-r from-purple-900/70 via-purple-800/80 to-purple-900/70" style={{ color: '#FFD700', fontSize: '22px' }}>
             <span className="animate-sparkle inline-block">👑</span> TOP RANKING <span className="animate-sparkle-delay inline-block">👑</span>
           </h3>
         </div>
-        <ScrollArea className="h-[320px]">
+        <ScrollArea className="h-[360px]">
           <div className="relative p-2 space-y-1">
             {topRankers.map((ranker) => (
               <div
                 key={ranker.rank}
-                className="flex items-center gap-2 px-3 py-2.5 rounded-xl border border-yellow-400/50 bg-black/20 hover:bg-black/30 transition-colors cursor-pointer mb-1.5"
+                className="flex items-center gap-2 px-3 py-3 rounded-xl border border-yellow-400/50 bg-black/20 hover:bg-black/30 transition-colors cursor-pointer mb-1.5"
               >
                 {/* Rank badge with avatar */}
                 <div className="relative">
                   <div className="p-0.5 rounded-full bg-gradient-to-br from-yellow-400/60 to-yellow-500/30">
                     <Avatar className="w-10 h-10 border-2 border-yellow-400/40">
                       <AvatarImage src={ranker.avatar} />
-                      <AvatarFallback className={`bg-gradient-to-br ${getAvatarGradient(ranker.name)} text-white text-sm font-medium`}>
+                      <AvatarFallback className={`bg-gradient-to-br ${getAvatarGradient(ranker.name)} text-white font-medium`} style={{ fontSize: '16px' }}>
                         {ranker.name.charAt(0)}
                       </AvatarFallback>
                     </Avatar>
                   </div>
-                  <div className={`absolute -bottom-1 -left-1 w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold shadow-md ${getRankBadgeStyle(ranker.rank)}`}>
+                  <div className={`absolute -bottom-1 -left-1 w-6 h-6 rounded-full flex items-center justify-center font-bold shadow-md ${getRankBadgeStyle(ranker.rank)}`} style={{ fontSize: '11px' }}>
                     #{ranker.rank}
                   </div>
                 </div>
                 <div className="flex-1 min-w-0 ml-1">
                   <div className="flex items-center gap-1">
-                    <span className="text-sm font-bold truncate drop-shadow-md" style={{ color: '#FFD700' }}>{ranker.name}</span>
+                    <span className="font-bold truncate drop-shadow-md" style={{ color: '#FFD700', fontSize: '20px' }}>{ranker.name}</span>
                     {ranker.verified && (
-                      <span className="text-xs" style={{ color: '#FFD700' }}>✓</span>
+                      <span style={{ color: '#FFD700', fontSize: '16px' }}>✓</span>
                     )}
                   </div>
-                  <span className="text-xs drop-shadow-sm" style={{ color: '#FFDF00', opacity: 0.85 }}>{ranker.location}</span>
                 </div>
-                <span className="text-sm font-bold shrink-0 drop-shadow-lg" style={{ color: '#FFDF00' }}>
+                <span className="font-bold shrink-0 drop-shadow-lg" style={{ color: '#FFDF00', fontSize: '20px' }}>
                   {ranker.amount}
                 </span>
               </div>
