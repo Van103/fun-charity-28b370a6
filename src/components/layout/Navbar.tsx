@@ -110,7 +110,7 @@ export function Navbar() {
   };
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border/50">
+    <nav className="fixed top-0 left-0 right-0 z-50 bg-gradient-to-r from-purple-dark/95 via-primary/90 to-purple-dark/95 backdrop-blur-xl border-b border-primary/30 shadow-lg shadow-primary/10">
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           {/* Logo + Home + Search */}
@@ -127,7 +127,7 @@ export function Navbar() {
             {/* Platform Dropdown */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="gap-1">
+                <Button variant="ghost" size="sm" className="gap-1 text-white/90 hover:text-white hover:bg-white/10">
                   <Layers className="w-4 h-4" />
                   Nền Tảng
                   <ChevronDown className="w-3 h-3" />
@@ -156,7 +156,7 @@ export function Navbar() {
                   <Button
                     variant={isActive ? "secondary" : "ghost"}
                     size="sm"
-                    className={isActive ? "bg-secondary/10 text-secondary" : ""}
+                    className={isActive ? "bg-white/20 text-white" : "text-white/90 hover:text-white hover:bg-white/10"}
                   >
                     <Icon className="w-4 h-4" />
                     {item.name}
@@ -173,7 +173,7 @@ export function Navbar() {
             {/* Settings Popover */}
             <Popover>
               <PopoverTrigger asChild>
-                <Button variant="ghost" size="icon">
+                <Button variant="ghost" size="icon" className="text-white/90 hover:text-white hover:bg-white/10">
                   <Settings className="w-5 h-5" />
                 </Button>
               </PopoverTrigger>
@@ -191,21 +191,21 @@ export function Navbar() {
               onWalletConnected={(address) => setConnectedWallet(address)}
             />
 
-            <div className="flex items-center gap-2 pl-3 border-l border-border">
+            <div className="flex items-center gap-2 pl-3 border-l border-white/20">
               {user ? (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <button className="flex items-center gap-2 text-sm hover:opacity-80 transition-opacity cursor-pointer focus:outline-none">
-                      <Avatar className="w-8 h-8 border-2 border-secondary/50">
+                      <Avatar className="w-8 h-8 border-2 border-secondary/70 ring-2 ring-white/20">
                         <AvatarImage src={avatarUrl || undefined} alt="Avatar" />
-                        <AvatarFallback className="bg-secondary/20">
+                        <AvatarFallback className="bg-secondary/30">
                           <UserIcon className="w-4 h-4 text-secondary" />
                         </AvatarFallback>
                       </Avatar>
-                      <span className="navbar-username max-w-[120px] truncate font-semibold">
+                      <span className="text-white font-semibold max-w-[120px] truncate drop-shadow-sm">
                         {user.user_metadata?.full_name || user.email?.split('@')[0]}
                       </span>
-                      <ChevronDown className="w-3 h-3" />
+                      <ChevronDown className="w-3 h-3 text-white/80" />
                     </button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-56">
