@@ -302,7 +302,7 @@ export function GiftDonateModal({ post, trigger }: GiftDonateModalProps) {
             className="flex-1 gap-2 text-muted-foreground hover:text-secondary"
           >
             <Gift className="w-5 h-5" />
-            Tặng
+            Từ thiện
           </Button>
         )}
       </DialogTrigger>
@@ -381,7 +381,7 @@ export function GiftDonateModal({ post, trigger }: GiftDonateModalProps) {
               <DialogHeader>
                 <DialogTitle className="flex items-center gap-2">
                   <Gift className="w-5 h-5 text-secondary" />
-                  Tặng quà cho {post.profiles?.full_name || "người dùng"}
+                  Từ thiện cho Quỹ FUN Charity
                 </DialogTitle>
               </DialogHeader>
 
@@ -555,7 +555,7 @@ export function GiftDonateModal({ post, trigger }: GiftDonateModalProps) {
                   ) : (
                     <>
                       <Sparkles className="w-5 h-5" />
-                      Tặng {amount > 0 ? amount.toLocaleString() + "₫" : ""}
+                      Từ thiện {amount > 0 ? amount.toLocaleString() + "₫" : ""}
                     </>
                   )}
                 </Button>
