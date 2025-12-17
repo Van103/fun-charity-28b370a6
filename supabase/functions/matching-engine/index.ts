@@ -1,10 +1,25 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+// Allowed origins for CORS - restrict to trusted domains
+const ALLOWED_ORIGINS = [
+  'https://rsmppgcxrdywybxorvla.lovable.app',
+  'https://lovable.dev',
+  'http://localhost:5173',
+  'http://localhost:8080',
+];
+
+function getCorsHeaders(origin: string | null) {
+  const allowedOrigin = ALLOWED_ORIGINS.includes(origin || '') 
+    ? origin 
+    : ALLOWED_ORIGINS[0];
+  
+  return {
+    'Access-Control-Allow-Origin': allowedOrigin!,
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+    'Access-Control-Allow-Credentials': 'true',
+  };
+}
 
 interface FeedPost {
   id: string;
@@ -49,26 +64,23 @@ function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: numbe
 
 // Calculate geo score based on distance (0-25 points)
 function calculateGeoScore(need: FeedPost, supply: FeedPost): number {
-  // Same region = 20 points
   if (need.region && supply.region && need.region === supply.region) {
     return 20;
   }
   
-  // Calculate by coordinates if available
   if (need.latitude && need.longitude && supply.latitude && supply.longitude) {
     const distance = calculateDistance(
       need.latitude, need.longitude,
       supply.latitude, supply.longitude
     );
     
-    if (distance < 50) return 25;      // < 50km = 25 points
-    if (distance < 100) return 20;     // < 100km = 20 points
-    if (distance < 500) return 15;     // < 500km = 15 points
-    if (distance < 1000) return 10;    // < 1000km = 10 points
-    return 5;                          // > 1000km = 5 points
+    if (distance < 50) return 25;
+    if (distance < 100) return 20;
+    if (distance < 500) return 15;
+    if (distance < 1000) return 10;
+    return 5;
   }
   
-  // Same location string
   if (need.location && supply.location) {
     const needLoc = need.location.toLowerCase();
     const supplyLoc = supply.location.toLowerCase();
@@ -77,7 +89,7 @@ function calculateGeoScore(need: FeedPost, supply: FeedPost): number {
     }
   }
   
-  return 5; // Base score if no location match
+  return 5;
 }
 
 // Calculate category score (0-25 points)
@@ -85,7 +97,6 @@ function calculateCategoryScore(need: FeedPost, supply: FeedPost): number {
   if (need.category && supply.category) {
     if (need.category === supply.category) return 25;
     
-    // Related categories get partial score
     const relatedCategories: Record<string, string[]> = {
       'healthcare': ['community', 'disaster_relief'],
       'education': ['community', 'poverty'],
@@ -105,7 +116,7 @@ function calculateCategoryScore(need: FeedPost, supply: FeedPost): number {
 }
 
 // Calculate urgency score (0-25 points)
-function calculateUrgencyScore(need: FeedPost, supply: FeedPost): number {
+function calculateUrgencyScore(need: FeedPost): number {
   const urgencyWeights: Record<string, number> = {
     'critical': 25,
     'high': 20,
@@ -113,7 +124,6 @@ function calculateUrgencyScore(need: FeedPost, supply: FeedPost): number {
     'low': 10,
   };
   
-  // Higher urgency needs get priority
   return urgencyWeights[need.urgency] || 10;
 }
 
@@ -132,7 +142,7 @@ function calculateReputationScore(supply: FeedPost): number {
 function calculateMatch(need: FeedPost, supply: FeedPost): MatchResult {
   const geoScore = calculateGeoScore(need, supply);
   const categoryScore = calculateCategoryScore(need, supply);
-  const urgencyScore = calculateUrgencyScore(need, supply);
+  const urgencyScore = calculateUrgencyScore(need);
   const reputationScore = calculateReputationScore(supply);
   
   const totalScore = geoScore + categoryScore + urgencyScore + reputationScore;
@@ -149,6 +159,9 @@ function calculateMatch(need: FeedPost, supply: FeedPost): MatchResult {
 }
 
 serve(async (req) => {
+  const origin = req.headers.get('origin');
+  const corsHeaders = getCorsHeaders(origin);
+
   // Handle CORS preflight
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -246,7 +259,6 @@ serve(async (req) => {
     console.log(`Matching Engine: action=${action}, need_post_id=${need_post_id}, user=${user.id}, limit=${limit}`);
 
     if (action === "find_matches") {
-      // Get the need post
       const { data: needPost, error: needError } = await supabase
         .from("feed_posts")
         .select("*, profiles:user_id(reputation_score)")
@@ -263,7 +275,6 @@ serve(async (req) => {
         );
       }
 
-      // Get all active supply posts
       const { data: supplyPosts, error: supplyError } = await supabase
         .from("feed_posts")
         .select("*, profiles:user_id(reputation_score)")
@@ -279,10 +290,9 @@ serve(async (req) => {
         );
       }
 
-      // Calculate matches
       const matches = (supplyPosts || [])
         .map(supply => calculateMatch(needPost as FeedPost, supply as FeedPost))
-        .filter(match => match.match_score >= 30) // Minimum threshold
+        .filter(match => match.match_score >= 30)
         .sort((a, b) => b.match_score - a.match_score)
         .slice(0, limit);
 
@@ -295,7 +305,6 @@ serve(async (req) => {
     }
 
     if (action === "run_batch_matching") {
-      // Get all unmatched need posts
       const { data: needPosts, error: needsError } = await supabase
         .from("feed_posts")
         .select("*, profiles:user_id(reputation_score)")
@@ -311,7 +320,6 @@ serve(async (req) => {
         );
       }
 
-      // Get all unmatched supply posts
       const { data: supplyPosts, error: supplyError } = await supabase
         .from("feed_posts")
         .select("*, profiles:user_id(reputation_score)")
@@ -327,19 +335,17 @@ serve(async (req) => {
         );
       }
 
-      // Calculate all possible matches
       const allMatches: MatchResult[] = [];
       
       for (const need of (needPosts || [])) {
         for (const supply of (supplyPosts || [])) {
           const match = calculateMatch(need as FeedPost, supply as FeedPost);
-          if (match.match_score >= 40) { // Higher threshold for batch
+          if (match.match_score >= 40) {
             allMatches.push(match);
           }
         }
       }
 
-      // Sort by score and insert top matches
       const topMatches = allMatches
         .sort((a, b) => b.match_score - a.match_score)
         .slice(0, 50);
@@ -380,6 +386,8 @@ serve(async (req) => {
 
   } catch (error) {
     console.error("Matching Engine error:", error);
+    const origin = req.headers.get('origin');
+    const corsHeaders = getCorsHeaders(origin);
     return new Response(
       JSON.stringify({ error: error instanceof Error ? error.message : "Unknown error" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }

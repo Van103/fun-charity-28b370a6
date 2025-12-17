@@ -1,9 +1,24 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+// Allowed origins for CORS - restrict to trusted domains
+const ALLOWED_ORIGINS = [
+  'https://rsmppgcxrdywybxorvla.lovable.app',
+  'https://lovable.dev',
+  'http://localhost:5173',
+  'http://localhost:8080',
+];
+
+function getCorsHeaders(origin: string | null) {
+  const allowedOrigin = ALLOWED_ORIGINS.includes(origin || '') 
+    ? origin 
+    : ALLOWED_ORIGINS[0];
+  
+  return {
+    'Access-Control-Allow-Origin': allowedOrigin!,
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+    'Access-Control-Allow-Credentials': 'true',
+  };
+}
 
 // Input validation and sanitization
 function validateAndSanitizeInput(body: unknown): { topic?: string; style?: string } {
@@ -23,9 +38,8 @@ function validateAndSanitizeInput(body: unknown): { topic?: string; style?: stri
     if (topic.length > 500) {
       throw new Error("Topic must be less than 500 characters");
     }
-    // Remove control characters and limit to safe characters
     sanitizedTopic = topic
-      .replace(/[\x00-\x1f\x7f]/g, '') // Remove control characters
+      .replace(/[\x00-\x1f\x7f]/g, '')
       .trim()
       .slice(0, 500);
   }
@@ -37,9 +51,8 @@ function validateAndSanitizeInput(body: unknown): { topic?: string; style?: stri
     if (style.length > 100) {
       throw new Error("Style must be less than 100 characters");
     }
-    // Remove control characters and limit to safe characters
     sanitizedStyle = style
-      .replace(/[\x00-\x1f\x7f]/g, '') // Remove control characters
+      .replace(/[\x00-\x1f\x7f]/g, '')
       .trim()
       .slice(0, 100);
   }
@@ -48,12 +61,14 @@ function validateAndSanitizeInput(body: unknown): { topic?: string; style?: stri
 }
 
 serve(async (req) => {
+  const origin = req.headers.get('origin');
+  const corsHeaders = getCorsHeaders(origin);
+
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    // Parse and validate input
     let body: unknown;
     try {
       body = await req.json();
@@ -84,7 +99,6 @@ serve(async (req) => {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
-    // Build prompts with sanitized inputs
     const safeStyle = style || 'thân thiện, ấm áp';
     const systemPrompt = `Bạn là một chuyên gia viết nội dung mạng xã hội tiếng Việt cho nền tảng từ thiện FUN Charity. 
 Hãy tạo nội dung bài đăng hấp dẫn, cảm xúc và truyền cảm hứng.
@@ -95,7 +109,6 @@ Nội dung phải ngắn gọn (tối đa 200 từ), có emoji phù hợp và k�
       ? `Viết một bài đăng về chủ đề: ${topic}`
       : `Viết một bài đăng truyền cảm hứng về hoạt động từ thiện, giúp đỡ cộng đồng`;
 
-    // Step 1: Generate text content
     console.log("Generating text content with sanitized inputs...");
     const textResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -134,7 +147,6 @@ Nội dung phải ngắn gọn (tối đa 200 từ), có emoji phù hợp và k�
     const generatedContent = textData.choices?.[0]?.message?.content || "";
     console.log("Text content generated successfully");
 
-    // Step 2: Generate image based on the content
     console.log("Generating image...");
     const imagePrompt = topic 
       ? `Create a beautiful, heartwarming illustration for a Vietnamese charity social media post about: ${topic}. Style: warm, hopeful, colorful, showing people helping each other, community spirit. No text in the image.`
@@ -166,7 +178,6 @@ Nội dung phải ngắn gọn (tối đa 200 từ), có emoji phù hợp và k�
       }
     } else {
       console.error("Image generation failed:", imageResponse.status);
-      // Continue without image if image generation fails
     }
 
     return new Response(JSON.stringify({ 
@@ -177,6 +188,8 @@ Nội dung phải ngắn gọn (tối đa 200 từ), có emoji phù hợp và k�
     });
   } catch (error) {
     console.error("Error in generate-post-content:", error);
+    const origin = req.headers.get('origin');
+    const corsHeaders = getCorsHeaders(origin);
     return new Response(
       JSON.stringify({ error: error instanceof Error ? error.message : "Unknown error" }),
       {
