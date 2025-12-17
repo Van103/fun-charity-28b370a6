@@ -191,9 +191,59 @@ serve(async (req) => {
     // Use service role client for database operations (after auth verification)
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    const { action, need_post_id, limit = 10 } = await req.json();
+    // Parse and validate input
+    let body: unknown;
+    try {
+      body = await req.json();
+    } catch {
+      return new Response(
+        JSON.stringify({ error: "Invalid JSON in request body" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
-    console.log(`Matching Engine: action=${action}, need_post_id=${need_post_id}, user=${user.id}`);
+    if (!body || typeof body !== 'object') {
+      return new Response(
+        JSON.stringify({ error: "Invalid request body" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const { action, need_post_id, limit: rawLimit } = body as { action?: unknown; need_post_id?: unknown; limit?: unknown };
+
+    // Validate action
+    const validActions = ["find_matches", "run_batch_matching"];
+    if (!action || typeof action !== 'string' || !validActions.includes(action)) {
+      return new Response(
+        JSON.stringify({ error: "Invalid action. Must be 'find_matches' or 'run_batch_matching'" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Validate need_post_id for find_matches action (must be valid UUID)
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (action === "find_matches") {
+      if (!need_post_id || typeof need_post_id !== 'string' || !uuidRegex.test(need_post_id)) {
+        return new Response(
+          JSON.stringify({ error: "Invalid need_post_id. Must be a valid UUID" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+    }
+
+    // Validate and bound limit (1-50, default 10)
+    let limit = 10;
+    if (rawLimit !== undefined) {
+      if (typeof rawLimit !== 'number' || !Number.isInteger(rawLimit) || rawLimit < 1 || rawLimit > 50) {
+        return new Response(
+          JSON.stringify({ error: "Invalid limit. Must be an integer between 1 and 50" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      limit = rawLimit;
+    }
+
+    console.log(`Matching Engine: action=${action}, need_post_id=${need_post_id}, user=${user.id}, limit=${limit}`);
 
     if (action === "find_matches") {
       // Get the need post
