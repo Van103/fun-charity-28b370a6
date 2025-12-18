@@ -2,7 +2,7 @@ import { useState, useRef } from "react";
 import { Link } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Image, Video, Sparkles, X, Loader2, Send, RefreshCw, AlertCircle, Check, Palette } from "lucide-react";
+import { Image, Video, Sparkles, X, Loader2, Send, RefreshCw, AlertCircle, Check, Palette, Copy, Trash2 } from "lucide-react";
 import { useCreateFeedPost } from "@/hooks/useFeedPosts";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -459,7 +459,7 @@ export function CreatePostBox({ profile, onPostCreated }: CreatePostBoxProps) {
           setAiPreviewImage(null);
         }
       }}>
-        <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Sparkles className="w-5 h-5 text-primary" />
@@ -579,12 +579,30 @@ export function CreatePostBox({ profile, onPostCreated }: CreatePostBoxProps) {
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-foreground flex items-center justify-between">
                     <span>Nội dung bài viết:</span>
-                    <span className="text-xs text-muted-foreground font-normal">Bạn có thể chỉnh sửa</span>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          navigator.clipboard.writeText(aiPreviewContent);
+                          toast({
+                            title: "Đã copy!",
+                            description: "Nội dung đã được sao chép vào clipboard",
+                          });
+                        }}
+                        className="h-7 px-2 text-xs gap-1 text-muted-foreground hover:text-primary"
+                      >
+                        <Copy className="w-3 h-3" />
+                        Copy
+                      </Button>
+                      <span className="text-xs text-muted-foreground font-normal">Bạn có thể chỉnh sửa</span>
+                    </div>
                   </label>
                   <Textarea
                     value={aiPreviewContent}
                     onChange={(e) => setAiPreviewContent(e.target.value)}
-                    className="min-h-[150px] rounded-xl resize-none"
+                    className="min-h-[220px] rounded-xl resize-y text-base leading-relaxed"
                     placeholder="Nội dung AI..."
                   />
                 </div>
@@ -592,12 +610,24 @@ export function CreatePostBox({ profile, onPostCreated }: CreatePostBoxProps) {
                 {/* Generated Image Preview */}
                 {aiPreviewImage && (
                   <div className="space-y-2">
-                    <label className="text-sm font-medium text-foreground flex items-center gap-2">
-                      Hình ảnh AI:
-                      <span className="bg-primary/20 text-primary text-xs px-2 py-0.5 rounded-full flex items-center gap-1">
-                        <Sparkles className="w-3 h-3" />
-                        AI
-                      </span>
+                    <label className="text-sm font-medium text-foreground flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        Hình ảnh AI:
+                        <span className="bg-primary/20 text-primary text-xs px-2 py-0.5 rounded-full flex items-center gap-1">
+                          <Sparkles className="w-3 h-3" />
+                          AI
+                        </span>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setAiPreviewImage(null)}
+                        className="h-7 px-2 text-xs gap-1 text-destructive hover:text-destructive hover:bg-destructive/10"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                        Xóa ảnh
+                      </Button>
                     </label>
                     <div className="rounded-xl overflow-hidden border border-primary/30 bg-muted">
                       <img 
