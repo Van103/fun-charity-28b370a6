@@ -2,7 +2,7 @@ import { useState, useRef } from "react";
 import { Link } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Image, Video, Sparkles, X, Loader2, Send, RefreshCw, AlertCircle } from "lucide-react";
+import { Image, Video, Sparkles, X, Loader2, Send, RefreshCw, AlertCircle, Check } from "lucide-react";
 import { useCreateFeedPost } from "@/hooks/useFeedPosts";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -49,6 +49,8 @@ export function CreatePostBox({ profile, onPostCreated }: CreatePostBoxProps) {
   const [isGenerating, setIsGenerating] = useState(false);
   const [aiError, setAiError] = useState<string | null>(null);
   const [generationProgress, setGenerationProgress] = useState(0);
+  const [aiPreviewContent, setAiPreviewContent] = useState<string | null>(null);
+  const [aiPreviewImage, setAiPreviewImage] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
   
@@ -60,6 +62,8 @@ export function CreatePostBox({ profile, onPostCreated }: CreatePostBoxProps) {
     setIsGenerating(true);
     setAiError(null);
     setGenerationProgress(0);
+    setAiPreviewContent(null);
+    setAiPreviewImage(null);
     
     // Simulate progress for better UX
     const progressInterval = setInterval(() => {
@@ -99,20 +103,13 @@ export function CreatePostBox({ profile, onPostCreated }: CreatePostBoxProps) {
       }
 
       if (data?.content) {
-        setContent(data.content);
+        // Show preview in modal instead of closing immediately
+        setAiPreviewContent(data.content);
         
-        // Handle AI-generated image
+        // Handle AI-generated image preview
         if (data?.image) {
-          setAiGeneratedImage(data.image);
+          setAiPreviewImage(data.image);
         }
-        
-        setShowAiModal(false);
-        setAiTopic("");
-        setAiError(null);
-        toast({
-          title: t("ai.success"),
-          description: data?.image ? t("ai.successWithImage") : t("ai.successDesc"),
-        });
       }
     } catch (error: any) {
       clearInterval(progressInterval);
@@ -130,6 +127,30 @@ export function CreatePostBox({ profile, onPostCreated }: CreatePostBoxProps) {
       setIsGenerating(false);
       setGenerationProgress(0);
     }
+  };
+
+  const applyAiContent = () => {
+    if (aiPreviewContent) {
+      setContent(aiPreviewContent);
+    }
+    if (aiPreviewImage) {
+      setAiGeneratedImage(aiPreviewImage);
+    }
+    setShowAiModal(false);
+    setAiTopic("");
+    setAiPreviewContent(null);
+    setAiPreviewImage(null);
+    setAiError(null);
+    toast({
+      title: t("ai.success"),
+      description: aiPreviewImage ? t("ai.successWithImage") : t("ai.successDesc"),
+    });
+  };
+
+  const resetAiModal = () => {
+    setAiPreviewContent(null);
+    setAiPreviewImage(null);
+    setAiError(null);
   };
 
   const removeAiImage = () => {
@@ -423,9 +444,11 @@ export function CreatePostBox({ profile, onPostCreated }: CreatePostBoxProps) {
         if (!open) {
           setAiError(null);
           setGenerationProgress(0);
+          setAiPreviewContent(null);
+          setAiPreviewImage(null);
         }
       }}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Sparkles className="w-5 h-5 text-primary" />
@@ -433,74 +456,138 @@ export function CreatePostBox({ profile, onPostCreated }: CreatePostBoxProps) {
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
-            <div>
-              <label className="text-sm font-medium mb-2 block">
-                {t("ai.topic")}
-              </label>
-              <Input
-                placeholder={t("ai.placeholder")}
-                value={aiTopic}
-                onChange={(e) => setAiTopic(e.target.value)}
-                disabled={isGenerating}
-                className="rounded-lg"
-              />
-            </div>
-            <p className="text-xs text-muted-foreground">
-              {t("ai.empty")}
-            </p>
-            
-            {/* Error State with Retry */}
-            {aiError && (
-              <div className="flex items-start gap-3 p-3 bg-destructive/10 border border-destructive/30 rounded-lg">
-                <AlertCircle className="w-5 h-5 text-destructive shrink-0 mt-0.5" />
-                <div className="flex-1 space-y-2">
-                  <p className="text-sm text-destructive font-medium">{aiError}</p>
+            {/* Show input section when no preview */}
+            {!aiPreviewContent && (
+              <>
+                <div>
+                  <label className="text-sm font-medium mb-2 block">
+                    {t("ai.topic")}
+                  </label>
+                  <Input
+                    placeholder={t("ai.placeholder")}
+                    value={aiTopic}
+                    onChange={(e) => setAiTopic(e.target.value)}
+                    disabled={isGenerating}
+                    className="rounded-lg"
+                  />
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {t("ai.empty")}
+                </p>
+                
+                {/* Error State with Retry */}
+                {aiError && (
+                  <div className="flex items-start gap-3 p-3 bg-destructive/10 border border-destructive/30 rounded-lg">
+                    <AlertCircle className="w-5 h-5 text-destructive shrink-0 mt-0.5" />
+                    <div className="flex-1 space-y-2">
+                      <p className="text-sm text-destructive font-medium">{aiError}</p>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={generateAiContent}
+                        disabled={isGenerating}
+                        className="gap-2"
+                      >
+                        <RefreshCw className="w-3 h-3" />
+                        {t("ai.retry")}
+                      </Button>
+                    </div>
+                  </div>
+                )}
+                
+                {/* Progress Bar */}
+                {isGenerating && (
+                  <div className="space-y-2">
+                    <div className="h-2 bg-muted rounded-full overflow-hidden">
+                      <div 
+                        className="h-full bg-gradient-to-r from-primary to-gold-champagne transition-all duration-300"
+                        style={{ width: `${generationProgress}%` }}
+                      />
+                    </div>
+                    <p className="text-xs text-muted-foreground text-center">
+                      {generationProgress < 50 ? "Đang tạo nội dung văn bản..." : "Đang tạo hình ảnh AI..."}
+                    </p>
+                  </div>
+                )}
+                
+                <Button
+                  onClick={generateAiContent}
+                  disabled={isGenerating}
+                  className="w-full bg-gradient-to-r from-primary to-primary-light hover:from-primary-dark hover:to-primary rounded-lg h-11"
+                >
+                  {isGenerating ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      {t("ai.generating")}
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="w-4 h-4 mr-2" />
+                      {t("ai.generate")}
+                    </>
+                  )}
+                </Button>
+              </>
+            )}
+
+            {/* Preview Section - Show when content is generated */}
+            {aiPreviewContent && (
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 text-primary">
+                  <Check className="w-5 h-5" />
+                  <span className="font-medium">Nội dung AI đã tạo xong!</span>
+                </div>
+                
+                {/* Generated Text Preview */}
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-foreground">Nội dung bài viết:</label>
+                  <div className="p-4 bg-muted/50 border border-border rounded-xl">
+                    <p className="text-sm text-foreground whitespace-pre-wrap leading-relaxed">
+                      {aiPreviewContent}
+                    </p>
+                  </div>
+                </div>
+                
+                {/* Generated Image Preview */}
+                {aiPreviewImage && (
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-foreground flex items-center gap-2">
+                      Hình ảnh AI:
+                      <span className="bg-primary/20 text-primary text-xs px-2 py-0.5 rounded-full flex items-center gap-1">
+                        <Sparkles className="w-3 h-3" />
+                        AI
+                      </span>
+                    </label>
+                    <div className="rounded-xl overflow-hidden border border-primary/30 bg-muted">
+                      <img 
+                        src={aiPreviewImage} 
+                        alt="AI Generated" 
+                        className="w-full max-h-80 object-contain"
+                      />
+                    </div>
+                  </div>
+                )}
+                
+                {/* Action Buttons */}
+                <div className="flex gap-3 pt-2">
                   <Button
                     variant="outline"
-                    size="sm"
-                    onClick={generateAiContent}
-                    disabled={isGenerating}
-                    className="gap-2"
+                    onClick={resetAiModal}
+                    className="flex-1 rounded-lg"
                   >
-                    <RefreshCw className="w-3 h-3" />
-                    {t("ai.retry")}
+                    <RefreshCw className="w-4 h-4 mr-2" />
+                    Tạo lại
+                  </Button>
+                  <Button
+                    onClick={applyAiContent}
+                    className="flex-1 bg-gradient-to-r from-primary to-gold-champagne hover:from-primary-dark hover:to-gold-champagne text-primary-foreground rounded-lg"
+                  >
+                    <Check className="w-4 h-4 mr-2" />
+                    Sử dụng nội dung này
                   </Button>
                 </div>
               </div>
             )}
-            
-            {/* Progress Bar */}
-            {isGenerating && (
-              <div className="space-y-2">
-                <div className="h-2 bg-muted rounded-full overflow-hidden">
-                  <div 
-                    className="h-full bg-gradient-to-r from-primary to-gold-champagne transition-all duration-300"
-                    style={{ width: `${generationProgress}%` }}
-                  />
-                </div>
-                <p className="text-xs text-muted-foreground text-center">
-                  {generationProgress < 50 ? "Đang tạo nội dung văn bản..." : "Đang tạo hình ảnh AI..."}
-                </p>
-              </div>
-            )}
-            
-            <Button
-              onClick={generateAiContent}
-              disabled={isGenerating}
-              className="w-full bg-gradient-to-r from-primary to-primary-light hover:from-primary-dark hover:to-primary rounded-lg h-11"
-            >
-              {isGenerating ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  {t("ai.generating")}
-                </>
-              ) : (
-                <>
-                  <Sparkles className="w-4 h-4 mr-2" />
-                  {t("ai.generate")}
-                </>
-              )}
-            </Button>
           </div>
         </DialogContent>
       </Dialog>
