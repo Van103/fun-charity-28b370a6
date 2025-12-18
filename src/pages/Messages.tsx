@@ -9,7 +9,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { supabase } from "@/integrations/supabase/client";
 import { 
   Loader2, Send, ArrowLeft, Search, Image as ImageIcon, X, 
-  Phone, Video, Users, Plus 
+  Phone, Video, Users, Plus, Mic, ThumbsUp, MoreHorizontal,
+  Minimize2, Maximize2
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { vi } from "date-fns/locale";
@@ -57,6 +58,12 @@ interface Message {
   };
 }
 
+interface SearchUser {
+  user_id: string;
+  full_name: string | null;
+  avatar_url: string | null;
+}
+
 export default function Messages() {
   const [searchParams] = useSearchParams();
   const targetUserId = searchParams.get("user");
@@ -75,8 +82,12 @@ export default function Messages() {
   const [showVideoCall, setShowVideoCall] = useState(false);
   const [callType, setCallType] = useState<"video" | "audio">("video");
   const [showCreateGroup, setShowCreateGroup] = useState(false);
+  const [searchResults, setSearchResults] = useState<SearchUser[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [showSearchDropdown, setShowSearchDropdown] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   // Setup presence tracking
   usePresence(currentUserId);
@@ -114,6 +125,44 @@ export default function Messages() {
     init();
   }, [targetUserId]);
 
+  // Search users
+  useEffect(() => {
+    const searchUsers = async () => {
+      if (searchQuery.trim().length < 2) {
+        setSearchResults([]);
+        setShowSearchDropdown(false);
+        return;
+      }
+      
+      setIsSearching(true);
+      const { data } = await supabase
+        .from("profiles")
+        .select("user_id, full_name, avatar_url")
+        .ilike("full_name", `%${searchQuery}%`)
+        .neq("user_id", currentUserId)
+        .limit(10);
+      
+      setSearchResults(data || []);
+      setShowSearchDropdown(true);
+      setIsSearching(false);
+    };
+
+    const debounce = setTimeout(searchUsers, 300);
+    return () => clearTimeout(debounce);
+  }, [searchQuery, currentUserId]);
+
+  // Close search dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (searchInputRef.current && !searchInputRef.current.contains(e.target as Node)) {
+        setShowSearchDropdown(false);
+      }
+    };
+    
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
   const loadConversations = async (userId: string) => {
     const { data: convos } = await supabase
       .from("conversations")
@@ -125,9 +174,7 @@ export default function Messages() {
 
     const enrichedConvos = await Promise.all(
       convos.map(async (convo) => {
-        // Check if group chat
         if (convo.is_group) {
-          // Load all participants for group
           const { data: participants } = await supabase
             .from("conversation_participants")
             .select("user_id")
@@ -156,9 +203,7 @@ export default function Messages() {
           };
         }
 
-        // Direct message
         const otherUserId = convo.participant1_id === userId ? convo.participant2_id : convo.participant1_id;
-        
         const onlineStatusMap = await getOnlineStatus([otherUserId]);
         
         const { data: profile } = await supabase
@@ -210,7 +255,6 @@ export default function Messages() {
       
       convo = newConvo;
 
-      // Add participants for new conversation
       if (newConvo) {
         await supabase
           .from("conversation_participants")
@@ -254,7 +298,6 @@ export default function Messages() {
       return;
     }
 
-    // For group chats, load sender profiles
     const senderIds = [...new Set(data.map(m => m.sender_id))];
     const { data: profiles } = await supabase
       .from("profiles")
@@ -282,6 +325,13 @@ export default function Messages() {
   const selectConversation = async (convo: Conversation) => {
     setActiveConversation(convo);
     await loadMessages(convo.id);
+  };
+
+  const selectSearchResult = async (user: SearchUser) => {
+    if (!currentUserId) return;
+    setSearchQuery("");
+    setShowSearchDropdown(false);
+    await openConversationWithUser(currentUserId, user.user_id);
   };
 
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -313,7 +363,7 @@ export default function Messages() {
     setNewMessage(prev => prev + sticker);
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setNewMessage(e.target.value);
     handleTyping();
   };
@@ -372,6 +422,33 @@ export default function Messages() {
       });
     } finally {
       setIsSending(false);
+    }
+  };
+
+  const sendLike = async () => {
+    if (!activeConversation || !currentUserId) return;
+    
+    try {
+      await supabase
+        .from("messages")
+        .insert({
+          conversation_id: activeConversation.id,
+          sender_id: currentUserId,
+          content: "👍"
+        });
+      
+      await loadMessages(activeConversation.id);
+      
+      await supabase
+        .from("conversations")
+        .update({ last_message_at: new Date().toISOString() })
+        .eq("id", activeConversation.id);
+    } catch (error: any) {
+      toast({
+        title: "Lỗi",
+        description: error.message,
+        variant: "destructive"
+      });
     }
   };
 
@@ -441,6 +518,7 @@ export default function Messages() {
   }
 
   const filteredConversations = conversations.filter(c => {
+    if (!searchQuery.trim()) return true;
     if (c.is_group) {
       return c.name?.toLowerCase().includes(searchQuery.toLowerCase());
     }
@@ -453,9 +531,7 @@ export default function Messages() {
   };
 
   const getConversationAvatar = (convo: Conversation) => {
-    if (convo.is_group) {
-      return null; // Will show group icon
-    }
+    if (convo.is_group) return null;
     return convo.otherUser?.avatar_url;
   };
 
@@ -467,29 +543,64 @@ export default function Messages() {
       <Navbar />
 
       <main className="max-w-6xl mx-auto px-4 pt-4">
-        <div className="glass-card overflow-hidden h-[calc(100vh-120px)] flex">
+        <div className="bg-card rounded-xl shadow-lg overflow-hidden h-[calc(100vh-120px)] flex border border-border">
           {/* Conversations List */}
-          <div className={`w-full md:w-80 border-r border-border flex flex-col ${activeConversation ? 'hidden md:flex' : ''}`}>
+          <div className={`w-full md:w-80 border-r border-border flex flex-col bg-card ${activeConversation ? 'hidden md:flex' : ''}`}>
             <div className="p-4 border-b border-border">
               <div className="flex items-center justify-between mb-3">
-                <h2 className="text-lg font-semibold">Tin nhắn</h2>
+                <h2 className="text-xl font-bold">Đoạn chat</h2>
                 <Button
                   variant="ghost"
                   size="icon"
                   onClick={() => setShowCreateGroup(true)}
                   title="Tạo nhóm chat"
+                  className="rounded-full hover:bg-muted"
                 >
                   <Plus className="w-5 h-5" />
                 </Button>
               </div>
-              <div className="relative">
+              
+              {/* Search with dropdown */}
+              <div className="relative" ref={searchInputRef}>
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
-                  placeholder="Tìm kiếm..."
+                  placeholder="Tìm kiếm người dùng..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-9"
+                  onFocus={() => searchQuery.trim().length >= 2 && setShowSearchDropdown(true)}
+                  className="pl-10 rounded-full bg-muted/50 border-0 focus-visible:ring-1"
                 />
+                
+                {/* Search Results Dropdown */}
+                {showSearchDropdown && (
+                  <div className="absolute top-full left-0 right-0 mt-1 bg-card border border-border rounded-lg shadow-lg z-50 max-h-64 overflow-y-auto">
+                    {isSearching ? (
+                      <div className="p-4 text-center">
+                        <Loader2 className="w-5 h-5 animate-spin mx-auto text-muted-foreground" />
+                      </div>
+                    ) : searchResults.length === 0 ? (
+                      <div className="p-4 text-center text-muted-foreground text-sm">
+                        Không tìm thấy người dùng
+                      </div>
+                    ) : (
+                      searchResults.map(user => (
+                        <button
+                          key={user.user_id}
+                          onClick={() => selectSearchResult(user)}
+                          className="w-full flex items-center gap-3 p-3 hover:bg-muted/50 transition-colors text-left"
+                        >
+                          <Avatar className="w-10 h-10">
+                            <AvatarImage src={user.avatar_url || ""} />
+                            <AvatarFallback className="bg-primary/10 text-primary">
+                              {user.full_name?.charAt(0) || "U"}
+                            </AvatarFallback>
+                          </Avatar>
+                          <span className="font-medium">{user.full_name || "Người dùng"}</span>
+                        </button>
+                      ))
+                    )}
+                  </div>
+                )}
               </div>
             </div>
             
@@ -503,33 +614,35 @@ export default function Messages() {
                   <div
                     key={convo.id}
                     onClick={() => selectConversation(convo)}
-                    className={`flex items-center gap-3 p-4 hover:bg-muted/50 cursor-pointer transition-colors ${
-                      activeConversation?.id === convo.id ? 'bg-muted/50' : ''
+                    className={`flex items-center gap-3 p-3 mx-2 my-1 rounded-lg hover:bg-muted/50 cursor-pointer transition-colors ${
+                      activeConversation?.id === convo.id ? 'bg-primary/10' : ''
                     }`}
                   >
                     <div className="relative">
                       {convo.is_group ? (
-                        <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                          <Users className="w-5 h-5 text-primary" />
+                        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary to-purple-400 flex items-center justify-center">
+                          <Users className="w-6 h-6 text-white" />
                         </div>
                       ) : (
-                        <Avatar>
+                        <Avatar className="w-12 h-12">
                           <AvatarImage src={getConversationAvatar(convo) || ""} />
-                          <AvatarFallback>{getConversationName(convo).charAt(0)}</AvatarFallback>
+                          <AvatarFallback className="bg-primary/10 text-primary font-medium">
+                            {getConversationName(convo).charAt(0)}
+                          </AvatarFallback>
                         </Avatar>
                       )}
                       {!convo.is_group && (
-                        <span className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-card ${
-                          convo.isOnline ? 'bg-green-500' : 'bg-muted-foreground'
+                        <span className={`absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full border-2 border-card ${
+                          convo.isOnline ? 'bg-green-500' : 'bg-gray-400'
                         }`} />
                       )}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="font-medium truncate">{getConversationName(convo)}</p>
-                      <p className="text-xs text-muted-foreground truncate">{convo.lastMessage}</p>
+                      <p className="font-semibold truncate">{getConversationName(convo)}</p>
+                      <p className="text-sm text-muted-foreground truncate">{convo.lastMessage}</p>
                     </div>
-                    <span className="text-xs text-muted-foreground">
-                      {formatDistanceToNow(new Date(convo.last_message_at), { locale: vi })}
+                    <span className="text-xs text-muted-foreground whitespace-nowrap">
+                      {formatDistanceToNow(new Date(convo.last_message_at), { locale: vi, addSuffix: false })}
                     </span>
                   </div>
                 ))
@@ -538,16 +651,16 @@ export default function Messages() {
           </div>
 
           {/* Messages Area */}
-          <div className={`flex-1 flex flex-col ${!activeConversation ? 'hidden md:flex' : ''}`}>
+          <div className={`flex-1 flex flex-col bg-background ${!activeConversation ? 'hidden md:flex' : ''}`}>
             {activeConversation ? (
               <>
-                {/* Chat Header */}
-                <div className="p-4 border-b border-border flex items-center justify-between">
+                {/* Chat Header - Messenger Style */}
+                <div className="px-4 py-3 border-b border-border flex items-center justify-between bg-card">
                   <div className="flex items-center gap-3">
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="md:hidden"
+                      className="md:hidden rounded-full"
                       onClick={() => setActiveConversation(null)}
                     >
                       <ArrowLeft className="w-5 h-5" />
@@ -555,11 +668,11 @@ export default function Messages() {
                     
                     {activeConversation.is_group ? (
                       <>
-                        <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                          <Users className="w-5 h-5 text-primary" />
+                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-purple-400 flex items-center justify-center">
+                          <Users className="w-5 h-5 text-white" />
                         </div>
                         <div>
-                          <p className="font-medium">{activeConversation.name || "Nhóm chat"}</p>
+                          <p className="font-semibold">{activeConversation.name || "Nhóm chat"}</p>
                           <p className="text-xs text-muted-foreground">
                             {(activeConversation.participants?.length || 0) + 1} thành viên
                           </p>
@@ -568,26 +681,31 @@ export default function Messages() {
                     ) : (
                       <>
                         <Link to={`/user/${activeConversation.otherUser?.user_id}`} className="relative">
-                          <Avatar>
+                          <Avatar className="w-10 h-10">
                             <AvatarImage src={activeConversation.otherUser?.avatar_url || ""} />
-                            <AvatarFallback>{activeConversation.otherUser?.full_name?.charAt(0) || "U"}</AvatarFallback>
+                            <AvatarFallback className="bg-primary/10 text-primary">
+                              {activeConversation.otherUser?.full_name?.charAt(0) || "U"}
+                            </AvatarFallback>
                           </Avatar>
                           <span className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-card ${
-                            activeConversation.isOnline ? 'bg-green-500' : 'bg-muted-foreground'
+                            activeConversation.isOnline ? 'bg-green-500' : 'bg-gray-400'
                           }`} />
                         </Link>
                         <div>
                           <Link 
                             to={`/user/${activeConversation.otherUser?.user_id}`}
-                            className="font-medium hover:underline"
+                            className="font-semibold hover:underline block"
                           >
                             {activeConversation.otherUser?.full_name || "Người dùng"}
                           </Link>
-                          <p className="text-xs text-muted-foreground">
+                          <p className="text-xs">
                             {activeConversation.isOnline ? (
-                              <span className="text-green-500">● Đang hoạt động</span>
+                              <span className="text-green-500 flex items-center gap-1">
+                                <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                                Đang hoạt động
+                              </span>
                             ) : (
-                              "Ngoại tuyến"
+                              <span className="text-muted-foreground">Ngoại tuyến</span>
                             )}
                           </p>
                         </div>
@@ -595,94 +713,128 @@ export default function Messages() {
                     )}
                   </div>
 
-                  {/* Call buttons - only for direct messages */}
-                  {!activeConversation.is_group && activeConversation.otherUser && (
-                    <div className="flex items-center gap-2">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => startCall("audio")}
-                        title="Gọi thoại"
-                      >
-                        <Phone className="w-5 h-5" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => startCall("video")}
-                        title="Gọi video"
-                      >
-                        <Video className="w-5 h-5" />
-                      </Button>
-                    </div>
-                  )}
+                  {/* Action buttons - Messenger style */}
+                  <div className="flex items-center gap-1">
+                    {!activeConversation.is_group && activeConversation.otherUser && (
+                      <>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => startCall("audio")}
+                          title="Gọi thoại"
+                          className="rounded-full hover:bg-muted text-primary"
+                        >
+                          <Phone className="w-5 h-5" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => startCall("video")}
+                          title="Gọi video"
+                          className="rounded-full hover:bg-muted text-primary"
+                        >
+                          <Video className="w-5 h-5" />
+                        </Button>
+                      </>
+                    )}
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setActiveConversation(null)}
+                      title="Đóng"
+                      className="rounded-full hover:bg-muted hidden md:flex"
+                    >
+                      <X className="w-5 h-5" />
+                    </Button>
+                  </div>
                 </div>
 
                 {/* Messages */}
                 <ScrollArea className="flex-1 p-4">
-                  <div className="space-y-4">
-                    {messages.map(msg => (
-                      <div
-                        key={msg.id}
-                        className={`flex ${msg.sender_id === currentUserId ? 'justify-end' : 'justify-start'}`}
-                      >
-                        {/* Show avatar for group messages from others */}
-                        {activeConversation.is_group && msg.sender_id !== currentUserId && (
-                          <Avatar className="w-8 h-8 mr-2 flex-shrink-0">
-                            <AvatarImage src={msg.senderProfile?.avatar_url || ""} />
-                            <AvatarFallback className="text-xs">
-                              {msg.senderProfile?.full_name?.charAt(0) || "U"}
-                            </AvatarFallback>
-                          </Avatar>
-                        )}
-                        <div className="flex flex-col">
-                          {/* Show sender name in group */}
-                          {activeConversation.is_group && msg.sender_id !== currentUserId && (
-                            <span className="text-xs text-muted-foreground mb-1">
-                              {msg.senderProfile?.full_name || "Người dùng"}
-                            </span>
+                  <div className="space-y-2">
+                    {messages.map((msg, index) => {
+                      const isCurrentUser = msg.sender_id === currentUserId;
+                      const showAvatar = !isCurrentUser && (
+                        index === 0 || 
+                        messages[index - 1]?.sender_id !== msg.sender_id
+                      );
+                      
+                      return (
+                        <div
+                          key={msg.id}
+                          className={`flex items-end gap-2 ${isCurrentUser ? 'justify-end' : 'justify-start'}`}
+                        >
+                          {/* Avatar for other user's messages */}
+                          {!isCurrentUser && (
+                            <div className="w-7 h-7 flex-shrink-0">
+                              {showAvatar && (
+                                <Avatar className="w-7 h-7">
+                                  <AvatarImage src={msg.senderProfile?.avatar_url || activeConversation.otherUser?.avatar_url || ""} />
+                                  <AvatarFallback className="text-xs bg-primary/10 text-primary">
+                                    {(msg.senderProfile?.full_name || activeConversation.otherUser?.full_name || "U").charAt(0)}
+                                  </AvatarFallback>
+                                </Avatar>
+                              )}
+                            </div>
                           )}
-                          <div
-                            className={`max-w-[70%] rounded-2xl overflow-hidden ${
-                              msg.sender_id === currentUserId
-                                ? 'bg-primary text-primary-foreground'
-                                : 'bg-muted'
-                            }`}
-                          >
-                            {msg.image_url && (
-                              <img 
-                                src={msg.image_url} 
-                                alt="Shared image" 
-                                className="max-w-full max-h-60 object-cover cursor-pointer"
-                                onClick={() => window.open(msg.image_url!, '_blank')}
-                              />
+                          
+                          <div className={`flex flex-col max-w-[70%] ${isCurrentUser ? 'items-end' : 'items-start'}`}>
+                            {/* Sender name for group */}
+                            {activeConversation.is_group && !isCurrentUser && showAvatar && (
+                              <span className="text-xs text-muted-foreground mb-1 ml-1">
+                                {msg.senderProfile?.full_name || "Người dùng"}
+                              </span>
                             )}
-                            {msg.content && (
-                              <div className="px-4 py-2">
-                                <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
-                              </div>
-                            )}
-                            <p className={`text-xs px-4 pb-2 ${
-                              msg.sender_id === currentUserId ? 'text-primary-foreground/70' : 'text-muted-foreground'
+                            
+                            <div
+                              className={`rounded-2xl overflow-hidden ${
+                                isCurrentUser
+                                  ? 'bg-primary text-primary-foreground'
+                                  : 'bg-muted'
+                              }`}
+                            >
+                              {msg.image_url && (
+                                <img 
+                                  src={msg.image_url} 
+                                  alt="Shared image" 
+                                  className="max-w-full max-h-60 object-cover cursor-pointer"
+                                  onClick={() => window.open(msg.image_url!, '_blank')}
+                                />
+                              )}
+                              {msg.content && (
+                                <div className={`px-3 py-2 ${msg.content === '👍' ? 'text-3xl py-1' : ''}`}>
+                                  <p className="text-sm whitespace-pre-wrap break-words">{msg.content}</p>
+                                </div>
+                              )}
+                            </div>
+                            
+                            {/* Timestamp - show on hover or for last message */}
+                            <span className={`text-[10px] mt-1 ${
+                              isCurrentUser ? 'text-muted-foreground mr-1' : 'text-muted-foreground ml-1'
                             }`}>
-                              {formatDistanceToNow(new Date(msg.created_at), { locale: vi })}
-                            </p>
+                              {formatDistanceToNow(new Date(msg.created_at), { locale: vi, addSuffix: false })}
+                            </span>
                           </div>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                     
                     {/* Typing indicator */}
                     {typingUsers.length > 0 && (
-                      <div className="flex items-center gap-2 text-muted-foreground text-sm">
-                        <div className="flex gap-1">
-                          <span className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
-                          <span className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
-                          <span className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
+                      <div className="flex items-end gap-2">
+                        <Avatar className="w-7 h-7">
+                          <AvatarImage src={activeConversation.otherUser?.avatar_url || ""} />
+                          <AvatarFallback className="text-xs">
+                            {activeConversation.otherUser?.full_name?.charAt(0) || "U"}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="bg-muted rounded-2xl px-4 py-3">
+                          <div className="flex gap-1">
+                            <span className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
+                            <span className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
+                            <span className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
+                          </div>
                         </div>
-                        <span>
-                          {typingUsers.map(u => u.name).join(", ")} đang nhập...
-                        </span>
                       </div>
                     )}
                     
@@ -692,9 +844,9 @@ export default function Messages() {
 
                 {/* Image Preview */}
                 {imagePreview && (
-                  <div className="px-4 py-2 border-t border-border">
+                  <div className="px-4 py-2 border-t border-border bg-card">
                     <div className="relative inline-block">
-                      <img src={imagePreview} alt="Preview" className="max-h-20 rounded-lg" />
+                      <img src={imagePreview} alt="Preview" className="max-h-24 rounded-lg" />
                       <Button
                         variant="destructive"
                         size="icon"
@@ -707,50 +859,87 @@ export default function Messages() {
                   </div>
                 )}
 
-                {/* Message Input */}
-                <div className="p-4 border-t border-border">
+                {/* Message Input - Messenger Style */}
+                <div className="p-3 border-t border-border bg-card">
                   <input
                     ref={fileInputRef}
                     type="file"
-                    accept="image/*"
+                    accept="image/*,video/*"
                     className="hidden"
                     onChange={handleImageSelect}
                   />
-                  <form 
-                    onSubmit={(e) => { e.preventDefault(); sendMessage(); }}
-                    className="flex items-center gap-2"
-                  >
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      className="h-9 w-9"
-                      onClick={() => fileInputRef.current?.click()}
-                      disabled={isSending}
-                    >
-                      <ImageIcon className="w-5 h-5 text-muted-foreground" />
-                    </Button>
-                    <ChatStickerPicker onSelect={handleStickerSelect} />
-                    <Input
-                      placeholder="Nhập tin nhắn..."
-                      value={newMessage}
-                      onChange={handleInputChange}
-                      disabled={isSending}
-                      className="flex-1"
-                    />
-                    <Button type="submit" disabled={isSending || (!newMessage.trim() && !imageFile)}>
-                      {isSending ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                      ) : (
-                        <Send className="w-4 h-4" />
-                      )}
-                    </Button>
-                  </form>
+                  <div className="flex items-center gap-2">
+                    {/* Left action buttons */}
+                    <div className="flex items-center gap-1">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-9 w-9 rounded-full hover:bg-muted text-primary"
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={isSending}
+                        title="Đính kèm ảnh/video"
+                      >
+                        <ImageIcon className="w-5 h-5" />
+                      </Button>
+                      <ChatStickerPicker onSelect={handleStickerSelect} />
+                    </div>
+                    
+                    {/* Message input */}
+                    <div className="flex-1 relative">
+                      <Input
+                        placeholder="Aa"
+                        value={newMessage}
+                        onChange={handleInputChange}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && !e.shiftKey) {
+                            e.preventDefault();
+                            sendMessage();
+                          }
+                        }}
+                        disabled={isSending}
+                        className="w-full rounded-full bg-muted/50 border-0 pr-10 focus-visible:ring-1"
+                      />
+                    </div>
+                    
+                    {/* Send/Like button */}
+                    {newMessage.trim() || imageFile ? (
+                      <Button 
+                        onClick={sendMessage}
+                        disabled={isSending}
+                        size="icon"
+                        className="h-9 w-9 rounded-full"
+                      >
+                        {isSending ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <Send className="w-4 h-4" />
+                        )}
+                      </Button>
+                    ) : (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-9 w-9 rounded-full hover:bg-muted text-primary"
+                        onClick={sendLike}
+                        title="Gửi like"
+                      >
+                        <ThumbsUp className="w-5 h-5" />
+                      </Button>
+                    )}
+                  </div>
                 </div>
               </>
             ) : (
-              <div className="flex-1 flex items-center justify-center text-muted-foreground">
-                Chọn một cuộc trò chuyện để bắt đầu
+              <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground gap-4">
+                <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center">
+                  <Send className="w-10 h-10 text-primary" />
+                </div>
+                <div className="text-center">
+                  <p className="font-semibold text-lg text-foreground">Tin nhắn của bạn</p>
+                  <p className="text-sm">Chọn một cuộc trò chuyện để bắt đầu</p>
+                </div>
               </div>
             )}
           </div>
