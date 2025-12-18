@@ -5,10 +5,13 @@ import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 import {
   Heart,
   Users,
@@ -22,8 +25,13 @@ import {
   MapPin,
   Wallet,
   UserPlus,
+  UserCheck,
+  UserX,
   MessageCircle,
   Loader2,
+  Search,
+  Filter,
+  SlidersHorizontal,
 } from "lucide-react";
 
 interface Profile {
@@ -39,21 +47,61 @@ interface Profile {
   created_at: string | null;
 }
 
+interface Friendship {
+  id: string;
+  user_id: string;
+  friend_id: string;
+  status: string;
+}
+
 const Profiles = () => {
   const [activeTab, setActiveTab] = useState("donors");
   const [donors, setDonors] = useState<Profile[]>([]);
   const [volunteers, setVolunteers] = useState<Profile[]>([]);
   const [ngos, setNgos] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [friendships, setFriendships] = useState<Friendship[]>([]);
+  const [loadingFriendship, setLoadingFriendship] = useState<string | null>(null);
+
+  // Search and filter states
+  const [searchQuery, setSearchQuery] = useState("");
+  const [reputationFilter, setReputationFilter] = useState("all");
 
   useEffect(() => {
+    fetchCurrentUser();
     fetchProfiles();
   }, []);
+
+  useEffect(() => {
+    if (currentUserId) {
+      fetchFriendships();
+    }
+  }, [currentUserId]);
+
+  const fetchCurrentUser = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      setCurrentUserId(user.id);
+    }
+  };
+
+  const fetchFriendships = async () => {
+    if (!currentUserId) return;
+    
+    const { data, error } = await supabase
+      .from("friendships")
+      .select("*")
+      .or(`user_id.eq.${currentUserId},friend_id.eq.${currentUserId}`);
+
+    if (!error && data) {
+      setFriendships(data);
+    }
+  };
 
   const fetchProfiles = async () => {
     setLoading(true);
     try {
-      // Fetch all profiles
       const { data, error } = await supabase
         .from("profiles")
         .select("*")
@@ -62,7 +110,6 @@ const Profiles = () => {
       if (error) throw error;
 
       if (data) {
-        // Filter by role
         setDonors(data.filter((p) => p.role === "donor"));
         setVolunteers(data.filter((p) => p.role === "volunteer"));
         setNgos(data.filter((p) => p.role === "ngo"));
@@ -72,6 +119,134 @@ const Profiles = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const getFriendshipStatus = (profileUserId: string) => {
+    if (!currentUserId || profileUserId === currentUserId) return null;
+
+    const friendship = friendships.find(
+      (f) =>
+        (f.user_id === currentUserId && f.friend_id === profileUserId) ||
+        (f.friend_id === currentUserId && f.user_id === profileUserId)
+    );
+
+    if (!friendship) return "none";
+    if (friendship.status === "accepted") return "friends";
+    if (friendship.status === "pending") {
+      if (friendship.user_id === currentUserId) return "sent";
+      return "received";
+    }
+    return "none";
+  };
+
+  const handleSendFriendRequest = async (profileUserId: string) => {
+    if (!currentUserId) {
+      toast.error("Vui lòng đăng nhập để kết bạn");
+      return;
+    }
+
+    setLoadingFriendship(profileUserId);
+    try {
+      const { error } = await supabase.from("friendships").insert({
+        user_id: currentUserId,
+        friend_id: profileUserId,
+        status: "pending",
+      });
+
+      if (error) throw error;
+      toast.success("Đã gửi lời mời kết bạn!");
+      await fetchFriendships();
+    } catch (error: any) {
+      toast.error("Không thể gửi lời mời kết bạn");
+    } finally {
+      setLoadingFriendship(null);
+    }
+  };
+
+  const handleAcceptFriendRequest = async (profileUserId: string) => {
+    setLoadingFriendship(profileUserId);
+    try {
+      const { error } = await supabase
+        .from("friendships")
+        .update({ status: "accepted" })
+        .eq("user_id", profileUserId)
+        .eq("friend_id", currentUserId);
+
+      if (error) throw error;
+      toast.success("Đã chấp nhận lời mời kết bạn!");
+      await fetchFriendships();
+    } catch (error) {
+      toast.error("Không thể chấp nhận lời mời");
+    } finally {
+      setLoadingFriendship(null);
+    }
+  };
+
+  const handleCancelFriendRequest = async (profileUserId: string) => {
+    setLoadingFriendship(profileUserId);
+    try {
+      const { error } = await supabase
+        .from("friendships")
+        .delete()
+        .eq("user_id", currentUserId)
+        .eq("friend_id", profileUserId);
+
+      if (error) throw error;
+      toast.success("Đã hủy lời mời kết bạn");
+      await fetchFriendships();
+    } catch (error) {
+      toast.error("Không thể hủy lời mời");
+    } finally {
+      setLoadingFriendship(null);
+    }
+  };
+
+  const handleUnfriend = async (profileUserId: string) => {
+    setLoadingFriendship(profileUserId);
+    try {
+      const { error } = await supabase
+        .from("friendships")
+        .delete()
+        .or(`and(user_id.eq.${currentUserId},friend_id.eq.${profileUserId}),and(user_id.eq.${profileUserId},friend_id.eq.${currentUserId})`);
+
+      if (error) throw error;
+      toast.success("Đã hủy kết bạn");
+      await fetchFriendships();
+    } catch (error) {
+      toast.error("Không thể hủy kết bạn");
+    } finally {
+      setLoadingFriendship(null);
+    }
+  };
+
+  // Filter profiles based on search and reputation
+  const filterProfiles = (profiles: Profile[]) => {
+    return profiles.filter((profile) => {
+      // Search filter
+      const matchesSearch =
+        searchQuery === "" ||
+        profile.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        profile.bio?.toLowerCase().includes(searchQuery.toLowerCase());
+
+      // Reputation filter
+      let matchesReputation = true;
+      const score = profile.reputation_score || 0;
+      switch (reputationFilter) {
+        case "high":
+          matchesReputation = score >= 100;
+          break;
+        case "medium":
+          matchesReputation = score >= 50 && score < 100;
+          break;
+        case "low":
+          matchesReputation = score < 50;
+          break;
+        default:
+          matchesReputation = true;
+      }
+
+      return matchesSearch && matchesReputation;
+    });
   };
 
   const shortenAddress = (address: string | null) => {
@@ -100,6 +275,9 @@ const Profiles = () => {
     const borderColor = type === "donor" ? "border-secondary" : type === "volunteer" ? "border-primary" : "border-success";
     const badgeVariant = type === "donor" ? "donor" : type === "volunteer" ? "volunteer" : "ngo";
     const roleLabel = type === "donor" ? "Nhà Hảo Tâm" : type === "volunteer" ? "Tình Nguyện Viên" : "Tổ Chức";
+    const friendshipStatus = getFriendshipStatus(profile.user_id);
+    const isLoading = loadingFriendship === profile.user_id;
+    const isOwnProfile = profile.user_id === currentUserId;
     
     return (
       <motion.div
@@ -176,15 +354,94 @@ const Profiles = () => {
 
         {/* Actions */}
         <div className="flex gap-2">
-          <Link to={`/user/${profile.user_id}`} className="flex-1">
-            <Button variant="outline" size="sm" className="w-full gap-2">
-              <UserPlus className="w-4 h-4" />
-              Xem hồ sơ
+          {!isOwnProfile && currentUserId && (
+            <>
+              {friendshipStatus === "none" && (
+                <Button
+                  variant="default"
+                  size="sm"
+                  className="flex-1 gap-2"
+                  onClick={() => handleSendFriendRequest(profile.user_id)}
+                  disabled={isLoading}
+                >
+                  {isLoading ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <UserPlus className="w-4 h-4" />
+                  )}
+                  Kết bạn
+                </Button>
+              )}
+              {friendshipStatus === "sent" && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="flex-1 gap-2"
+                  onClick={() => handleCancelFriendRequest(profile.user_id)}
+                  disabled={isLoading}
+                >
+                  {isLoading ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <UserX className="w-4 h-4" />
+                  )}
+                  Hủy lời mời
+                </Button>
+              )}
+              {friendshipStatus === "received" && (
+                <Button
+                  variant="default"
+                  size="sm"
+                  className="flex-1 gap-2"
+                  onClick={() => handleAcceptFriendRequest(profile.user_id)}
+                  disabled={isLoading}
+                >
+                  {isLoading ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <UserCheck className="w-4 h-4" />
+                  )}
+                  Chấp nhận
+                </Button>
+              )}
+              {friendshipStatus === "friends" && (
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  className="flex-1 gap-2"
+                  onClick={() => handleUnfriend(profile.user_id)}
+                  disabled={isLoading}
+                >
+                  {isLoading ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <UserCheck className="w-4 h-4" />
+                  )}
+                  Bạn bè
+                </Button>
+              )}
+            </>
+          )}
+          {isOwnProfile && (
+            <Link to="/profile" className="flex-1">
+              <Button variant="outline" size="sm" className="w-full gap-2">
+                Hồ sơ của bạn
+              </Button>
+            </Link>
+          )}
+          {!isOwnProfile && !currentUserId && (
+            <Link to={`/user/${profile.user_id}`} className="flex-1">
+              <Button variant="outline" size="sm" className="w-full gap-2">
+                <UserPlus className="w-4 h-4" />
+                Xem hồ sơ
+              </Button>
+            </Link>
+          )}
+          <Link to={`/user/${profile.user_id}`}>
+            <Button variant="ghost" size="sm" className="gap-2">
+              <MessageCircle className="w-4 h-4" />
             </Button>
           </Link>
-          <Button variant="ghost" size="sm" className="gap-2">
-            <MessageCircle className="w-4 h-4" />
-          </Button>
         </div>
       </motion.div>
     );
@@ -227,6 +484,10 @@ const Profiles = () => {
     </div>
   );
 
+  const filteredDonors = filterProfiles(donors);
+  const filteredVolunteers = filterProfiles(volunteers);
+  const filteredNgos = filterProfiles(ngos);
+
   return (
     <main className="min-h-screen bg-background">
       <Navbar />
@@ -247,23 +508,48 @@ const Profiles = () => {
             </p>
           </div>
 
+          {/* Search and Filter */}
+          <div className="flex flex-col sm:flex-row gap-4 mb-8 max-w-2xl mx-auto">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input
+                placeholder="Tìm kiếm theo tên..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+            <Select value={reputationFilter} onValueChange={setReputationFilter}>
+              <SelectTrigger className="w-full sm:w-[200px]">
+                <SlidersHorizontal className="w-4 h-4 mr-2" />
+                <SelectValue placeholder="Lọc theo điểm uy tín" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Tất cả điểm uy tín</SelectItem>
+                <SelectItem value="high">Cao (≥100 điểm)</SelectItem>
+                <SelectItem value="medium">Trung bình (50-99)</SelectItem>
+                <SelectItem value="low">Thấp (&lt;50 điểm)</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
           {/* Tabs */}
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="w-full justify-center mb-8 bg-muted/50 p-1 rounded-xl">
               <TabsTrigger value="donors" className="gap-2 rounded-lg">
                 <Heart className="w-4 h-4" />
                 Nhà Hảo Tâm
-                {!loading && <span className="ml-1 text-xs bg-secondary/20 px-1.5 py-0.5 rounded-full">{donors.length}</span>}
+                {!loading && <span className="ml-1 text-xs bg-secondary/20 px-1.5 py-0.5 rounded-full">{filteredDonors.length}</span>}
               </TabsTrigger>
               <TabsTrigger value="volunteers" className="gap-2 rounded-lg">
                 <Users className="w-4 h-4" />
                 Tình Nguyện Viên
-                {!loading && <span className="ml-1 text-xs bg-primary/20 px-1.5 py-0.5 rounded-full">{volunteers.length}</span>}
+                {!loading && <span className="ml-1 text-xs bg-primary/20 px-1.5 py-0.5 rounded-full">{filteredVolunteers.length}</span>}
               </TabsTrigger>
               <TabsTrigger value="ngos" className="gap-2 rounded-lg">
                 <Building2 className="w-4 h-4" />
                 Tổ Chức
-                {!loading && <span className="ml-1 text-xs bg-success/20 px-1.5 py-0.5 rounded-full">{ngos.length}</span>}
+                {!loading && <span className="ml-1 text-xs bg-success/20 px-1.5 py-0.5 rounded-full">{filteredNgos.length}</span>}
               </TabsTrigger>
             </TabsList>
 
@@ -271,9 +557,9 @@ const Profiles = () => {
             <TabsContent value="donors">
               {loading ? (
                 <LoadingSkeleton />
-              ) : donors.length > 0 ? (
+              ) : filteredDonors.length > 0 ? (
                 <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {donors.map((profile) => (
+                  {filteredDonors.map((profile) => (
                     <ProfileCard key={profile.id} profile={profile} type="donor" />
                   ))}
                 </div>
@@ -286,9 +572,9 @@ const Profiles = () => {
             <TabsContent value="volunteers">
               {loading ? (
                 <LoadingSkeleton />
-              ) : volunteers.length > 0 ? (
+              ) : filteredVolunteers.length > 0 ? (
                 <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {volunteers.map((profile) => (
+                  {filteredVolunteers.map((profile) => (
                     <ProfileCard key={profile.id} profile={profile} type="volunteer" />
                   ))}
                 </div>
@@ -301,9 +587,9 @@ const Profiles = () => {
             <TabsContent value="ngos">
               {loading ? (
                 <LoadingSkeleton />
-              ) : ngos.length > 0 ? (
+              ) : filteredNgos.length > 0 ? (
                 <div className="grid md:grid-cols-2 gap-6">
-                  {ngos.map((profile) => (
+                  {filteredNgos.map((profile) => (
                     <ProfileCard key={profile.id} profile={profile} type="ngo" />
                   ))}
                 </div>
