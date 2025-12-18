@@ -2,7 +2,7 @@ import { useState, useRef } from "react";
 import { Link } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Image, Video, Sparkles, X, Loader2, Send, RefreshCw, AlertCircle, Check } from "lucide-react";
+import { Image, Video, Sparkles, X, Loader2, Send, RefreshCw, AlertCircle, Check, Palette } from "lucide-react";
 import { useCreateFeedPost } from "@/hooks/useFeedPosts";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -14,6 +14,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { useLanguage } from "@/contexts/LanguageContext";
 
 interface CreatePostBoxProps {
@@ -37,6 +38,15 @@ const getAvatarGradient = (name: string) => {
   return gradients[index];
 };
 
+// Image style options
+const imageStyleOptions = [
+  { value: 'illustration', label: 'Tranh minh họa', emoji: '🎨' },
+  { value: 'realistic', label: 'Chân thực', emoji: '📷' },
+  { value: 'cartoon', label: 'Hoạt hình', emoji: '🎬' },
+  { value: 'watercolor', label: 'Tranh vẽ tay', emoji: '🖌️' },
+  { value: '3d', label: '3D Render', emoji: '🧊' },
+];
+
 export function CreatePostBox({ profile, onPostCreated }: CreatePostBoxProps) {
   const [content, setContent] = useState("");
   const [mediaFiles, setMediaFiles] = useState<File[]>([]);
@@ -46,6 +56,7 @@ export function CreatePostBox({ profile, onPostCreated }: CreatePostBoxProps) {
   const [showAdvancedModal, setShowAdvancedModal] = useState(false);
   const [showAiModal, setShowAiModal] = useState(false);
   const [aiTopic, setAiTopic] = useState("");
+  const [aiImageStyle, setAiImageStyle] = useState("illustration");
   const [isGenerating, setIsGenerating] = useState(false);
   const [aiError, setAiError] = useState<string | null>(null);
   const [generationProgress, setGenerationProgress] = useState(0);
@@ -72,7 +83,7 @@ export function CreatePostBox({ profile, onPostCreated }: CreatePostBoxProps) {
     
     try {
       const { data, error } = await supabase.functions.invoke("generate-post-content", {
-        body: { topic: aiTopic, style: "thân thiện, ấm áp, truyền cảm hứng" },
+        body: { topic: aiTopic, style: "thân thiện, ấm áp, truyền cảm hứng", imageStyle: aiImageStyle },
       });
 
       clearInterval(progressInterval);
@@ -475,6 +486,32 @@ export function CreatePostBox({ profile, onPostCreated }: CreatePostBoxProps) {
                   {t("ai.empty")}
                 </p>
                 
+                {/* Image Style Selector */}
+                <div className="space-y-2">
+                  <label className="text-sm font-medium flex items-center gap-2">
+                    <Palette className="w-4 h-4 text-primary" />
+                    Kiểu ảnh AI
+                  </label>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                    {imageStyleOptions.map((style) => (
+                      <button
+                        key={style.value}
+                        type="button"
+                        onClick={() => setAiImageStyle(style.value)}
+                        disabled={isGenerating}
+                        className={`flex items-center gap-2 px-3 py-2.5 rounded-lg border text-sm font-medium transition-all ${
+                          aiImageStyle === style.value
+                            ? 'bg-primary/10 border-primary text-primary'
+                            : 'bg-muted/30 border-border text-foreground hover:bg-muted/50'
+                        } disabled:opacity-50`}
+                      >
+                        <span>{style.emoji}</span>
+                        <span>{style.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                
                 {/* Error State with Retry */}
                 {aiError && (
                   <div className="flex items-start gap-3 p-3 bg-destructive/10 border border-destructive/30 rounded-lg">
@@ -538,14 +575,18 @@ export function CreatePostBox({ profile, onPostCreated }: CreatePostBoxProps) {
                   <span className="font-medium">Nội dung AI đã tạo xong!</span>
                 </div>
                 
-                {/* Generated Text Preview */}
+                {/* Editable Generated Text */}
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-foreground">Nội dung bài viết:</label>
-                  <div className="p-4 bg-muted/50 border border-border rounded-xl">
-                    <p className="text-sm text-foreground whitespace-pre-wrap leading-relaxed">
-                      {aiPreviewContent}
-                    </p>
-                  </div>
+                  <label className="text-sm font-medium text-foreground flex items-center justify-between">
+                    <span>Nội dung bài viết:</span>
+                    <span className="text-xs text-muted-foreground font-normal">Bạn có thể chỉnh sửa</span>
+                  </label>
+                  <Textarea
+                    value={aiPreviewContent}
+                    onChange={(e) => setAiPreviewContent(e.target.value)}
+                    className="min-h-[150px] rounded-xl resize-none"
+                    placeholder="Nội dung AI..."
+                  />
                 </div>
                 
                 {/* Generated Image Preview */}

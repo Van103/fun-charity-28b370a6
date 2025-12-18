@@ -10,15 +10,16 @@ const corsHeaders = {
 
 
 // Input validation and sanitization
-function validateAndSanitizeInput(body: unknown): { topic?: string; style?: string } {
+function validateAndSanitizeInput(body: unknown): { topic?: string; style?: string; imageStyle?: string } {
   if (!body || typeof body !== 'object') {
     throw new Error("Invalid request body");
   }
 
-  const { topic, style } = body as { topic?: unknown; style?: unknown };
+  const { topic, style, imageStyle } = body as { topic?: unknown; style?: unknown; imageStyle?: unknown };
 
   let sanitizedTopic: string | undefined;
   let sanitizedStyle: string | undefined;
+  let sanitizedImageStyle: string | undefined;
 
   if (topic !== undefined) {
     if (typeof topic !== 'string') {
@@ -46,7 +47,20 @@ function validateAndSanitizeInput(body: unknown): { topic?: string; style?: stri
       .slice(0, 100);
   }
 
-  return { topic: sanitizedTopic, style: sanitizedStyle };
+  if (imageStyle !== undefined) {
+    if (typeof imageStyle !== 'string') {
+      throw new Error("Image style must be a string");
+    }
+    if (imageStyle.length > 50) {
+      throw new Error("Image style must be less than 50 characters");
+    }
+    sanitizedImageStyle = imageStyle
+      .replace(/[\x00-\x1f\x7f]/g, '')
+      .trim()
+      .slice(0, 50);
+  }
+
+  return { topic: sanitizedTopic, style: sanitizedStyle, imageStyle: sanitizedImageStyle };
 }
 
 serve(async (req) => {
@@ -99,11 +113,13 @@ serve(async (req) => {
 
     let topic: string | undefined;
     let style: string | undefined;
+    let imageStyle: string | undefined;
 
     try {
       const validated = validateAndSanitizeInput(body);
       topic = validated.topic;
       style = validated.style;
+      imageStyle = validated.imageStyle;
     } catch (validationError) {
       return new Response(
         JSON.stringify({ error: validationError instanceof Error ? validationError.message : "Validation error" }),
@@ -174,10 +190,22 @@ Nội dung phải ngắn gọn (tối đa 200 từ), có emoji phù hợp và k�
     const generatedContent = textData.choices?.[0]?.message?.content || "";
     console.log("Text content generated successfully");
 
-    console.log("Generating image...");
+    console.log("Generating image with style:", imageStyle);
+    
+    // Map image style to English descriptions
+    const imageStyleMap: Record<string, string> = {
+      'illustration': 'digital illustration style, colorful, artistic',
+      'realistic': 'photorealistic, ultra-realistic photography style, like a real photo',
+      'cartoon': 'cartoon/anime style, cute, vibrant colors',
+      'watercolor': 'watercolor painting style, artistic, soft brushstrokes',
+      '3d': '3D rendered style, modern, polished look',
+    };
+    
+    const styleDescription = imageStyleMap[imageStyle || 'illustration'] || imageStyleMap['illustration'];
+    
     const imagePrompt = topic 
-      ? `Create a beautiful, heartwarming illustration for a Vietnamese charity social media post about: ${topic}. Style: warm, hopeful, colorful, showing people helping each other, community spirit. No text in the image.`
-      : `Create a beautiful, heartwarming illustration for a Vietnamese charity social media post about helping the community. Style: warm, hopeful, colorful, showing people helping each other, community spirit. No text in the image.`;
+      ? `Create a beautiful, heartwarming image for a Vietnamese charity social media post about: ${topic}. Style: ${styleDescription}, warm, hopeful, showing people helping each other, community spirit. No text in the image.`
+      : `Create a beautiful, heartwarming image for a Vietnamese charity social media post about helping the community. Style: ${styleDescription}, warm, hopeful, showing people helping each other, community spirit. No text in the image.`;
 
     const imageResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
