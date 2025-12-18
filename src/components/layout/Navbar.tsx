@@ -121,16 +121,16 @@ export function Navbar() {
         <div className="flex items-center justify-between h-16">
           {/* Logo + Home + Search */}
           <div className="flex items-center gap-2">
-            <Link to="/" className="flex items-center gap-2 group">
+            <Link to="/social" className="flex items-center gap-2 group">
               <Logo size="md" />
             </Link>
             
-            {/* Home Button */}
-            <Link to="/">
+            {/* Home Button - goes to social feed like Facebook */}
+            <Link to="/social">
               <Button 
-                variant={location.pathname === "/" ? "secondary" : "ghost"} 
+                variant={location.pathname === "/social" ? "secondary" : "ghost"} 
                 size="icon"
-                className={location.pathname === "/" ? "bg-primary/20 text-primary" : "text-foreground hover:text-primary hover:bg-primary/10"}
+                className={location.pathname === "/social" ? "bg-primary/20 text-primary" : "text-foreground hover:text-primary hover:bg-primary/10"}
                 title={t("nav.home")}
               >
                 <Home className="w-5 h-5" />

@@ -39,13 +39,13 @@ const Auth = () => {
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (session?.user) {
-        navigate("/");
+        navigate("/social");
       }
     });
 
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.user) {
-        navigate("/");
+        navigate("/social");
       }
     });
 
@@ -94,7 +94,7 @@ const Auth = () => {
       title: "Đăng nhập thành công",
       description: "Chào mừng bạn trở lại FUN Charity!",
     });
-    navigate("/");
+    navigate("/social");
   };
 
   const handleSignup = async (e: React.FormEvent) => {
@@ -148,7 +148,7 @@ const Auth = () => {
       title: "Đăng ký thành công!",
       description: "Tài khoản của bạn đã được tạo. Chào mừng đến với FUN Charity!",
     });
-    navigate("/");
+    navigate("/social");
   };
 
   return (
