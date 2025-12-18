@@ -27,18 +27,24 @@ export interface UploadProgress {
 }
 
 // Upload file with progress tracking using XMLHttpRequest
+// Returns an object with the promise and an abort function
+export interface UploadController {
+  promise: Promise<void>;
+  abort: () => void;
+}
+
 export function uploadFileWithProgress(
   url: string,
   file: File,
   headers: Record<string, string>,
   onProgress: (progress: UploadProgress) => void
-): Promise<void> {
-  return new Promise((resolve, reject) => {
-    const xhr = new XMLHttpRequest();
-    let startTime = Date.now();
-    let lastLoaded = 0;
-    let lastTime = startTime;
+): UploadController {
+  const xhr = new XMLHttpRequest();
+  let startTime = Date.now();
+  let lastLoaded = 0;
+  let lastTime = startTime;
 
+  const promise = new Promise<void>((resolve, reject) => {
     xhr.upload.addEventListener("progress", (event) => {
       if (event.lengthComputable) {
         const now = Date.now();
@@ -80,7 +86,7 @@ export function uploadFileWithProgress(
     });
 
     xhr.addEventListener("abort", () => {
-      reject(new Error("Upload was aborted"));
+      reject(new Error("Upload cancelled"));
     });
 
     xhr.open("POST", url, true);
@@ -91,6 +97,11 @@ export function uploadFileWithProgress(
 
     xhr.send(file);
   });
+
+  return {
+    promise,
+    abort: () => xhr.abort(),
+  };
 }
 
 // Video compression using Canvas and MediaRecorder

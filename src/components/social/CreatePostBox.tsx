@@ -24,6 +24,7 @@ import {
   uploadFileWithProgress,
   compressVideo,
   shouldCompressVideo,
+  UploadController,
 } from "@/lib/media";
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from "@dnd-kit/core";
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, rectSortingStrategy } from "@dnd-kit/sortable";
@@ -85,6 +86,7 @@ export function CreatePostBox({ profile, onPostCreated }: CreatePostBoxProps) {
   const [aiPreviewImage, setAiPreviewImage] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
+  const uploadControllersRef = useRef<Map<string, UploadController>>(new Map());
   
   const { toast } = useToast();
   const { t } = useLanguage();
@@ -320,6 +322,13 @@ export function CreatePostBox({ profile, onPostCreated }: CreatePostBoxProps) {
   };
 
   const removeMedia = (id: string) => {
+    // Cancel upload if in progress
+    const controller = uploadControllersRef.current.get(id);
+    if (controller) {
+      controller.abort();
+      uploadControllersRef.current.delete(id);
+    }
+    
     setMediaItems((prev) => {
       const item = prev.find((i) => i.id === id);
       if (item) {
@@ -327,6 +336,26 @@ export function CreatePostBox({ profile, onPostCreated }: CreatePostBoxProps) {
       }
       return prev.filter((i) => i.id !== id);
     });
+  };
+
+  const cancelUpload = (id: string) => {
+    const controller = uploadControllersRef.current.get(id);
+    if (controller) {
+      controller.abort();
+      uploadControllersRef.current.delete(id);
+      
+      // Reset upload progress for this item
+      setMediaItems((prev) =>
+        prev.map((item) =>
+          item.id === id ? { ...item, uploadProgress: null } : item
+        )
+      );
+      
+      toast({
+        title: "Đã hủy upload",
+        description: "Upload đã được hủy thành công",
+      });
+    }
   };
 
   // Convert base64 to File for upload
@@ -354,8 +383,8 @@ export function CreatePostBox({ profile, onPostCreated }: CreatePostBoxProps) {
       const filePath = `${user.id}/${fileName}`;
 
       try {
-        // Use XMLHttpRequest for progress tracking
-        await uploadFileWithProgress(
+        // Use XMLHttpRequest for progress tracking with abort capability
+        const controller = uploadFileWithProgress(
           `${supabaseUrl}/storage/v1/object/post-images/${filePath}`,
           item.file,
           {
@@ -370,6 +399,14 @@ export function CreatePostBox({ profile, onPostCreated }: CreatePostBoxProps) {
             );
           }
         );
+        
+        // Store controller for potential cancellation
+        uploadControllersRef.current.set(item.id, controller);
+        
+        await controller.promise;
+        
+        // Remove controller after successful upload
+        uploadControllersRef.current.delete(item.id);
 
         const { data: urlData } = supabase.storage
           .from("post-images")
@@ -377,6 +414,14 @@ export function CreatePostBox({ profile, onPostCreated }: CreatePostBoxProps) {
 
         uploadedUrls.push(urlData.publicUrl);
       } catch (error: any) {
+        // Clean up controller reference
+        uploadControllersRef.current.delete(item.id);
+        
+        // If cancelled, don't throw, just skip
+        if (error.message === "Upload cancelled") {
+          continue;
+        }
+        
         console.error(`Failed to upload ${item.file.name}:`, error);
         throw new Error(`Failed to upload ${item.file.name}: ${error.message}`);
       }
@@ -527,6 +572,7 @@ export function CreatePostBox({ profile, onPostCreated }: CreatePostBoxProps) {
                       preview={item.preview}
                       isVideo={item.isVideo}
                       onRemove={() => removeMedia(item.id)}
+                      onCancelUpload={item.uploadProgress ? () => cancelUpload(item.id) : undefined}
                       disabled={isSubmitting}
                       uploadProgress={item.uploadProgress}
                       isCompressing={item.isCompressing}

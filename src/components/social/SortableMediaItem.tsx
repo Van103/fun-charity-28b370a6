@@ -1,7 +1,7 @@
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { Button } from "@/components/ui/button";
-import { X, GripVertical, Sparkles } from "lucide-react";
+import { X, GripVertical, Sparkles, XCircle } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { formatBytes, UploadProgress } from "@/lib/media";
 
@@ -11,6 +11,7 @@ interface SortableMediaItemProps {
   isVideo: boolean;
   isAiGenerated?: boolean;
   onRemove: () => void;
+  onCancelUpload?: () => void;
   disabled?: boolean;
   uploadProgress?: UploadProgress | null;
   isCompressing?: boolean;
@@ -23,6 +24,7 @@ export function SortableMediaItem({
   isVideo,
   isAiGenerated,
   onRemove,
+  onCancelUpload,
   disabled,
   uploadProgress,
   isCompressing,
@@ -124,6 +126,18 @@ export function SortableMediaItem({
             <div className="text-white/60 text-xs">
               Còn ~{formatTime(uploadProgress.remainingTime)}
             </div>
+          )}
+          {/* Cancel button */}
+          {onCancelUpload && (
+            <Button
+              variant="destructive"
+              size="sm"
+              className="mt-2 h-7 text-xs gap-1"
+              onClick={onCancelUpload}
+            >
+              <XCircle className="w-3 h-3" />
+              Hủy upload
+            </Button>
           )}
         </div>
       )}
