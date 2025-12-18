@@ -52,7 +52,7 @@ const platformItems = [
 ];
 
 const navItems = [
-  { nameKey: "nav.profiles", path: "/profiles", icon: Users },
+  { nameKey: "nav.communityProfiles", path: "/profiles", icon: Users },
 ];
 
 export function Navbar() {

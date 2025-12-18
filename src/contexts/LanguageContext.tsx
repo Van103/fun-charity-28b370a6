@@ -19,6 +19,7 @@ export const translations: Translations = {
   "nav.platform": { en: "Platform", vi: "Nền tảng" },
   "nav.reviews": { en: "Reviews", vi: "Đánh giá" },
   "nav.profiles": { en: "Profiles", vi: "Hồ sơ" },
+  "nav.communityProfiles": { en: "Community Profiles", vi: "Hồ sơ cộng đồng" },
   "nav.search": { en: "Search on FUN Charity", vi: "Tìm kiếm trên FUN Charity" },
   
   // Left Sidebar
