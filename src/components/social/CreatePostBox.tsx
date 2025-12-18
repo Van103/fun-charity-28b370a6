@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -84,8 +84,10 @@ export function CreatePostBox({ profile, onPostCreated }: CreatePostBoxProps) {
   const [generationProgress, setGenerationProgress] = useState(0);
   const [aiPreviewContent, setAiPreviewContent] = useState<string | null>(null);
   const [aiPreviewImage, setAiPreviewImage] = useState<string | null>(null);
+  const [isExpanded, setIsExpanded] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const uploadControllersRef = useRef<Map<string, UploadController>>(new Map());
   
   const { toast } = useToast();
@@ -97,6 +99,13 @@ export function CreatePostBox({ profile, onPostCreated }: CreatePostBoxProps) {
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
+
+  // Auto-expand when media or AI content is added
+  useEffect(() => {
+    if (mediaItems.length > 0 || aiGeneratedImage || content) {
+      setIsExpanded(true);
+    }
+  }, [mediaItems.length, aiGeneratedImage, content]);
 
   const generateAiContent = async () => {
     setIsGenerating(true);
@@ -491,6 +500,7 @@ export function CreatePostBox({ profile, onPostCreated }: CreatePostBoxProps) {
       setContent("");
       setMediaItems([]);
       setAiGeneratedImage(null);
+      setIsExpanded(false);
       onPostCreated?.();
     } catch (error) {
       console.error("Error creating post:", error);
@@ -507,9 +517,9 @@ export function CreatePostBox({ profile, onPostCreated }: CreatePostBoxProps) {
       <div className="glass-card overflow-hidden">
         {/* Main input area - Clean white */}
         <div className="p-4">
-          <div className="flex items-center gap-3">
+          <div className="flex gap-3">
             {/* User Avatar with gold ring - clickable to profile */}
-            <Link to="/profile" className="p-0.5 rounded-full bg-gradient-to-br from-gold-champagne to-gold-light flex-shrink-0">
+            <Link to="/profile" className="p-0.5 rounded-full bg-gradient-to-br from-gold-champagne to-gold-light flex-shrink-0 self-start mt-1">
               <Avatar className="w-10 h-10 border-2 border-card">
                 <AvatarImage src={profile?.avatar_url || ""} />
                 <AvatarFallback className={`bg-gradient-to-br ${getAvatarGradient(profile?.full_name || "U")} text-white font-medium`}>
@@ -518,16 +528,44 @@ export function CreatePostBox({ profile, onPostCreated }: CreatePostBoxProps) {
               </Avatar>
             </Link>
             
-            {/* Input - shorter height */}
+            {/* Input - expands when focused or has content */}
             <div className="flex-1">
-              <input
-                type="text"
-                placeholder="Bạn đang nghĩ gì?"
-                value={content}
-                onChange={(e) => setContent(e.target.value)}
-                className="w-full bg-muted/30 border border-border rounded-full px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50 transition-all"
-                disabled={isSubmitting}
-              />
+              {!isExpanded && !content && mediaItems.length === 0 && !aiGeneratedImage ? (
+                <input
+                  type="text"
+                  placeholder="Bạn đang nghĩ gì?"
+                  onFocus={() => {
+                    setIsExpanded(true);
+                    setTimeout(() => textareaRef.current?.focus(), 50);
+                  }}
+                  className="w-full bg-muted/30 border border-border rounded-full px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50 transition-all cursor-pointer"
+                  readOnly
+                />
+              ) : (
+                <div className="space-y-3">
+                  <textarea
+                    ref={textareaRef}
+                    placeholder="Bạn đang nghĩ gì? Chia sẻ câu chuyện, hình ảnh hoặc video của bạn..."
+                    value={content}
+                    onChange={(e) => setContent(e.target.value)}
+                    className="w-full bg-muted/30 border border-border rounded-xl px-4 py-3 text-base text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50 transition-all resize-none min-h-[120px]"
+                    disabled={isSubmitting}
+                    rows={4}
+                  />
+                  {/* Collapse button when empty */}
+                  {!content && mediaItems.length === 0 && !aiGeneratedImage && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setIsExpanded(false)}
+                      className="text-xs text-muted-foreground hover:text-foreground"
+                    >
+                      Thu gọn
+                    </Button>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </div>
