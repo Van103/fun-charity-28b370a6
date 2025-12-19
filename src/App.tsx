@@ -24,6 +24,8 @@ import Life from "./pages/Life";
 import Academy from "./pages/Academy";
 import Trading from "./pages/Trading";
 import Investment from "./pages/Investment";
+import Farm from "./pages/Farm";
+import Play from "./pages/Play";
 import Legal from "./pages/Legal";
 import Planet from "./pages/Planet";
 import Friends from "./pages/Friends";
@@ -74,6 +76,8 @@ const App = () => (
               <Route path="/academy" element={<Academy />} />
               <Route path="/trading" element={<Trading />} />
               <Route path="/investment" element={<Investment />} />
+              <Route path="/farm" element={<Farm />} />
+              <Route path="/play" element={<Play />} />
               <Route path="/legal" element={<Legal />} />
               <Route path="/planet" element={<Planet />} />
               <Route path="/friends" element={<Friends />} />
