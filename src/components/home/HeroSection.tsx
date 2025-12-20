@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Logo } from "@/components/brand/Logo";
+import { ParticleButton } from "@/components/ui/ParticleButton";
 import {
   ArrowRight,
   Heart,
@@ -85,16 +85,28 @@ export function HeroSection() {
 
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.4 }} className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-12">
             <Link to="/campaigns">
-              <Button variant="hero" size="xl" className="group glossy-btn glossy-btn-gradient">
+              <ParticleButton 
+                variant="hero" 
+                size="xl" 
+                className="group glossy-btn glossy-btn-gradient"
+                particleColors={['#84D9BA', '#FFD700', '#FF6B9D', '#00D4FF']}
+                glowColor="#84D9BA"
+              >
                 <Heart className="w-5 h-5" fill="currentColor" />
                 Quyên Góp Ngay
                 <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-1" />
-              </Button>
+              </ParticleButton>
             </Link>
-            <Button variant="wallet" size="xl" className="group glossy-btn glossy-btn-purple">
+            <ParticleButton 
+              variant="wallet" 
+              size="xl" 
+              className="group glossy-btn glossy-btn-purple"
+              particleColors={['#8B5CF6', '#A78BFA', '#C4B5FD', '#DDD6FE']}
+              glowColor="#8B5CF6"
+            >
               <Wallet className="w-5 h-5" />
               Kết Nối Ví
-            </Button>
+            </ParticleButton>
           </motion.div>
 
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.5 }} className="grid md:grid-cols-3 gap-4 mb-12">

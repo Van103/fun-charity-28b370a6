@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
+import { ParticleButton } from "@/components/ui/ParticleButton";
 import { Heart, ArrowRight, Building2, Users, Sparkles, Crown, Wallet } from "lucide-react";
 import { Link } from "react-router-dom";
 
@@ -100,15 +101,27 @@ export function CTASection() {
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
               <Link to="/campaigns">
-                <Button variant="hero" size="xl" className="glossy-btn glossy-btn-gradient">
+                <ParticleButton 
+                  variant="hero" 
+                  size="xl" 
+                  className="glossy-btn glossy-btn-gradient"
+                  particleColors={['#84D9BA', '#FFD700', '#FF6B9D', '#00D4FF']}
+                  glowColor="#84D9BA"
+                >
                   <Heart className="w-5 h-5" fill="currentColor" />
                   Duyệt Chiến Dịch
-                </Button>
+                </ParticleButton>
               </Link>
-              <Button variant="wallet" size="xl" className="glossy-btn glossy-btn-purple">
+              <ParticleButton 
+                variant="wallet" 
+                size="xl" 
+                className="glossy-btn glossy-btn-purple"
+                particleColors={['#8B5CF6', '#A78BFA', '#C4B5FD', '#DDD6FE']}
+                glowColor="#8B5CF6"
+              >
                 <Wallet className="w-5 h-5" />
                 Kết Nối Ví
-              </Button>
+              </ParticleButton>
             </div>
           </div>
         </motion.div>
