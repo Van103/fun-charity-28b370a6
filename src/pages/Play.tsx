@@ -143,7 +143,8 @@ const Play = () => {
                       </div>
                       <Button 
                         size="sm" 
-                        className="w-full mt-3"
+                        className={`w-full mt-3 ${game.status === "coming" ? "" : "glossy-btn glossy-btn-gradient"}`}
+                        variant={game.status === "coming" ? "secondary" : "default"}
                         disabled={game.status === "coming"}
                       >
                         {game.status === "coming" ? "Coming Soon" : "Play Now"}

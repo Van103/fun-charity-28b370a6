@@ -85,13 +85,13 @@ export function HeroSection() {
 
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.4 }} className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-12">
             <Link to="/campaigns">
-              <Button variant="hero" size="xl" className="group">
+              <Button variant="hero" size="xl" className="group glossy-btn glossy-btn-gradient">
                 <Heart className="w-5 h-5" fill="currentColor" />
                 Quyên Góp Ngay
                 <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-1" />
               </Button>
             </Link>
-            <Button variant="wallet" size="xl" className="group">
+            <Button variant="wallet" size="xl" className="group glossy-btn glossy-btn-purple">
               <Wallet className="w-5 h-5" />
               Kết Nối Ví
             </Button>

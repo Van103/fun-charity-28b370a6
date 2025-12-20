@@ -34,6 +34,24 @@ const buttonVariants = cva(
           "bg-card/60 backdrop-blur-lg border border-secondary/20 text-foreground hover:bg-card/80 hover:border-secondary/40 shadow-sm",
         wallet:
           "bg-primary text-primary-foreground border border-secondary/30 hover:border-secondary hover:shadow-glow font-mono",
+        // Glassmorphism Glossy variants - like crypto promo buttons
+        "glossy-green":
+          "glossy-btn glossy-btn-green",
+        "glossy-pink":
+          "glossy-btn glossy-btn-pink",
+        "glossy-orange":
+          "glossy-btn glossy-btn-orange",
+        "glossy-blue":
+          "glossy-btn glossy-btn-blue",
+        "glossy-purple":
+          "glossy-btn glossy-btn-purple",
+        "glossy-cyan":
+          "glossy-btn glossy-btn-cyan",
+        "glossy-gradient":
+          "glossy-btn glossy-btn-gradient",
+        // Feature button with glassmorphism hover
+        feature:
+          "feature-btn bg-gradient-to-r from-primary via-primary-light to-secondary text-white font-semibold shadow-lg",
       },
       size: {
         default: "h-11 px-5 py-2",

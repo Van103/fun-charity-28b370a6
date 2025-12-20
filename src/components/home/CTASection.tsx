@@ -59,7 +59,7 @@ export function CTASection() {
                     <p className="text-muted-foreground mb-6">
                       {role.description}
                     </p>
-                    <Button variant="outline" className="group/btn">
+                    <Button variant="outline" className="group/btn hover-glossy">
                       {role.cta}
                       <ArrowRight className="w-4 h-4 transition-transform group-hover/btn:translate-x-1" />
                     </Button>
@@ -100,12 +100,12 @@ export function CTASection() {
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
               <Link to="/campaigns">
-                <Button variant="hero" size="xl">
+                <Button variant="hero" size="xl" className="glossy-btn glossy-btn-gradient">
                   <Heart className="w-5 h-5" fill="currentColor" />
                   Duyệt Chiến Dịch
                 </Button>
               </Link>
-              <Button variant="wallet" size="xl">
+              <Button variant="wallet" size="xl" className="glossy-btn glossy-btn-purple">
                 <Wallet className="w-5 h-5" />
                 Kết Nối Ví
               </Button>

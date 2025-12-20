@@ -139,8 +139,8 @@ const Farm = () => {
                         <Progress value={0} className="h-2" />
                       </div>
                       <div className="flex gap-2 mt-3">
-                        <Button size="sm" className="flex-1">Stake</Button>
-                        <Button size="sm" variant="outline" className="flex-1">Harvest</Button>
+                        <Button size="sm" className="flex-1 glossy-btn glossy-btn-green">Stake</Button>
+                        <Button size="sm" variant="outline" className="flex-1 hover-glossy">Harvest</Button>
                       </div>
                     </div>
                   ))}

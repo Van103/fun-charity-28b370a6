@@ -543,3 +543,254 @@ label,
 .animate-sparkle {
   animation: sparkle 2s ease-in-out infinite;
 }
+
+/* ========================================
+   GLASSMORPHISM GLOSSY BUTTONS
+   Crypto promo style with hover effects
+   ======================================== */
+
+/* Base glossy button styles */
+.glossy-btn {
+  @apply relative overflow-hidden rounded-full font-semibold text-white;
+  @apply transition-all duration-300 ease-out;
+  @apply backdrop-blur-md;
+  border: 2px solid transparent;
+  box-shadow: 
+    0 4px 15px rgba(0, 0, 0, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+
+/* Glossy reflection overlay */
+.glossy-btn::before {
+  content: '';
+  @apply absolute inset-0 pointer-events-none;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.35) 0%,
+    rgba(255, 255, 255, 0.1) 40%,
+    transparent 60%
+  );
+  border-radius: inherit;
+}
+
+/* Hover glow effect */
+.glossy-btn::after {
+  content: '';
+  @apply absolute inset-0 opacity-0 pointer-events-none;
+  @apply transition-opacity duration-300;
+  border-radius: inherit;
+  box-shadow: 0 0 30px currentColor;
+}
+
+/* Hover state */
+.glossy-btn:hover {
+  transform: scale(1.05) translateY(-2px);
+  box-shadow: 
+    0 8px 25px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.4);
+}
+
+.glossy-btn:hover::after {
+  @apply opacity-40;
+}
+
+/* Active/tap state */
+.glossy-btn:active {
+  transform: scale(1.02) translateY(0);
+}
+
+/* Color variants */
+.glossy-btn-green {
+  background: linear-gradient(135deg, #10b981 0%, #34d399 50%, #6ee7b7 100%);
+  border-color: rgba(16, 185, 129, 0.5);
+  --tw-shadow-color: rgba(16, 185, 129, 0.5);
+}
+
+.glossy-btn-green:hover {
+  box-shadow: 
+    0 0 20px rgba(16, 185, 129, 0.5),
+    0 0 40px rgba(16, 185, 129, 0.3),
+    0 8px 25px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.4);
+}
+
+.glossy-btn-pink {
+  background: linear-gradient(135deg, #ec4899 0%, #f472b6 50%, #f9a8d4 100%);
+  border-color: rgba(236, 72, 153, 0.5);
+}
+
+.glossy-btn-pink:hover {
+  box-shadow: 
+    0 0 20px rgba(236, 72, 153, 0.5),
+    0 0 40px rgba(236, 72, 153, 0.3),
+    0 8px 25px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.4);
+}
+
+.glossy-btn-orange {
+  background: linear-gradient(135deg, #f97316 0%, #fb923c 50%, #fdba74 100%);
+  border-color: rgba(249, 115, 22, 0.5);
+}
+
+.glossy-btn-orange:hover {
+  box-shadow: 
+    0 0 20px rgba(249, 115, 22, 0.5),
+    0 0 40px rgba(249, 115, 22, 0.3),
+    0 8px 25px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.4);
+}
+
+.glossy-btn-blue {
+  background: linear-gradient(135deg, #3b82f6 0%, #60a5fa 50%, #93c5fd 100%);
+  border-color: rgba(59, 130, 246, 0.5);
+}
+
+.glossy-btn-blue:hover {
+  box-shadow: 
+    0 0 20px rgba(59, 130, 246, 0.5),
+    0 0 40px rgba(59, 130, 246, 0.3),
+    0 8px 25px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.4);
+}
+
+.glossy-btn-purple {
+  background: linear-gradient(135deg, #8b5cf6 0%, #a78bfa 50%, #c4b5fd 100%);
+  border-color: rgba(139, 92, 246, 0.5);
+}
+
+.glossy-btn-purple:hover {
+  box-shadow: 
+    0 0 20px rgba(139, 92, 246, 0.5),
+    0 0 40px rgba(139, 92, 246, 0.3),
+    0 8px 25px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.4);
+}
+
+.glossy-btn-cyan {
+  background: linear-gradient(135deg, #06b6d4 0%, #22d3ee 50%, #67e8f9 100%);
+  border-color: rgba(6, 182, 212, 0.5);
+}
+
+.glossy-btn-cyan:hover {
+  box-shadow: 
+    0 0 20px rgba(6, 182, 212, 0.5),
+    0 0 40px rgba(6, 182, 212, 0.3),
+    0 8px 25px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.4);
+}
+
+/* Animated gradient button */
+.glossy-btn-gradient {
+  background: linear-gradient(
+    135deg,
+    #10b981 0%,
+    #ec4899 25%,
+    #f97316 50%,
+    #3b82f6 75%,
+    #10b981 100%
+  );
+  background-size: 300% 300%;
+  animation: gradient-shift 4s ease infinite;
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.glossy-btn-gradient:hover {
+  animation: gradient-shift 2s ease infinite;
+  box-shadow: 
+    0 0 25px rgba(139, 92, 246, 0.4),
+    0 0 50px rgba(236, 72, 153, 0.3),
+    0 8px 25px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.4);
+}
+
+@keyframes gradient-shift {
+  0%, 100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+/* Feature button with glassmorphism hover */
+.feature-btn {
+  @apply relative overflow-hidden rounded-xl font-semibold;
+  @apply transition-all duration-300 ease-out;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.feature-btn::before {
+  content: '';
+  @apply absolute inset-0 opacity-0 pointer-events-none;
+  @apply transition-opacity duration-300;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.3) 0%,
+    rgba(255, 255, 255, 0.1) 50%,
+    transparent 100%
+  );
+  backdrop-filter: blur(10px);
+}
+
+.feature-btn:hover {
+  transform: scale(1.05) translateY(-2px);
+  border-color: rgba(255, 255, 255, 0.4);
+  box-shadow: 
+    0 0 20px rgba(168, 85, 247, 0.4),
+    0 0 40px rgba(245, 199, 122, 0.3),
+    0 10px 30px rgba(0, 0, 0, 0.2);
+}
+
+.feature-btn:hover::before {
+  @apply opacity-100;
+}
+
+.feature-btn:active {
+  transform: scale(1.02) translateY(0);
+}
+
+/* Touch-friendly tap animation for mobile */
+@media (hover: none) {
+  .glossy-btn:active,
+  .feature-btn:active {
+    transform: scale(0.98);
+    transition-duration: 100ms;
+  }
+}
+
+/* Utility class for any button to have glossy hover */
+.hover-glossy {
+  @apply transition-all duration-300 ease-out;
+  position: relative;
+  overflow: hidden;
+}
+
+.hover-glossy::before {
+  content: '';
+  @apply absolute inset-0 opacity-0 pointer-events-none;
+  @apply transition-opacity duration-300;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.4) 0%,
+    rgba(255, 255, 255, 0.1) 40%,
+    transparent 60%
+  );
+  border-radius: inherit;
+}
+
+.hover-glossy:hover {
+  transform: scale(1.05) translateY(-2px);
+  box-shadow: 
+    0 0 25px rgba(139, 92, 246, 0.3),
+    0 0 50px rgba(245, 199, 122, 0.2),
+    0 8px 25px rgba(0, 0, 0, 0.15);
+}
+
+.hover-glossy:hover::before {
+  @apply opacity-100;
+}
+
+.hover-glossy:active {
+  transform: scale(1.02) translateY(0);
+}

@@ -54,10 +54,10 @@ export function LeftSidebar({ profile }: LeftSidebarProps) {
         <nav className="space-y-1">
           {menuItems.map((item) => {
             const isActive = !item.external && location.pathname === item.href;
-            const linkClasses = `flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all ${
+            const linkClasses = `flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-300 ${
               isActive 
-                ? "bg-gradient-to-r from-primary to-purple-500 text-white font-semibold shadow-lg" 
-                : "text-muted-foreground hover:bg-muted/50 font-medium"
+                ? "glossy-btn glossy-btn-gradient shadow-lg font-semibold" 
+                : "text-muted-foreground hover:bg-muted/50 hover:scale-[1.02] font-medium active:scale-[0.98]"
             }`;
             
             if (item.external) {
@@ -69,7 +69,7 @@ export function LeftSidebar({ profile }: LeftSidebarProps) {
                   rel="noopener noreferrer"
                   className={linkClasses}
                 >
-                  <item.icon className="w-4 h-4 text-primary" />
+                  <item.icon className={`w-4 h-4 ${isActive ? "text-white" : "text-primary"}`} />
                   <span style={{ fontSize: '18px' }}>{t(item.labelKey)}</span>
                 </a>
               );
