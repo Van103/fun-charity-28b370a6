@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useSearchParams, Link } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import { Navbar } from "@/components/layout/Navbar";
@@ -9,8 +9,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { supabase } from "@/integrations/supabase/client";
 import { 
   Loader2, Send, ArrowLeft, Search, Image as ImageIcon, X, 
-  Phone, Video, Users, Plus, Mic, ThumbsUp, MoreHorizontal,
-  Minimize2, Maximize2
+  Phone, Video, Users, Plus, ThumbsUp, Circle
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { vi } from "date-fns/locale";
@@ -21,6 +20,8 @@ import { ChatStickerPicker } from "@/components/chat/ChatStickerPicker";
 import { VideoCallModal } from "@/components/chat/VideoCallModal";
 import { CreateGroupModal } from "@/components/chat/CreateGroupModal";
 import { useToast } from "@/hooks/use-toast";
+import { motion, AnimatePresence } from "framer-motion";
+import { MobileBottomNav } from "@/components/layout/MobileBottomNav";
 
 interface Conversation {
   id: string;
@@ -42,6 +43,7 @@ interface Conversation {
   }>;
   lastMessage?: string;
   isOnline?: boolean;
+  unreadCount?: number;
 }
 
 interface Message {
@@ -88,6 +90,7 @@ export default function Messages() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const activeConversationRef = useRef<string | null>(null);
 
   // Setup presence tracking
   usePresence(currentUserId);
@@ -105,6 +108,11 @@ export default function Messages() {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  // Update ref when active conversation changes
+  useEffect(() => {
+    activeConversationRef.current = activeConversation?.id || null;
+  }, [activeConversation?.id]);
 
   // Initial load
   useEffect(() => {
@@ -163,7 +171,7 @@ export default function Messages() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const loadConversations = async (userId: string) => {
+  const loadConversations = useCallback(async (userId: string) => {
     const { data: convos } = await supabase
       .from("conversations")
       .select("*")
@@ -174,6 +182,14 @@ export default function Messages() {
 
     const enrichedConvos = await Promise.all(
       convos.map(async (convo) => {
+        // Get unread count
+        const { count: unreadCount } = await supabase
+          .from("messages")
+          .select("*", { count: "exact", head: true })
+          .eq("conversation_id", convo.id)
+          .eq("is_read", false)
+          .neq("sender_id", userId);
+
         if (convo.is_group) {
           const { data: participants } = await supabase
             .from("conversation_participants")
@@ -199,7 +215,8 @@ export default function Messages() {
             ...convo,
             participants: profiles || [],
             lastMessage: lastMsg?.image_url ? "📷 Hình ảnh" : lastMsg?.content || "",
-            isOnline: false
+            isOnline: false,
+            unreadCount: unreadCount || 0
           };
         }
 
@@ -224,13 +241,14 @@ export default function Messages() {
           ...convo,
           otherUser: profile || undefined,
           lastMessage: lastMsg?.image_url ? "📷 Hình ảnh" : lastMsg?.content || "",
-          isOnline: onlineStatusMap.get(otherUserId) || false
+          isOnline: onlineStatusMap.get(otherUserId) || false,
+          unreadCount: unreadCount || 0
         };
       })
     );
 
     setConversations(enrichedConvos);
-  };
+  }, []);
 
   const openConversationWithUser = async (myId: string, theirId: string) => {
     const { data: existing } = await supabase
@@ -276,6 +294,9 @@ export default function Messages() {
 
       const onlineStatusMap = await getOnlineStatus([theirId]);
 
+      // Clear messages first when switching
+      setMessages([]);
+      
       setActiveConversation({
         ...convo,
         otherUser: profile || undefined,
@@ -286,7 +307,12 @@ export default function Messages() {
     }
   };
 
-  const loadMessages = async (conversationId: string) => {
+  const loadMessages = useCallback(async (conversationId: string) => {
+    // Only load if this is still the active conversation
+    if (activeConversationRef.current && activeConversationRef.current !== conversationId) {
+      return;
+    }
+
     const { data } = await supabase
       .from("messages")
       .select("*")
@@ -311,7 +337,10 @@ export default function Messages() {
       senderProfile: profileMap.get(msg.sender_id)
     }));
 
-    setMessages(enrichedMessages);
+    // Double check we're still on the same conversation
+    if (activeConversationRef.current === conversationId) {
+      setMessages(enrichedMessages);
+    }
 
     if (currentUserId) {
       await supabase
@@ -320,9 +349,11 @@ export default function Messages() {
         .eq("conversation_id", conversationId)
         .neq("sender_id", currentUserId);
     }
-  };
+  }, [currentUserId]);
 
   const selectConversation = async (convo: Conversation) => {
+    // Clear messages immediately to prevent showing old chat
+    setMessages([]);
     setActiveConversation(convo);
     await loadMessages(convo.id);
   };
@@ -408,12 +439,16 @@ export default function Messages() {
       setNewMessage("");
       setImageFile(null);
       setImagePreview(null);
-      await loadMessages(activeConversation.id);
       
       await supabase
         .from("conversations")
         .update({ last_message_at: new Date().toISOString() })
         .eq("id", activeConversation.id);
+
+      // Refresh conversation list
+      if (currentUserId) {
+        await loadConversations(currentUserId);
+      }
     } catch (error: any) {
       toast({
         title: "Lỗi",
@@ -437,8 +472,6 @@ export default function Messages() {
           content: "👍"
         });
       
-      await loadMessages(activeConversation.id);
-      
       await supabase
         .from("conversations")
         .update({ last_message_at: new Date().toISOString() })
@@ -457,22 +490,47 @@ export default function Messages() {
     setShowVideoCall(true);
   };
 
-  // Realtime subscription for messages
+  // Realtime subscription for messages - CRITICAL: proper cleanup
   useEffect(() => {
-    if (!activeConversation) return;
+    if (!activeConversation?.id) return;
+
+    const conversationId = activeConversation.id;
 
     const channel = supabase
-      .channel(`messages-${activeConversation.id}`)
+      .channel(`messages-${conversationId}`)
       .on(
         'postgres_changes',
         {
           event: 'INSERT',
           schema: 'public',
           table: 'messages',
-          filter: `conversation_id=eq.${activeConversation.id}`
+          filter: `conversation_id=eq.${conversationId}`
         },
-        () => {
-          loadMessages(activeConversation.id);
+        async (payload) => {
+          // Only update if still on the same conversation
+          if (activeConversationRef.current === conversationId) {
+            const newMsg = payload.new as Message;
+            
+            // Get sender profile
+            const { data: profile } = await supabase
+              .from("profiles")
+              .select("user_id, full_name, avatar_url")
+              .eq("user_id", newMsg.sender_id)
+              .maybeSingle();
+            
+            setMessages(prev => [...prev, {
+              ...newMsg,
+              senderProfile: profile || undefined
+            }]);
+
+            // Mark as read if not from current user
+            if (newMsg.sender_id !== currentUserId) {
+              await supabase
+                .from("messages")
+                .update({ is_read: true })
+                .eq("id", newMsg.id);
+            }
+          }
         }
       )
       .subscribe();
@@ -480,10 +538,12 @@ export default function Messages() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [activeConversation?.id]);
+  }, [activeConversation?.id, currentUserId]);
 
   // Realtime subscription for presence changes
   useEffect(() => {
+    if (!currentUserId) return;
+
     const channel = supabase
       .channel("presence-updates")
       .on(
@@ -494,7 +554,33 @@ export default function Messages() {
           table: 'user_presence'
         },
         async () => {
-          if (currentUserId) {
+          await loadConversations(currentUserId);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [currentUserId, loadConversations]);
+
+  // Realtime subscription for new messages in any conversation (for unread badges)
+  useEffect(() => {
+    if (!currentUserId) return;
+
+    const channel = supabase
+      .channel("all-messages")
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'messages'
+        },
+        async (payload) => {
+          const newMsg = payload.new as Message;
+          // Refresh conversations to update unread counts and last message
+          if (newMsg.sender_id !== currentUserId) {
             await loadConversations(currentUserId);
           }
         }
@@ -504,7 +590,7 @@ export default function Messages() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [currentUserId]);
+  }, [currentUserId, loadConversations]);
 
   if (isLoading) {
     return (
@@ -542,19 +628,19 @@ export default function Messages() {
       </Helmet>
       <Navbar />
 
-      <main className="max-w-6xl mx-auto px-4 pt-20 pb-4">
-        <div className="bg-card rounded-xl shadow-lg overflow-hidden h-[calc(100vh-100px)] flex border border-border">
+      <main className="max-w-6xl mx-auto px-2 sm:px-4 pt-16 sm:pt-20 pb-20 md:pb-4">
+        <div className="bg-card rounded-xl shadow-lg overflow-hidden h-[calc(100vh-100px)] sm:h-[calc(100vh-120px)] flex border border-border">
           {/* Conversations List */}
-          <div className={`w-full md:w-80 border-r border-border flex flex-col bg-card ${activeConversation ? 'hidden md:flex' : ''}`}>
-            <div className="p-4 border-b border-border">
+          <div className={`w-full md:w-80 lg:w-96 border-r border-border flex flex-col bg-card ${activeConversation ? 'hidden md:flex' : ''}`}>
+            <div className="p-3 sm:p-4 border-b border-border">
               <div className="flex items-center justify-between mb-3">
-                <h2 className="text-xl font-bold">Đoạn chat</h2>
+                <h2 className="text-lg sm:text-xl font-bold">Đoạn chat</h2>
                 <Button
                   variant="ghost"
                   size="icon"
                   onClick={() => setShowCreateGroup(true)}
                   title="Tạo nhóm chat"
-                  className="rounded-full hover:bg-muted"
+                  className="rounded-full hover:bg-muted h-9 w-9"
                 >
                   <Plus className="w-5 h-5" />
                 </Button>
@@ -568,39 +654,46 @@ export default function Messages() {
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   onFocus={() => searchQuery.trim().length >= 2 && setShowSearchDropdown(true)}
-                  className="pl-10 rounded-full bg-muted/50 border-0 focus-visible:ring-1"
+                  className="pl-10 rounded-full bg-muted/50 border-0 focus-visible:ring-1 h-10"
                 />
                 
                 {/* Search Results Dropdown */}
-                {showSearchDropdown && (
-                  <div className="absolute top-full left-0 right-0 mt-1 bg-card border border-border rounded-lg shadow-lg z-50 max-h-64 overflow-y-auto">
-                    {isSearching ? (
-                      <div className="p-4 text-center">
-                        <Loader2 className="w-5 h-5 animate-spin mx-auto text-muted-foreground" />
-                      </div>
-                    ) : searchResults.length === 0 ? (
-                      <div className="p-4 text-center text-muted-foreground text-sm">
-                        Không tìm thấy người dùng
-                      </div>
-                    ) : (
-                      searchResults.map(user => (
-                        <button
-                          key={user.user_id}
-                          onClick={() => selectSearchResult(user)}
-                          className="w-full flex items-center gap-3 p-3 hover:bg-muted/50 transition-colors text-left"
-                        >
-                          <Avatar className="w-10 h-10">
-                            <AvatarImage src={user.avatar_url || ""} />
-                            <AvatarFallback className="bg-primary/10 text-primary">
-                              {user.full_name?.charAt(0) || "U"}
-                            </AvatarFallback>
-                          </Avatar>
-                          <span className="font-medium">{user.full_name || "Người dùng"}</span>
-                        </button>
-                      ))
-                    )}
-                  </div>
-                )}
+                <AnimatePresence>
+                  {showSearchDropdown && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                      className="absolute top-full left-0 right-0 mt-1 bg-card border border-border rounded-lg shadow-lg z-50 max-h-64 overflow-y-auto"
+                    >
+                      {isSearching ? (
+                        <div className="p-4 text-center">
+                          <Loader2 className="w-5 h-5 animate-spin mx-auto text-muted-foreground" />
+                        </div>
+                      ) : searchResults.length === 0 ? (
+                        <div className="p-4 text-center text-muted-foreground text-sm">
+                          Không tìm thấy người dùng
+                        </div>
+                      ) : (
+                        searchResults.map(user => (
+                          <button
+                            key={user.user_id}
+                            onClick={() => selectSearchResult(user)}
+                            className="w-full flex items-center gap-3 p-3 hover:bg-muted/50 transition-colors text-left"
+                          >
+                            <Avatar className="w-10 h-10">
+                              <AvatarImage src={user.avatar_url || ""} />
+                              <AvatarFallback className="bg-primary/10 text-primary">
+                                {user.full_name?.charAt(0) || "U"}
+                              </AvatarFallback>
+                            </Avatar>
+                            <span className="font-medium">{user.full_name || "Người dùng"}</span>
+                          </button>
+                        ))
+                      )}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
             </div>
             
@@ -611,14 +704,15 @@ export default function Messages() {
                 </div>
               ) : (
                 filteredConversations.map(convo => (
-                  <div
+                  <motion.div
                     key={convo.id}
+                    whileTap={{ scale: 0.98 }}
                     onClick={() => selectConversation(convo)}
-                    className={`flex items-center gap-3 p-3 mx-2 my-1 rounded-lg hover:bg-muted/50 cursor-pointer transition-colors ${
+                    className={`flex items-center gap-3 p-3 mx-2 my-1 rounded-xl hover:bg-muted/50 cursor-pointer transition-colors ${
                       activeConversation?.id === convo.id ? 'bg-primary/10' : ''
                     }`}
                   >
-                    <div className="relative">
+                    <div className="relative flex-shrink-0">
                       {convo.is_group ? (
                         <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary to-purple-400 flex items-center justify-center">
                           <Users className="w-6 h-6 text-white" />
@@ -638,13 +732,28 @@ export default function Messages() {
                       )}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="font-semibold truncate">{getConversationName(convo)}</p>
-                      <p className="text-sm text-muted-foreground truncate">{convo.lastMessage}</p>
+                      <div className="flex items-center justify-between">
+                        <p className={`font-semibold truncate ${convo.unreadCount ? 'text-foreground' : ''}`}>
+                          {getConversationName(convo)}
+                        </p>
+                        <span className="text-xs text-muted-foreground whitespace-nowrap ml-2">
+                          {formatDistanceToNow(new Date(convo.last_message_at), { locale: vi, addSuffix: false })}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <p className={`text-sm truncate flex-1 ${
+                          convo.unreadCount ? 'text-foreground font-medium' : 'text-muted-foreground'
+                        }`}>
+                          {convo.lastMessage}
+                        </p>
+                        {!!convo.unreadCount && convo.unreadCount > 0 && (
+                          <span className="flex-shrink-0 w-5 h-5 rounded-full bg-primary text-primary-foreground text-xs flex items-center justify-center font-medium">
+                            {convo.unreadCount > 9 ? '9+' : convo.unreadCount}
+                          </span>
+                        )}
+                      </div>
                     </div>
-                    <span className="text-xs text-muted-foreground whitespace-nowrap">
-                      {formatDistanceToNow(new Date(convo.last_message_at), { locale: vi, addSuffix: false })}
-                    </span>
-                  </div>
+                  </motion.div>
                 ))
               )}
             </ScrollArea>
@@ -654,13 +763,13 @@ export default function Messages() {
           <div className={`flex-1 flex flex-col bg-background ${!activeConversation ? 'hidden md:flex' : ''}`}>
             {activeConversation ? (
               <>
-                {/* Chat Header - Messenger Style */}
-                <div className="px-4 py-3 border-b border-border flex items-center justify-between bg-card">
+                {/* Chat Header */}
+                <div className="px-3 sm:px-4 py-3 border-b border-border flex items-center justify-between bg-card">
                   <div className="flex items-center gap-3">
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="md:hidden rounded-full"
+                      className="md:hidden rounded-full h-9 w-9"
                       onClick={() => setActiveConversation(null)}
                     >
                       <ArrowLeft className="w-5 h-5" />
@@ -672,7 +781,7 @@ export default function Messages() {
                           <Users className="w-5 h-5 text-white" />
                         </div>
                         <div>
-                          <p className="font-semibold">{activeConversation.name || "Nhóm chat"}</p>
+                          <p className="font-semibold text-sm sm:text-base">{activeConversation.name || "Nhóm chat"}</p>
                           <p className="text-xs text-muted-foreground">
                             {(activeConversation.participants?.length || 0) + 1} thành viên
                           </p>
@@ -694,14 +803,14 @@ export default function Messages() {
                         <div>
                           <Link 
                             to={`/user/${activeConversation.otherUser?.user_id}`}
-                            className="font-semibold hover:underline block"
+                            className="font-semibold hover:underline block text-sm sm:text-base"
                           >
                             {activeConversation.otherUser?.full_name || "Người dùng"}
                           </Link>
                           <p className="text-xs">
                             {activeConversation.isOnline ? (
                               <span className="text-green-500 flex items-center gap-1">
-                                <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                                <Circle className="w-2 h-2 fill-green-500" />
                                 Đang hoạt động
                               </span>
                             ) : (
@@ -713,7 +822,7 @@ export default function Messages() {
                     )}
                   </div>
 
-                  {/* Action buttons - Messenger style */}
+                  {/* Call buttons */}
                   <div className="flex items-center gap-1">
                     {!activeConversation.is_group && activeConversation.otherUser && (
                       <>
@@ -722,7 +831,7 @@ export default function Messages() {
                           size="icon"
                           onClick={() => startCall("audio")}
                           title="Gọi thoại"
-                          className="rounded-full hover:bg-muted text-primary"
+                          className="rounded-full hover:bg-muted text-primary h-9 w-9 sm:h-10 sm:w-10"
                         >
                           <Phone className="w-5 h-5" />
                         </Button>
@@ -731,136 +840,149 @@ export default function Messages() {
                           size="icon"
                           onClick={() => startCall("video")}
                           title="Gọi video"
-                          className="rounded-full hover:bg-muted text-primary"
+                          className="rounded-full hover:bg-muted text-primary h-9 w-9 sm:h-10 sm:w-10"
                         >
                           <Video className="w-5 h-5" />
                         </Button>
                       </>
                     )}
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => setActiveConversation(null)}
-                      title="Đóng"
-                      className="rounded-full hover:bg-muted hidden md:flex"
-                    >
-                      <X className="w-5 h-5" />
-                    </Button>
                   </div>
                 </div>
 
                 {/* Messages */}
-                <ScrollArea className="flex-1 p-4">
+                <ScrollArea className="flex-1 p-3 sm:p-4">
                   <div className="space-y-2">
-                    {messages.map((msg, index) => {
-                      const isCurrentUser = msg.sender_id === currentUserId;
-                      const showAvatar = !isCurrentUser && (
-                        index === 0 || 
-                        messages[index - 1]?.sender_id !== msg.sender_id
-                      );
-                      
-                      return (
-                        <div
-                          key={msg.id}
-                          className={`flex items-end gap-2 ${isCurrentUser ? 'justify-end' : 'justify-start'}`}
-                        >
-                          {/* Avatar for other user's messages */}
-                          {!isCurrentUser && (
-                            <div className="w-7 h-7 flex-shrink-0">
-                              {showAvatar && (
-                                <Avatar className="w-7 h-7">
-                                  <AvatarImage src={msg.senderProfile?.avatar_url || activeConversation.otherUser?.avatar_url || ""} />
-                                  <AvatarFallback className="text-xs bg-primary/10 text-primary">
-                                    {(msg.senderProfile?.full_name || activeConversation.otherUser?.full_name || "U").charAt(0)}
-                                  </AvatarFallback>
-                                </Avatar>
-                              )}
-                            </div>
-                          )}
-                          
-                          <div className={`flex flex-col max-w-[70%] ${isCurrentUser ? 'items-end' : 'items-start'}`}>
-                            {/* Sender name for group */}
-                            {activeConversation.is_group && !isCurrentUser && showAvatar && (
-                              <span className="text-xs text-muted-foreground mb-1 ml-1">
-                                {msg.senderProfile?.full_name || "Người dùng"}
-                              </span>
+                    {messages.length === 0 ? (
+                      <div className="text-center text-muted-foreground text-sm py-8">
+                        Bắt đầu cuộc trò chuyện...
+                      </div>
+                    ) : (
+                      messages.map((msg, index) => {
+                        const isCurrentUser = msg.sender_id === currentUserId;
+                        const showAvatar = !isCurrentUser && (
+                          index === 0 || 
+                          messages[index - 1]?.sender_id !== msg.sender_id
+                        );
+                        
+                        return (
+                          <motion.div
+                            key={msg.id}
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className={`flex items-end gap-2 ${isCurrentUser ? 'justify-end' : 'justify-start'}`}
+                          >
+                            {/* Avatar for other user's messages */}
+                            {!isCurrentUser && (
+                              <div className="w-7 h-7 flex-shrink-0">
+                                {showAvatar && (
+                                  <Avatar className="w-7 h-7">
+                                    <AvatarImage src={msg.senderProfile?.avatar_url || activeConversation.otherUser?.avatar_url || ""} />
+                                    <AvatarFallback className="text-xs bg-primary/10 text-primary">
+                                      {(msg.senderProfile?.full_name || activeConversation.otherUser?.full_name || "U").charAt(0)}
+                                    </AvatarFallback>
+                                  </Avatar>
+                                )}
+                              </div>
                             )}
                             
-                            <div
-                              className={`rounded-2xl overflow-hidden ${
-                                isCurrentUser
-                                  ? 'bg-primary text-primary-foreground'
-                                  : 'bg-muted'
-                              }`}
-                            >
-                              {msg.image_url && (
-                                <img 
-                                  src={msg.image_url} 
-                                  alt="Shared image" 
-                                  className="max-w-full max-h-60 object-cover cursor-pointer"
-                                  onClick={() => window.open(msg.image_url!, '_blank')}
-                                />
+                            <div className={`flex flex-col max-w-[75%] sm:max-w-[70%] ${isCurrentUser ? 'items-end' : 'items-start'}`}>
+                              {/* Sender name for group */}
+                              {activeConversation.is_group && !isCurrentUser && showAvatar && (
+                                <span className="text-xs text-muted-foreground mb-1 ml-1">
+                                  {msg.senderProfile?.full_name || "Người dùng"}
+                                </span>
                               )}
-                              {msg.content && (
-                                <div className={`px-3 py-2 ${msg.content === '👍' ? 'text-3xl py-1' : ''}`}>
-                                  <p className="text-sm whitespace-pre-wrap break-words">{msg.content}</p>
-                                </div>
-                              )}
+                              
+                              <div
+                                className={`rounded-2xl overflow-hidden ${
+                                  isCurrentUser
+                                    ? 'bg-primary text-primary-foreground'
+                                    : 'bg-muted'
+                                }`}
+                              >
+                                {msg.image_url && (
+                                  <img 
+                                    src={msg.image_url} 
+                                    alt="Shared image" 
+                                    className="max-w-full max-h-60 object-cover cursor-pointer"
+                                    onClick={() => window.open(msg.image_url!, '_blank')}
+                                  />
+                                )}
+                                {msg.content && (
+                                  <div className={`px-3 py-2 ${msg.content === '👍' ? 'text-3xl py-1' : ''}`}>
+                                    <p className="text-sm whitespace-pre-wrap break-words">{msg.content}</p>
+                                  </div>
+                                )}
+                              </div>
+                              
+                              {/* Timestamp */}
+                              <span className={`text-[10px] mt-1 text-muted-foreground ${
+                                isCurrentUser ? 'mr-1' : 'ml-1'
+                              }`}>
+                                {formatDistanceToNow(new Date(msg.created_at), { locale: vi, addSuffix: false })}
+                              </span>
                             </div>
-                            
-                            {/* Timestamp - show on hover or for last message */}
-                            <span className={`text-[10px] mt-1 ${
-                              isCurrentUser ? 'text-muted-foreground mr-1' : 'text-muted-foreground ml-1'
-                            }`}>
-                              {formatDistanceToNow(new Date(msg.created_at), { locale: vi, addSuffix: false })}
-                            </span>
-                          </div>
-                        </div>
-                      );
-                    })}
+                          </motion.div>
+                        );
+                      })
+                    )}
                     
                     {/* Typing indicator */}
-                    {typingUsers.length > 0 && (
-                      <div className="flex items-end gap-2">
-                        <Avatar className="w-7 h-7">
-                          <AvatarImage src={activeConversation.otherUser?.avatar_url || ""} />
-                          <AvatarFallback className="text-xs">
-                            {activeConversation.otherUser?.full_name?.charAt(0) || "U"}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div className="bg-muted rounded-2xl px-4 py-3">
-                          <div className="flex gap-1">
-                            <span className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
-                            <span className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
-                            <span className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
+                    <AnimatePresence>
+                      {typingUsers.length > 0 && (
+                        <motion.div
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0 }}
+                          className="flex items-end gap-2"
+                        >
+                          <Avatar className="w-7 h-7">
+                            <AvatarImage src={activeConversation.otherUser?.avatar_url || ""} />
+                            <AvatarFallback className="text-xs">
+                              {activeConversation.otherUser?.full_name?.charAt(0) || "U"}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="bg-muted rounded-2xl px-4 py-3">
+                            <div className="flex gap-1">
+                              <span className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
+                              <span className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
+                              <span className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
+                            </div>
                           </div>
-                        </div>
-                      </div>
-                    )}
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
                     
                     <div ref={messagesEndRef} />
                   </div>
                 </ScrollArea>
 
                 {/* Image Preview */}
-                {imagePreview && (
-                  <div className="px-4 py-2 border-t border-border bg-card">
-                    <div className="relative inline-block">
-                      <img src={imagePreview} alt="Preview" className="max-h-24 rounded-lg" />
-                      <Button
-                        variant="destructive"
-                        size="icon"
-                        className="absolute -top-2 -right-2 h-6 w-6 rounded-full"
-                        onClick={removeImage}
-                      >
-                        <X className="w-3 h-3" />
-                      </Button>
-                    </div>
-                  </div>
-                )}
+                <AnimatePresence>
+                  {imagePreview && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className="px-4 py-2 border-t border-border bg-card"
+                    >
+                      <div className="relative inline-block">
+                        <img src={imagePreview} alt="Preview" className="max-h-24 rounded-lg" />
+                        <Button
+                          variant="destructive"
+                          size="icon"
+                          className="absolute -top-2 -right-2 h-6 w-6 rounded-full"
+                          onClick={removeImage}
+                        >
+                          <X className="w-3 h-3" />
+                        </Button>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
 
-                {/* Message Input - Messenger Style */}
-                <div className="p-3 border-t border-border bg-card">
+                {/* Message Input */}
+                <div className="p-2 sm:p-3 border-t border-border bg-card">
                   <input
                     ref={fileInputRef}
                     type="file"
@@ -886,7 +1008,7 @@ export default function Messages() {
                     </div>
                     
                     {/* Message input */}
-                    <div className="flex-1 relative">
+                    <div className="flex-1">
                       <Input
                         placeholder="Aa"
                         value={newMessage}
@@ -898,7 +1020,7 @@ export default function Messages() {
                           }
                         }}
                         disabled={isSending}
-                        className="w-full rounded-full bg-muted/50 border-0 pr-10 focus-visible:ring-1"
+                        className="w-full rounded-full bg-muted/50 border-0 focus-visible:ring-1 h-10"
                       />
                     </div>
                     
@@ -908,7 +1030,7 @@ export default function Messages() {
                         onClick={sendMessage}
                         disabled={isSending}
                         size="icon"
-                        className="h-9 w-9 rounded-full"
+                        className="h-9 w-9 rounded-full flex-shrink-0"
                       >
                         {isSending ? (
                           <Loader2 className="w-4 h-4 animate-spin" />
@@ -921,7 +1043,7 @@ export default function Messages() {
                         type="button"
                         variant="ghost"
                         size="icon"
-                        className="h-9 w-9 rounded-full hover:bg-muted text-primary"
+                        className="h-9 w-9 rounded-full hover:bg-muted text-primary flex-shrink-0"
                         onClick={sendLike}
                         title="Gửi like"
                       >
@@ -932,7 +1054,7 @@ export default function Messages() {
                 </div>
               </>
             ) : (
-              <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground gap-4">
+              <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground gap-4 p-4">
                 <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center">
                   <Send className="w-10 h-10 text-primary" />
                 </div>
@@ -945,6 +1067,9 @@ export default function Messages() {
           </div>
         </div>
       </main>
+
+      {/* Mobile Bottom Nav */}
+      <MobileBottomNav />
 
       {/* Video/Audio Call Modal */}
       {showVideoCall && activeConversation?.otherUser && currentUserId && (

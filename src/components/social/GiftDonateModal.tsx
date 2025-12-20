@@ -12,6 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Gift,
   Heart,
@@ -22,6 +23,10 @@ import {
   CheckCircle,
   AlertCircle,
   ExternalLink,
+  Users,
+  Utensils,
+  GraduationCap,
+  HeartHandshake,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
@@ -38,30 +43,26 @@ interface GiftDonateModalProps {
 const VND_TO_ETH_RATE = 0.000000012; // ~1 ETH = 83M VND
 
 const PRESET_AMOUNTS = [
-  { value: 50000, label: "50K" },
-  { value: 100000, label: "100K" },
-  { value: 200000, label: "200K" },
-  { value: 500000, label: "500K" },
-  { value: 1000000, label: "1M" },
-  { value: 2000000, label: "2M" },
+  { value: 50000, label: "50K", impact: "1 bữa ăn" },
+  { value: 100000, label: "100K", impact: "2 bữa ăn" },
+  { value: 200000, label: "200K", impact: "1 ngày học" },
+  { value: 500000, label: "500K", impact: "1 tuần sách" },
+  { value: 1000000, label: "1M", impact: "1 tháng học" },
+  { value: 2000000, label: "2M", impact: "Giúp 1 gia đình" },
 ];
 
 const PAYMENT_METHODS = [
   {
     id: "crypto_eth",
     label: "Ví Crypto",
+    sublabel: "ETH via MetaMask",
     icon: Wallet,
-    description: "ETH via MetaMask",
-    color: "text-purple-500",
-    bgColor: "bg-purple-500/10",
   },
   {
     id: "fiat_card",
     label: "Thẻ tín dụng",
+    sublabel: "Visa, Mastercard",
     icon: CreditCard,
-    description: "Visa, Mastercard",
-    color: "text-blue-500",
-    bgColor: "bg-blue-500/10",
   },
 ];
 
@@ -72,6 +73,7 @@ export function GiftDonateModal({ post, trigger }: GiftDonateModalProps) {
   const [paymentMethod, setPaymentMethod] = useState<string>("crypto_eth");
   const [message, setMessage] = useState("");
   const [isAnonymous, setIsAnonymous] = useState(false);
+  const [isRecurring, setIsRecurring] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [walletConnected, setWalletConnected] = useState(false);
@@ -82,6 +84,7 @@ export function GiftDonateModal({ post, trigger }: GiftDonateModalProps) {
 
   const amount = customAmount ? parseInt(customAmount) : selectedAmount || 0;
   const ethAmount = (amount * VND_TO_ETH_RATE).toFixed(6);
+  const selectedPreset = PRESET_AMOUNTS.find(p => p.value === selectedAmount);
 
   // Load recipient wallet address from profile
   useEffect(() => {
@@ -203,17 +206,9 @@ export function GiftDonateModal({ post, trigger }: GiftDonateModalProps) {
         description: `TX: ${tx.hash.slice(0, 10)}...`,
       });
 
-      // Wait for transaction confirmation
-      const receipt = await tx.wait();
+      await tx.wait();
       
       setTxHash(tx.hash);
-
-      // Save donation record to database
-      const { data: user } = await supabase.auth.getUser();
-      
-      // Note: In production, you'd want to link this to a campaign_id
-      // For now, we'll just record the transaction
-      
       setShowSuccess(true);
       
       toast({
@@ -242,14 +237,13 @@ export function GiftDonateModal({ post, trigger }: GiftDonateModalProps) {
     setIsLoading(true);
 
     try {
-      // Simulated - in production, integrate with Stripe
       await new Promise((resolve) => setTimeout(resolve, 1500));
 
       setShowSuccess(true);
       
       toast({
         title: "Cảm ơn bạn! 🎉",
-        description: `Bạn đã tặng ${amount.toLocaleString()}₫`,
+        description: `Bạn đã tặng ${amount.toLocaleString()}₫${isRecurring ? '/tháng' : ''}`,
       });
 
       setTimeout(() => {
@@ -290,6 +284,7 @@ export function GiftDonateModal({ post, trigger }: GiftDonateModalProps) {
     setCustomAmount("");
     setMessage("");
     setIsAnonymous(false);
+    setIsRecurring(false);
     setTxHash(null);
   };
 
@@ -306,7 +301,7 @@ export function GiftDonateModal({ post, trigger }: GiftDonateModalProps) {
           </Button>
         )}
       </DialogTrigger>
-      <DialogContent className="sm:max-w-md overflow-hidden">
+      <DialogContent className="sm:max-w-lg p-0 overflow-hidden bg-card border-border">
         <AnimatePresence mode="wait">
           {showSuccess ? (
             <motion.div
@@ -314,31 +309,31 @@ export function GiftDonateModal({ post, trigger }: GiftDonateModalProps) {
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.8 }}
-              className="py-12 text-center"
+              className="py-16 px-6 text-center"
             >
               <motion.div
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
                 transition={{ type: "spring", delay: 0.1 }}
-                className="w-20 h-20 mx-auto mb-4 rounded-full bg-green-500/20 flex items-center justify-center"
+                className="w-24 h-24 mx-auto mb-6 rounded-full bg-[#84D9BA]/20 flex items-center justify-center"
               >
-                <CheckCircle className="w-10 h-10 text-green-500" />
+                <CheckCircle className="w-12 h-12 text-[#84D9BA]" />
               </motion.div>
               <motion.div
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.2 }}
               >
-                <h3 className="text-xl font-bold mb-2">Tặng quà thành công!</h3>
-                <p className="text-muted-foreground mb-3">
-                  Cảm ơn bạn đã lan tỏa yêu thương 💖
+                <h3 className="text-2xl font-bold mb-3">Cảm ơn bạn!</h3>
+                <p className="text-muted-foreground mb-4">
+                  Đóng góp của bạn sẽ mang đến sự thay đổi tích cực 💖
                 </p>
                 {txHash && (
                   <a
                     href={`https://etherscan.io/tx/${txHash}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 text-sm text-secondary hover:underline"
+                    className="inline-flex items-center gap-1 text-sm text-[#84D9BA] hover:underline"
                   >
                     Xem giao dịch <ExternalLink className="w-3 h-3" />
                   </a>
@@ -348,22 +343,18 @@ export function GiftDonateModal({ post, trigger }: GiftDonateModalProps) {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.4 }}
-                className="absolute inset-0 pointer-events-none"
+                className="absolute inset-0 pointer-events-none overflow-hidden"
               >
                 {[...Array(20)].map((_, i) => (
                   <motion.span
                     key={i}
-                    initial={{
-                      opacity: 1,
-                      x: "50%",
-                      y: "50%",
-                    }}
+                    initial={{ opacity: 1, x: "50%", y: "50%" }}
                     animate={{
                       opacity: 0,
                       x: `${Math.random() * 100}%`,
                       y: `${Math.random() * 100}%`,
                     }}
-                    transition={{ duration: 1, delay: i * 0.05 }}
+                    transition={{ duration: 1.5, delay: i * 0.05 }}
                     className="absolute text-2xl"
                   >
                     {["💖", "✨", "🎁", "💝", "⭐"][i % 5]}
@@ -378,147 +369,213 @@ export function GiftDonateModal({ post, trigger }: GiftDonateModalProps) {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
             >
-              <DialogHeader>
-                <DialogTitle className="flex items-center gap-2">
-                  <Gift className="w-5 h-5 text-secondary" />
-                  Từ thiện cho Quỹ FUN Charity
-                </DialogTitle>
-              </DialogHeader>
+              {/* Header */}
+              <div className="px-6 pt-6 pb-4 border-b border-border">
+                <DialogHeader>
+                  <DialogTitle className="flex items-center gap-3 text-xl">
+                    <div className="w-10 h-10 rounded-full bg-[#84D9BA]/20 flex items-center justify-center">
+                      <HeartHandshake className="w-5 h-5 text-[#84D9BA]" />
+                    </div>
+                    Đóng góp từ thiện
+                  </DialogTitle>
+                </DialogHeader>
+              </div>
 
-              <div className="space-y-5 mt-4">
+              <div className="p-6 space-y-6 max-h-[70vh] overflow-y-auto">
                 {/* Recipient Info */}
-                <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
-                  <Avatar className="w-12 h-12 border-2 border-secondary/30">
+                <div className="flex items-center gap-3 p-4 rounded-xl bg-muted/50 border border-border">
+                  <Avatar className="w-12 h-12 border-2 border-[#84D9BA]/30">
                     <AvatarImage src={post.profiles?.avatar_url || ""} />
-                    <AvatarFallback className="bg-secondary/20">
+                    <AvatarFallback className="bg-[#84D9BA]/20 text-[#84D9BA]">
                       {post.profiles?.full_name?.charAt(0) || "U"}
                     </AvatarFallback>
                   </Avatar>
                   <div className="flex-1 min-w-0">
-                    <p className="font-medium truncate">
-                      {post.profiles?.full_name || "Người dùng"}
+                    <p className="font-semibold truncate">
+                      {post.profiles?.full_name || "Quỹ FUN Charity"}
                     </p>
                     <p className="text-sm text-muted-foreground truncate">
                       {post.title || post.content?.slice(0, 50)}...
                     </p>
                   </div>
-                  <Heart className="w-5 h-5 text-red-400 animate-pulse" />
+                  <Heart className="w-5 h-5 text-red-400 animate-pulse flex-shrink-0" />
                 </div>
 
-                {/* Amount Selection */}
+                {/* Recurring Toggle - Clean design like reference */}
+                <div className="flex rounded-xl border border-border overflow-hidden">
+                  <button
+                    onClick={() => setIsRecurring(false)}
+                    className={`flex-1 py-3.5 px-4 text-sm font-medium transition-all ${
+                      !isRecurring
+                        ? 'bg-[#84D9BA] text-white'
+                        : 'bg-transparent text-muted-foreground hover:bg-muted/50'
+                    }`}
+                  >
+                    Một lần
+                  </button>
+                  <button
+                    onClick={() => setIsRecurring(true)}
+                    className={`flex-1 py-3.5 px-4 text-sm font-medium transition-all ${
+                      isRecurring
+                        ? 'bg-[#84D9BA] text-white'
+                        : 'bg-transparent text-muted-foreground hover:bg-muted/50'
+                    }`}
+                  >
+                    Hàng tháng
+                  </button>
+                </div>
+
+                {/* Amount Selection - Responsive grid */}
                 <div className="space-y-3">
-                  <Label className="text-sm font-medium">Chọn số tiền</Label>
-                  <div className="grid grid-cols-3 gap-2">
+                  <Label className="text-sm font-medium text-muted-foreground">
+                    Chọn số tiền {isRecurring ? 'hàng tháng' : ''}
+                  </Label>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                     {PRESET_AMOUNTS.map((preset) => (
                       <motion.button
                         key={preset.value}
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
                         onClick={() => handleAmountSelect(preset.value)}
-                        className={`py-3 px-2 rounded-lg border-2 transition-all font-medium ${
+                        className={`relative py-4 px-3 rounded-xl border-2 transition-all text-center ${
                           selectedAmount === preset.value
-                            ? "border-secondary bg-secondary/10 text-secondary"
-                            : "border-border hover:border-secondary/50"
+                            ? 'border-[#84D9BA] bg-[#84D9BA]/10 shadow-lg shadow-[#84D9BA]/20'
+                            : 'border-border hover:border-[#84D9BA]/50 bg-card'
                         }`}
                       >
-                        {preset.label}
+                        <span className={`text-lg font-bold ${
+                          selectedAmount === preset.value ? 'text-[#84D9BA]' : ''
+                        }`}>
+                          {preset.label}
+                        </span>
+                        {selectedAmount === preset.value && (
+                          <motion.div
+                            initial={{ opacity: 0, scale: 0 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            className="absolute -top-2 -right-2 w-5 h-5 bg-[#84D9BA] rounded-full flex items-center justify-center"
+                          >
+                            <CheckCircle className="w-3 h-3 text-white" />
+                          </motion.div>
+                        )}
                       </motion.button>
                     ))}
                   </div>
-                  
-                  {/* MetaMask Connection for Crypto */}
+
+                  {/* Custom Amount - Prominent styling */}
+                  <div className="relative mt-4">
+                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground font-medium">
+                      ₫
+                    </span>
+                    <Input
+                      type="text"
+                      placeholder="Nhập số tiền khác"
+                      value={customAmount ? parseInt(customAmount).toLocaleString() : ""}
+                      onChange={handleCustomAmountChange}
+                      className={`pl-8 pr-4 h-14 text-lg font-medium rounded-xl border-2 transition-all ${
+                        customAmount
+                          ? 'border-[#84D9BA] bg-[#84D9BA]/5'
+                          : 'border-border hover:border-muted-foreground/50'
+                      }`}
+                    />
+                  </div>
+
+                  {/* Impact Text */}
+                  {(selectedPreset || amount > 0) && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="flex items-center gap-2 p-3 rounded-lg bg-[#84D9BA]/10 border border-[#84D9BA]/20"
+                    >
+                      {selectedPreset?.value === 50000 && <Utensils className="w-4 h-4 text-[#84D9BA]" />}
+                      {selectedPreset?.value === 100000 && <Utensils className="w-4 h-4 text-[#84D9BA]" />}
+                      {selectedPreset?.value === 200000 && <GraduationCap className="w-4 h-4 text-[#84D9BA]" />}
+                      {selectedPreset?.value === 500000 && <GraduationCap className="w-4 h-4 text-[#84D9BA]" />}
+                      {selectedPreset?.value === 1000000 && <GraduationCap className="w-4 h-4 text-[#84D9BA]" />}
+                      {selectedPreset?.value === 2000000 && <Users className="w-4 h-4 text-[#84D9BA]" />}
+                      {!selectedPreset && <Heart className="w-4 h-4 text-[#84D9BA]" />}
+                      <span className="text-sm text-[#84D9BA] font-medium">
+                        {selectedPreset ? `Có thể hỗ trợ: ${selectedPreset.impact}` : 'Mỗi đóng góp đều có ý nghĩa'}
+                      </span>
+                    </motion.div>
+                  )}
+                </div>
+
+                {/* Payment Method - Tab design */}
+                <div className="space-y-3">
+                  <Label className="text-sm font-medium text-muted-foreground">
+                    Phương thức thanh toán
+                  </Label>
+                  <Tabs value={paymentMethod} onValueChange={setPaymentMethod} className="w-full">
+                    <TabsList className="w-full h-auto p-1 bg-muted/50 rounded-xl grid grid-cols-2 gap-1">
+                      {PAYMENT_METHODS.map((method) => (
+                        <TabsTrigger
+                          key={method.id}
+                          value={method.id}
+                          className={`flex flex-col items-center gap-1 py-3 px-4 rounded-lg data-[state=active]:bg-card data-[state=active]:shadow-md transition-all`}
+                        >
+                          <method.icon className={`w-5 h-5 ${
+                            paymentMethod === method.id ? 'text-[#84D9BA]' : 'text-muted-foreground'
+                          }`} />
+                          <span className="text-xs font-medium">{method.label}</span>
+                          <span className="text-[10px] text-muted-foreground">{method.sublabel}</span>
+                        </TabsTrigger>
+                      ))}
+                    </TabsList>
+                  </Tabs>
+
+                  {/* MetaMask Connection */}
                   {paymentMethod === "crypto_eth" && (
-                    <div className="mt-3 p-3 rounded-lg bg-muted/50 border border-border">
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className="p-4 rounded-xl bg-muted/50 border border-border space-y-3"
+                    >
                       {!walletConnected ? (
-                        <div className="space-y-2">
-                          <p className="text-sm text-muted-foreground">
-                            Kết nối ví để thanh toán bằng ETH
-                          </p>
-                          <Button
-                            type="button"
-                            variant="outline"
-                            onClick={connectMetaMask}
-                            className="w-full gap-2"
-                          >
-                            <Wallet className="w-4 h-4" />
-                            Kết nối MetaMask
-                          </Button>
-                        </div>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={connectMetaMask}
+                          className="w-full gap-2 h-12 rounded-xl border-dashed border-2"
+                        >
+                          <Wallet className="w-5 h-5" />
+                          Kết nối MetaMask
+                        </Button>
                       ) : (
                         <div className="space-y-2">
                           <div className="flex items-center gap-2 text-sm">
-                            <div className="w-2 h-2 rounded-full bg-green-500" />
+                            <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
                             <span className="text-muted-foreground">Đã kết nối:</span>
-                            <span className="font-mono text-xs">
+                            <span className="font-mono text-xs bg-muted px-2 py-1 rounded">
                               {walletAddress?.slice(0, 6)}...{walletAddress?.slice(-4)}
                             </span>
                           </div>
-                          <div className="flex items-center justify-between text-sm">
-                            <span className="text-muted-foreground">Số ETH tương đương:</span>
-                            <span className="font-bold text-secondary">{ethAmount} ETH</span>
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm text-muted-foreground">Số ETH:</span>
+                            <span className="font-bold text-[#84D9BA]">{ethAmount} ETH</span>
                           </div>
                           {!recipientWallet && (
-                            <div className="flex items-center gap-2 text-amber-500 text-xs mt-2">
-                              <AlertCircle className="w-4 h-4" />
+                            <div className="flex items-center gap-2 text-amber-500 text-xs p-2 bg-amber-500/10 rounded-lg">
+                              <AlertCircle className="w-4 h-4 flex-shrink-0" />
                               <span>Người nhận chưa thiết lập ví crypto</span>
                             </div>
                           )}
                         </div>
                       )}
-                    </div>
+                    </motion.div>
                   )}
-                  <div className="relative">
-                    <Input
-                      type="text"
-                      placeholder="Hoặc nhập số tiền khác..."
-                      value={customAmount ? parseInt(customAmount).toLocaleString() : ""}
-                      onChange={handleCustomAmountChange}
-                      className="pr-12"
-                    />
-                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">
-                      ₫
-                    </span>
-                  </div>
-                </div>
-
-                {/* Payment Method */}
-                <div className="space-y-3">
-                  <Label className="text-sm font-medium">Phương thức thanh toán</Label>
-                  <div className="grid grid-cols-2 gap-2">
-                    {PAYMENT_METHODS.map((method) => (
-                      <motion.button
-                        key={method.id}
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
-                        onClick={() => setPaymentMethod(method.id)}
-                        className={`p-3 rounded-lg border-2 transition-all text-left ${
-                          paymentMethod === method.id
-                            ? "border-secondary bg-secondary/10"
-                            : "border-border hover:border-secondary/50"
-                        }`}
-                      >
-                        <div className="flex items-center gap-2 mb-1">
-                          <div className={`w-8 h-8 rounded-full ${method.bgColor} flex items-center justify-center`}>
-                            <method.icon className={`w-4 h-4 ${method.color}`} />
-                          </div>
-                          <span className="font-medium text-sm">{method.label}</span>
-                        </div>
-                        <p className="text-xs text-muted-foreground ml-10">
-                          {method.description}
-                        </p>
-                      </motion.button>
-                    ))}
-                  </div>
                 </div>
 
                 {/* Message */}
                 <div className="space-y-2">
-                  <Label className="text-sm font-medium">Lời nhắn (tùy chọn)</Label>
+                  <Label className="text-sm font-medium text-muted-foreground">
+                    Lời nhắn (tùy chọn)
+                  </Label>
                   <Textarea
-                    placeholder="Gửi lời chúc của bạn..."
+                    placeholder="Viết lời chúc của bạn..."
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}
-                    className="resize-none h-20"
+                    className="resize-none h-20 rounded-xl border-border focus:border-[#84D9BA]"
                     maxLength={200}
                   />
                   <p className="text-xs text-muted-foreground text-right">
@@ -527,9 +584,9 @@ export function GiftDonateModal({ post, trigger }: GiftDonateModalProps) {
                 </div>
 
                 {/* Anonymous Toggle */}
-                <div className="flex items-center justify-between py-2">
+                <div className="flex items-center justify-between py-3 px-4 rounded-xl bg-muted/30">
                   <div className="space-y-0.5">
-                    <Label className="text-sm font-medium">Tặng ẩn danh</Label>
+                    <Label className="text-sm font-medium">Đóng góp ẩn danh</Label>
                     <p className="text-xs text-muted-foreground">
                       Tên của bạn sẽ không được hiển thị
                     </p>
@@ -537,14 +594,17 @@ export function GiftDonateModal({ post, trigger }: GiftDonateModalProps) {
                   <Switch
                     checked={isAnonymous}
                     onCheckedChange={setIsAnonymous}
+                    className="data-[state=checked]:bg-[#84D9BA]"
                   />
                 </div>
+              </div>
 
-                {/* Submit Button */}
+              {/* Submit Button - Fixed at bottom */}
+              <div className="p-6 pt-4 border-t border-border bg-card">
                 <Button
                   onClick={handleDonate}
-                  disabled={amount < 10000 || isLoading}
-                  className="w-full gap-2 h-12 text-base"
+                  disabled={amount < 10000 || isLoading || (paymentMethod === "crypto_eth" && !walletConnected)}
+                  className="w-full gap-2 h-14 text-lg font-semibold rounded-xl bg-[#84D9BA] hover:bg-[#6BC9A8] text-white shadow-lg shadow-[#84D9BA]/30 transition-all"
                   size="lg"
                 >
                   {isLoading ? (
@@ -555,22 +615,18 @@ export function GiftDonateModal({ post, trigger }: GiftDonateModalProps) {
                   ) : (
                     <>
                       <Sparkles className="w-5 h-5" />
-                      Từ thiện {amount > 0 ? amount.toLocaleString() + "₫" : ""}
+                      Đóng góp {amount > 0 ? amount.toLocaleString() + "₫" : ""}
+                      {isRecurring && amount > 0 ? "/tháng" : ""}
                     </>
                   )}
                 </Button>
 
-                {paymentMethod === "crypto_eth" && (
-                  <p className="text-xs text-center text-muted-foreground">
-                    Giao dịch ETH qua mạng Ethereum • Phí gas áp dụng 🔒
-                  </p>
-                )}
-
-                {paymentMethod === "fiat_card" && (
-                  <p className="text-xs text-center text-muted-foreground">
-                    Thanh toán được bảo mật qua Stripe 🔒
-                  </p>
-                )}
+                <p className="text-xs text-center text-muted-foreground mt-3">
+                  {paymentMethod === "crypto_eth" 
+                    ? "Giao dịch ETH qua mạng Ethereum • Phí gas áp dụng 🔒"
+                    : "Thanh toán được bảo mật qua Stripe 🔒"
+                  }
+                </p>
               </div>
             </motion.div>
           )}
