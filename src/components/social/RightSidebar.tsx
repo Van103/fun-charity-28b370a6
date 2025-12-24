@@ -2,6 +2,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useHonorStats, useTopRankers } from "@/hooks/useHonorStats";
+import { AnimatedStatItem } from "./AnimatedStatItem";
 import { 
   Users,
   Cake,
@@ -40,20 +41,6 @@ const contacts = [
   "Vinh Hào",
   "Mỹ Phương",
 ];
-
-// Format number for display
-const formatNumber = (num: number): string => {
-  if (num >= 1000000000) {
-    return `${(num / 1000000000).toFixed(1)}B`;
-  }
-  if (num >= 1000000) {
-    return `${(num / 1000000).toFixed(1)}M`;
-  }
-  if (num >= 1000) {
-    return `${(num / 1000).toFixed(1)}K`;
-  }
-  return num.toString();
-};
 
 // Format currency for display
 const formatCurrency = (amount: number): string => {
@@ -100,19 +87,12 @@ export function RightSidebar() {
             </div>
           ) : (
             honorStats.map((stat) => (
-              <div 
-                key={stat.labelKey} 
-                className="flex items-center justify-between gap-2 px-3 py-2.5 rounded-xl bg-white/95 transition-colors"
-                style={{ 
-                  boxShadow: '0 0 12px 2px rgba(255, 215, 0, 0.5), 0 0 4px 1px rgba(255, 215, 0, 0.3)',
-                  border: '2px solid rgba(255, 215, 0, 0.6)'
-                }}
-              >
-                <span className="font-bold whitespace-nowrap" style={{ color: '#4C1D95', fontSize: '16px' }}>{t(stat.labelKey)}</span>
-                <span className="font-bold whitespace-nowrap" style={{ color: '#4C1D95', fontSize: '16px' }}>
-                  {stat.isCurrency ? formatCurrency(stat.value) : formatNumber(stat.value)}
-                </span>
-              </div>
+              <AnimatedStatItem
+                key={stat.labelKey}
+                labelKey={stat.labelKey}
+                value={stat.value}
+                isCurrency={stat.isCurrency}
+              />
             ))
           )}
         </div>

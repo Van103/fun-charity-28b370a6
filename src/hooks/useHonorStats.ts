@@ -1,4 +1,5 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 export interface HonorStats {
@@ -10,70 +11,113 @@ export interface HonorStats {
   nftCount: number;
 }
 
+async function fetchHonorStats(): Promise<HonorStats> {
+  // Fetch total profiles count
+  const { count: profilesCount } = await supabase
+    .from("profiles")
+    .select("*", { count: "exact", head: true });
+
+  // Fetch total donations amount (earnings)
+  const { data: donations } = await supabase
+    .from("donations")
+    .select("amount")
+    .eq("status", "completed");
+
+  const totalEarnings = donations?.reduce((sum, d) => sum + Number(d.amount), 0) || 0;
+
+  // Fetch total posts count
+  const { count: postsCount } = await supabase
+    .from("feed_posts")
+    .select("*", { count: "exact", head: true });
+
+  // Fetch videos count (posts with video in media_urls)
+  const { data: mediaPosts } = await supabase
+    .from("feed_posts")
+    .select("media_urls");
+
+  const videosCount = mediaPosts?.filter(post => {
+    const urls = post.media_urls as string[] | null;
+    return urls?.some(url => 
+      url.includes('.mp4') || url.includes('.webm') || url.includes('.mov')
+    );
+  }).length || 0;
+
+  // Fetch friends/connections count
+  const { data: friendshipData } = await supabase
+    .from("friendships")
+    .select("user_id, friend_id")
+    .eq("status", "accepted");
+  
+  const uniqueUsers = new Set<string>();
+  friendshipData?.forEach(f => {
+    uniqueUsers.add(f.user_id);
+    uniqueUsers.add(f.friend_id);
+  });
+  const friendsCount = uniqueUsers.size;
+
+  // Fetch NFT badges count
+  const { count: nftCount } = await supabase
+    .from("user_badges")
+    .select("*", { count: "exact", head: true });
+
+  return {
+    topProfiles: profilesCount || 0,
+    totalEarnings,
+    totalPosts: postsCount || 0,
+    videosCount,
+    friendsCount: friendsCount || 0,
+    nftCount: nftCount || 0,
+  };
+}
+
 export function useHonorStats() {
+  const queryClient = useQueryClient();
+
+  // Subscribe to realtime updates
+  useEffect(() => {
+    const channels = [
+      supabase
+        .channel('honor-profiles')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => {
+          queryClient.invalidateQueries({ queryKey: ["honor-stats"] });
+        })
+        .subscribe(),
+      supabase
+        .channel('honor-donations')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'donations' }, () => {
+          queryClient.invalidateQueries({ queryKey: ["honor-stats"] });
+        })
+        .subscribe(),
+      supabase
+        .channel('honor-posts')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'feed_posts' }, () => {
+          queryClient.invalidateQueries({ queryKey: ["honor-stats"] });
+        })
+        .subscribe(),
+      supabase
+        .channel('honor-friendships')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'friendships' }, () => {
+          queryClient.invalidateQueries({ queryKey: ["honor-stats"] });
+        })
+        .subscribe(),
+      supabase
+        .channel('honor-badges')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'user_badges' }, () => {
+          queryClient.invalidateQueries({ queryKey: ["honor-stats"] });
+        })
+        .subscribe(),
+    ];
+
+    return () => {
+      channels.forEach(channel => supabase.removeChannel(channel));
+    };
+  }, [queryClient]);
+
   return useQuery({
     queryKey: ["honor-stats"],
-    queryFn: async (): Promise<HonorStats> => {
-      // Fetch total profiles count
-      const { count: profilesCount } = await supabase
-        .from("profiles")
-        .select("*", { count: "exact", head: true });
-
-      // Fetch total donations amount (earnings)
-      const { data: donations } = await supabase
-        .from("donations")
-        .select("amount")
-        .eq("status", "completed");
-
-      const totalEarnings = donations?.reduce((sum, d) => sum + Number(d.amount), 0) || 0;
-
-      // Fetch total posts count
-      const { count: postsCount } = await supabase
-        .from("feed_posts")
-        .select("*", { count: "exact", head: true });
-
-      // Fetch videos count (posts with video in media_urls)
-      const { data: mediaPosts } = await supabase
-        .from("feed_posts")
-        .select("media_urls");
-
-      const videosCount = mediaPosts?.filter(post => {
-        const urls = post.media_urls as string[] | null;
-        return urls?.some(url => 
-          url.includes('.mp4') || url.includes('.webm') || url.includes('.mov')
-        );
-      }).length || 0;
-
-      // Fetch friends/connections count - count unique users who have friendships
-      // Since RLS restricts viewing to own friendships, we count profiles with connections
-      const { data: friendshipData } = await supabase
-        .from("friendships")
-        .select("user_id, friend_id")
-        .eq("status", "accepted");
-      
-      // Count unique users involved in friendships
-      const uniqueUsers = new Set<string>();
-      friendshipData?.forEach(f => {
-        uniqueUsers.add(f.user_id);
-        uniqueUsers.add(f.friend_id);
-      });
-      const friendsCount = uniqueUsers.size;
-
-      // Fetch NFT badges count
-      const { count: nftCount } = await supabase
-        .from("user_badges")
-        .select("*", { count: "exact", head: true });
-
-      return {
-        topProfiles: profilesCount || 0,
-        totalEarnings,
-        totalPosts: postsCount || 0,
-        videosCount,
-        friendsCount: friendsCount || 0,
-        nftCount: nftCount || 0,
-      };
-    },
-    staleTime: 60000, // Cache for 1 minute
+    queryFn: fetchHonorStats,
+    staleTime: 30000,
+    refetchInterval: 60000,
   });
 }
 
