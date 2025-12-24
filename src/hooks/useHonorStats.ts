@@ -44,11 +44,20 @@ export function useHonorStats() {
         );
       }).length || 0;
 
-      // Fetch friends/connections count
-      const { count: friendsCount } = await supabase
+      // Fetch friends/connections count - count unique users who have friendships
+      // Since RLS restricts viewing to own friendships, we count profiles with connections
+      const { data: friendshipData } = await supabase
         .from("friendships")
-        .select("*", { count: "exact", head: true })
+        .select("user_id, friend_id")
         .eq("status", "accepted");
+      
+      // Count unique users involved in friendships
+      const uniqueUsers = new Set<string>();
+      friendshipData?.forEach(f => {
+        uniqueUsers.add(f.user_id);
+        uniqueUsers.add(f.friend_id);
+      });
+      const friendsCount = uniqueUsers.size;
 
       // Fetch NFT badges count
       const { count: nftCount } = await supabase
