@@ -9,9 +9,6 @@ export interface HonorStats {
   videosCount: number;
   friendsCount: number;
   nftCount: number;
-  campaignsCount: number;
-  donationsCount: number;
-  commentsCount: number;
 }
 
 async function fetchHonorStats(): Promise<HonorStats> {
@@ -56,23 +53,6 @@ async function fetchHonorStats(): Promise<HonorStats> {
     .from("user_badges")
     .select("*", { count: "exact", head: true });
 
-  // Fetch campaigns count (active/approved/completed)
-  const { count: campaignsCount } = await supabase
-    .from("campaigns")
-    .select("*", { count: "exact", head: true })
-    .in("status", ["active", "approved", "completed"]);
-
-  // Fetch donations count (completed)
-  const { count: donationsCount } = await supabase
-    .from("donations")
-    .select("*", { count: "exact", head: true })
-    .eq("status", "completed");
-
-  // Fetch comments count
-  const { count: commentsCount } = await supabase
-    .from("feed_comments")
-    .select("*", { count: "exact", head: true });
-
   return {
     topProfiles: profilesCount || 0,
     totalEarnings,
@@ -80,9 +60,6 @@ async function fetchHonorStats(): Promise<HonorStats> {
     videosCount,
     friendsCount: friendsCount || 0,
     nftCount: nftCount || 0,
-    campaignsCount: campaignsCount || 0,
-    donationsCount: donationsCount || 0,
-    commentsCount: commentsCount || 0,
   };
 }
 
