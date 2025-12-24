@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Helmet } from "react-helmet-async";
+import { useFriendRequestNotifications } from "@/hooks/useFriendNotifications";
 import { 
   Search, 
   UserPlus, 
@@ -17,7 +18,8 @@ import {
   Users, 
   Clock,
   User as UserIcon,
-  Loader2
+  Loader2,
+  MessageCircle
 } from "lucide-react";
 
 interface FriendProfile {
@@ -49,6 +51,9 @@ export default function Friends() {
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  // Enable realtime friend notifications
+  useFriendRequestNotifications(currentUserId);
 
   useEffect(() => {
     initializeData();

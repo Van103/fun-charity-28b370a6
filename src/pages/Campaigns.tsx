@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { Navbar } from "@/components/layout/Navbar";
@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Input } from "@/components/ui/input";
+import { CreateCampaignModal } from "@/components/campaigns/CreateCampaignModal";
+import { supabase } from "@/integrations/supabase/client";
 import {
   Select,
   SelectContent,
@@ -23,116 +25,135 @@ import {
   Verified,
   TrendingUp,
   Heart,
+  Loader2,
 } from "lucide-react";
 
-const campaigns = [
-  {
-    id: 1,
-    title: "Nước Sạch Cho Vùng Nông Thôn Việt Nam",
-    organization: "WaterAid Việt Nam",
-    image: "https://images.unsplash.com/photo-1594398901394-4e34939a4fd0?w=800&auto=format&fit=crop&q=60",
-    raised: 45000,
-    goal: 60000,
-    donors: 892,
-    daysLeft: 12,
-    location: "Việt Nam",
-    category: "Nước & Vệ Sinh",
-    verified: true,
-    trending: true,
-  },
-  {
-    id: 2,
-    title: "Giáo Dục Cho Trẻ Em Khó Khăn",
-    organization: "Quỹ EduHope",
-    image: "https://images.unsplash.com/photo-1497486751825-1233686d5d80?w=800&auto=format&fit=crop&q=60",
-    raised: 28500,
-    goal: 40000,
-    donors: 456,
-    daysLeft: 25,
-    location: "Ấn Độ",
-    category: "Giáo Dục",
-    verified: true,
-    trending: false,
-  },
-  {
-    id: 3,
-    title: "Cứu Trợ Lương Thực Khẩn Cấp - Đông Phi",
-    organization: "Mạng Lưới Lương Thực Toàn Cầu",
-    image: "https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?w=800&auto=format&fit=crop&q=60",
-    raised: 89000,
-    goal: 100000,
-    donors: 2341,
-    daysLeft: 5,
-    location: "Kenya",
-    category: "Cứu Trợ Lương Thực",
-    verified: true,
-    trending: true,
-  },
-  {
-    id: 4,
-    title: "Vật Tư Y Tế Cho Phòng Khám Vùng Xa",
-    organization: "Y Tế Không Biên Giới",
-    image: "https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=800&auto=format&fit=crop&q=60",
-    raised: 32000,
-    goal: 50000,
-    donors: 678,
-    daysLeft: 18,
-    location: "Philippines",
-    category: "Y Tế",
-    verified: true,
-    trending: false,
-  },
-  {
-    id: 5,
-    title: "Nhà Ở Cho Gia Đình Vô Gia Cư",
-    organization: "Sáng Kiến Mái Ấm",
-    image: "https://images.unsplash.com/photo-1469022563428-aa04fef9f5a2?w=800&auto=format&fit=crop&q=60",
-    raised: 67000,
-    goal: 80000,
-    donors: 1234,
-    daysLeft: 8,
-    location: "Brazil",
-    category: "Nhà Ở",
-    verified: true,
-    trending: true,
-  },
-  {
-    id: 6,
-    title: "Dự Án Trồng Rừng Amazon",
-    organization: "Liên Minh Xanh Trái Đất",
-    image: "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=800&auto=format&fit=crop&q=60",
-    raised: 120000,
-    goal: 150000,
-    donors: 3456,
-    daysLeft: 30,
-    location: "Brazil",
-    category: "Môi Trường",
-    verified: true,
-    trending: true,
-  },
-];
+interface Campaign {
+  id: string;
+  title: string;
+  short_description: string | null;
+  cover_image_url: string | null;
+  raised_amount: number;
+  goal_amount: number;
+  location: string | null;
+  category: string;
+  is_verified: boolean | null;
+  is_featured: boolean | null;
+  end_date: string | null;
+  created_at: string;
+  creator_profile?: {
+    full_name: string | null;
+  };
+  donors_count?: number;
+}
+
+const CATEGORY_MAP: Record<string, string> = {
+  education: "Giáo Dục",
+  healthcare: "Y Tế",
+  disaster_relief: "Cứu Trợ Thiên Tai",
+  poverty: "Xóa Đói Giảm Nghèo",
+  environment: "Môi Trường",
+  animal_welfare: "Bảo Vệ Động Vật",
+  community: "Cộng Đồng",
+  other: "Khác",
+};
 
 const categories = [
-  "Tất Cả Danh Mục",
-  "Nước & Vệ Sinh",
-  "Giáo Dục",
-  "Cứu Trợ Lương Thực",
-  "Y Tế",
-  "Nhà Ở",
-  "Môi Trường",
+  { value: "all", label: "Tất Cả Danh Mục" },
+  { value: "education", label: "Giáo Dục" },
+  { value: "healthcare", label: "Y Tế" },
+  { value: "disaster_relief", label: "Cứu Trợ Thiên Tai" },
+  { value: "poverty", label: "Xóa Đói Giảm Nghèo" },
+  { value: "environment", label: "Môi Trường" },
+  { value: "animal_welfare", label: "Bảo Vệ Động Vật" },
+  { value: "community", label: "Cộng Đồng" },
+  { value: "other", label: "Khác" },
 ];
 
+const formatCurrency = (amount: number): string => {
+  if (amount >= 1000000000) {
+    return `${(amount / 1000000000).toFixed(1)}B ₫`;
+  }
+  if (amount >= 1000000) {
+    return `${(amount / 1000000).toFixed(1)}M ₫`;
+  }
+  if (amount >= 1000) {
+    return `${(amount / 1000).toFixed(0)}K ₫`;
+  }
+  return `${amount.toLocaleString()} ₫`;
+};
+
+const getDaysLeft = (endDate: string | null): number | null => {
+  if (!endDate) return null;
+  const end = new Date(endDate);
+  const now = new Date();
+  const diff = Math.ceil((end.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+  return diff > 0 ? diff : 0;
+};
+
 const Campaigns = () => {
+  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("Tất Cả Danh Mục");
+  const [selectedCategory, setSelectedCategory] = useState("all");
+
+  useEffect(() => {
+    fetchCampaigns();
+  }, []);
+
+  const fetchCampaigns = async () => {
+    try {
+      // Fetch active campaigns
+      const { data: campaignsData, error } = await supabase
+        .from("campaigns")
+        .select("*")
+        .in("status", ["approved", "active"])
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+
+      if (campaignsData && campaignsData.length > 0) {
+        // Fetch creator profiles
+        const creatorIds = [...new Set(campaignsData.map(c => c.creator_id))];
+        const { data: profiles } = await supabase
+          .from("profiles")
+          .select("user_id, full_name")
+          .in("user_id", creatorIds);
+
+        const profileMap = new Map(profiles?.map(p => [p.user_id, p]) || []);
+
+        // Fetch donors count for each campaign
+        const campaignsWithDetails = await Promise.all(
+          campaignsData.map(async (campaign) => {
+            const { count } = await supabase
+              .from("donations")
+              .select("*", { count: "exact", head: true })
+              .eq("campaign_id", campaign.id)
+              .eq("status", "completed");
+
+            return {
+              ...campaign,
+              creator_profile: profileMap.get(campaign.creator_id),
+              donors_count: count || 0,
+            };
+          })
+        );
+
+        setCampaigns(campaignsWithDetails);
+      }
+    } catch (error) {
+      console.error("Error fetching campaigns:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const filteredCampaigns = campaigns.filter((campaign) => {
     const matchesSearch =
       campaign.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      campaign.organization.toLowerCase().includes(searchQuery.toLowerCase());
+      (campaign.short_description?.toLowerCase().includes(searchQuery.toLowerCase()) ?? false);
     const matchesCategory =
-      selectedCategory === "Tất Cả Danh Mục" ||
-      campaign.category === selectedCategory;
+      selectedCategory === "all" || campaign.category === selectedCategory;
     return matchesSearch && matchesCategory;
   });
 
@@ -151,10 +172,11 @@ const Campaigns = () => {
             <h1 className="font-display text-4xl md:text-5xl font-bold mb-4">
               Khám Phá <span className="gradient-text">Chiến Dịch</span>
             </h1>
-            <p className="text-muted-foreground max-w-2xl mx-auto">
+            <p className="text-muted-foreground max-w-2xl mx-auto mb-6">
               Duyệt qua các chiến dịch đã được xác minh từ các tổ chức NGO đáng tin cậy trên toàn thế giới.
               Mọi khoản quyên góp đều được ghi nhận on-chain để minh bạch hoàn toàn.
             </p>
+            <CreateCampaignModal onCampaignCreated={fetchCampaigns} />
           </div>
 
           {/* Filters */}
@@ -175,8 +197,8 @@ const Campaigns = () => {
               </SelectTrigger>
               <SelectContent>
                 {categories.map((category) => (
-                  <SelectItem key={category} value={category}>
-                    {category}
+                  <SelectItem key={category.value} value={category.value}>
+                    {category.label}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -184,101 +206,121 @@ const Campaigns = () => {
           </div>
 
           {/* Campaign Grid */}
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredCampaigns.map((campaign, index) => (
-              <motion.div
-                key={campaign.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: index * 0.1 }}
-              >
-                <Link to={`/campaigns/${campaign.id}`}>
-                  <article className="glass-card-hover overflow-hidden group">
-                    {/* Image */}
-                    <div className="relative h-48 overflow-hidden">
-                      <img
-                        src={campaign.image}
-                        alt={campaign.title}
-                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-foreground/60 to-transparent" />
+          {loading ? (
+            <div className="flex items-center justify-center py-16">
+              <Loader2 className="w-8 h-8 animate-spin text-primary" />
+            </div>
+          ) : (
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredCampaigns.map((campaign, index) => {
+                const daysLeft = getDaysLeft(campaign.end_date);
+                const progress = campaign.goal_amount > 0 
+                  ? (campaign.raised_amount / campaign.goal_amount) * 100 
+                  : 0;
 
-                      {/* Badges */}
-                      <div className="absolute top-3 left-3 flex gap-2">
-                        {campaign.verified && (
-                          <Badge variant="verified" className="backdrop-blur-sm">
-                            <Verified className="w-3 h-3" />
-                            Đã Xác Minh
-                          </Badge>
-                        )}
-                        {campaign.trending && (
-                          <Badge variant="trending" className="backdrop-blur-sm">
-                            <TrendingUp className="w-3 h-3" />
-                            Nổi Bật
-                          </Badge>
-                        )}
-                      </div>
+                return (
+                  <motion.div
+                    key={campaign.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5, delay: index * 0.1 }}
+                  >
+                    <Link to={`/campaigns/${campaign.id}`}>
+                      <article className="glass-card-hover overflow-hidden group">
+                        {/* Image */}
+                        <div className="relative h-48 overflow-hidden">
+                          <img
+                            src={campaign.cover_image_url || "https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?w=800&auto=format&fit=crop&q=60"}
+                            alt={campaign.title}
+                            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-foreground/60 to-transparent" />
 
-                      {/* Category */}
-                      <div className="absolute bottom-3 left-3">
-                        <Badge variant="secondary" className="backdrop-blur-sm">
-                          {campaign.category}
-                        </Badge>
-                      </div>
-                    </div>
+                          {/* Badges */}
+                          <div className="absolute top-3 left-3 flex gap-2">
+                            {campaign.is_verified && (
+                              <Badge variant="verified" className="backdrop-blur-sm">
+                                <Verified className="w-3 h-3" />
+                                Đã Xác Minh
+                              </Badge>
+                            )}
+                            {campaign.is_featured && (
+                              <Badge variant="trending" className="backdrop-blur-sm">
+                                <TrendingUp className="w-3 h-3" />
+                                Nổi Bật
+                              </Badge>
+                            )}
+                          </div>
 
-                    {/* Content */}
-                    <div className="p-5">
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
-                        <MapPin className="w-3.5 h-3.5" />
-                        {campaign.location}
-                      </div>
-
-                      <h3 className="font-display font-semibold text-lg mb-1 line-clamp-2 group-hover:text-primary transition-colors">
-                        {campaign.title}
-                      </h3>
-
-                      <p className="text-sm text-muted-foreground mb-4">
-                        bởi {campaign.organization}
-                      </p>
-
-                      {/* Progress */}
-                      <div className="mb-4">
-                        <div className="flex items-center justify-between text-sm mb-2">
-                          <span className="font-semibold">
-                            ${campaign.raised.toLocaleString()}
-                          </span>
-                          <span className="text-muted-foreground">
-                            mục tiêu ${campaign.goal.toLocaleString()}
-                          </span>
+                          {/* Category */}
+                          <div className="absolute bottom-3 left-3">
+                            <Badge variant="secondary" className="backdrop-blur-sm">
+                              {CATEGORY_MAP[campaign.category] || campaign.category}
+                            </Badge>
+                          </div>
                         </div>
-                        <Progress
-                          value={(campaign.raised / campaign.goal) * 100}
-                          className="h-2"
-                        />
-                      </div>
 
-                      {/* Stats */}
-                      <div className="flex items-center justify-between text-sm text-muted-foreground">
-                        <div className="flex items-center gap-1">
-                          <Users className="w-4 h-4" />
-                          {campaign.donors} nhà hảo tâm
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <Clock className="w-4 h-4" />
-                          còn {campaign.daysLeft} ngày
-                        </div>
-                      </div>
-                    </div>
-                  </article>
-                </Link>
-              </motion.div>
-            ))}
-          </div>
+                        {/* Content */}
+                        <div className="p-5">
+                          {campaign.location && (
+                            <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
+                              <MapPin className="w-3.5 h-3.5" />
+                              {campaign.location}
+                            </div>
+                          )}
 
-          {filteredCampaigns.length === 0 && (
+                          <h3 className="font-display font-semibold text-lg mb-1 line-clamp-2 group-hover:text-primary transition-colors">
+                            {campaign.title}
+                          </h3>
+
+                          {campaign.creator_profile?.full_name && (
+                            <p className="text-sm text-muted-foreground mb-4">
+                              bởi {campaign.creator_profile.full_name}
+                            </p>
+                          )}
+
+                          {/* Progress */}
+                          <div className="mb-4">
+                            <div className="flex items-center justify-between text-sm mb-2">
+                              <span className="font-semibold">
+                                {formatCurrency(campaign.raised_amount)}
+                              </span>
+                              <span className="text-muted-foreground">
+                                mục tiêu {formatCurrency(campaign.goal_amount)}
+                              </span>
+                            </div>
+                            <Progress
+                              value={Math.min(progress, 100)}
+                              className="h-2"
+                            />
+                          </div>
+
+                          {/* Stats */}
+                          <div className="flex items-center justify-between text-sm text-muted-foreground">
+                            <div className="flex items-center gap-1">
+                              <Users className="w-4 h-4" />
+                              {campaign.donors_count || 0} nhà hảo tâm
+                            </div>
+                            {daysLeft !== null && (
+                              <div className="flex items-center gap-1">
+                                <Clock className="w-4 h-4" />
+                                còn {daysLeft} ngày
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </article>
+                    </Link>
+                  </motion.div>
+                );
+              })}
+            </div>
+          )}
+
+          {!loading && filteredCampaigns.length === 0 && (
             <div className="text-center py-16">
-              <p className="text-muted-foreground">Không tìm thấy chiến dịch phù hợp với tiêu chí của bạn.</p>
+              <p className="text-muted-foreground mb-4">Không tìm thấy chiến dịch phù hợp với tiêu chí của bạn.</p>
+              <CreateCampaignModal onCampaignCreated={fetchCampaigns} />
             </div>
           )}
         </div>

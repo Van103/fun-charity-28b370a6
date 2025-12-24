@@ -19,6 +19,7 @@ import {
   useIntersectionObserver
 } from "@/hooks/useFeedPosts";
 import { useQueryClient } from "@tanstack/react-query";
+import { useFriendRequestNotifications } from "@/hooks/useFriendNotifications";
 
 interface Profile {
   id: string;
@@ -69,6 +70,9 @@ export default function SocialFeed() {
   const loadMoreRef = useIntersectionObserver(loadMore, {
     rootMargin: "200px",
   });
+
+  // Enable realtime friend notifications
+  useFriendRequestNotifications(profile?.user_id || null);
 
   useEffect(() => {
     fetchProfile();
