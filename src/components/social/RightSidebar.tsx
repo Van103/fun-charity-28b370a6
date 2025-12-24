@@ -64,6 +64,9 @@ export function RightSidebar() {
     { labelKey: "honor.videos", value: stats?.videosCount || 0 },
     { labelKey: "honor.friends", value: stats?.friendsCount || 0 },
     { labelKey: "honor.nftCount", value: stats?.nftCount || 0 },
+    { labelKey: "honor.campaigns", value: stats?.campaignsCount || 0 },
+    { labelKey: "honor.donations", value: stats?.donationsCount || 0 },
+    { labelKey: "honor.comments", value: stats?.commentsCount || 0 },
   ];
 
   return (
