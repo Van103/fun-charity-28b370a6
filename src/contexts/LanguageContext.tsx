@@ -41,13 +41,13 @@ export const translations: Translations = {
   "menu.life": { en: "Fun Life", vi: "Fun Life" },
   "menu.legal": { en: "Fun Legal", vi: "Fun Legal" },
   
-  // Right Sidebar
+  // Right Sidebar - Honor Board
   "honor.title": { en: "HONOR BOARD", vi: "BẢNG VINH DANH" },
-  "honor.usdt": { en: "Total USDT Donations", vi: "Tổng Quyên Góp USDT" },
-  "honor.camly": { en: "Total Camly Donations", vi: "Tổng Quyên Góp Camly" },
-  "honor.vnd": { en: "Total VND", vi: "Tổng VND" },
-  "honor.donations": { en: "Total Donations", vi: "Tổng Số Lần Quyên Góp" },
-  "honor.donors": { en: "Total Donors", vi: "Tổng Số Người Quyên Góp" },
+  "honor.topProfile": { en: "Top Profile", vi: "Hồ Sơ Nổi Bật" },
+  "honor.earnings": { en: "Earnings", vi: "Thu Nhập" },
+  "honor.posts": { en: "Posts", vi: "Bài Viết" },
+  "honor.friendsVideos": { en: "Friends' Videos", vi: "Video Bạn Bè" },
+  "honor.nftCount": { en: "NFT Count", vi: "Số Lượng NFT" },
   "ranking.title": { en: "TOP RANKING", vi: "XẾP HẠNG" },
   "birthday.title": { en: "Birthdays", vi: "Sinh nhật" },
   "birthday.today": { en: "Today is the birthday of", vi: "Hôm nay là sinh nhật của" },

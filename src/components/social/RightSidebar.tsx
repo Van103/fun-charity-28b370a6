@@ -1,33 +1,14 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useHonorStats, useTopRankers } from "@/hooks/useHonorStats";
 import { 
   Users,
   Cake,
   MessageCircle,
   Plus,
+  Loader2,
 } from "lucide-react";
-
-interface TopRanker {
-  rank: number;
-  name: string;
-  amount: string;
-  avatar?: string;
-  verified?: boolean;
-}
-
-const topRankers: TopRanker[] = [
-  { rank: 1, name: "Camly Duong", amount: "8B ₫", verified: true },
-  { rank: 2, name: "Elon Musk", amount: "7B ₫" },
-  { rank: 3, name: "Lê Minh Trí", amount: "2B ₫", verified: true },
-  { rank: 4, name: "Diệu Ngọc", amount: "1B ₫" },
-  { rank: 5, name: "Vinh Hào", amount: "500M ₫" },
-  { rank: 6, name: "Trang Huyền", amount: "300M ₫" },
-  { rank: 7, name: "Tinna Tinh", amount: "100M ₫" },
-  { rank: 8, name: "Khôi Phan", amount: "50M ₫" },
-  { rank: 9, name: "Thu Thanh Hoàng", amount: "30M ₫", verified: true },
-  { rank: 10, name: "Nông Liên", amount: "10M ₫", verified: true },
-];
 
 // Rank badge colors
 const getRankBadgeStyle = (rank: number) => {
@@ -60,15 +41,45 @@ const contacts = [
   "Mỹ Phương",
 ];
 
+// Format number for display
+const formatNumber = (num: number): string => {
+  if (num >= 1000000000) {
+    return `${(num / 1000000000).toFixed(1)}B`;
+  }
+  if (num >= 1000000) {
+    return `${(num / 1000000).toFixed(1)}M`;
+  }
+  if (num >= 1000) {
+    return `${(num / 1000).toFixed(1)}K`;
+  }
+  return num.toString();
+};
+
+// Format currency for display
+const formatCurrency = (amount: number): string => {
+  if (amount >= 1000000000) {
+    return `${(amount / 1000000000).toFixed(1)}B ₫`;
+  }
+  if (amount >= 1000000) {
+    return `${(amount / 1000000).toFixed(1)}M ₫`;
+  }
+  if (amount >= 1000) {
+    return `${(amount / 1000).toFixed(1)}K ₫`;
+  }
+  return `${amount} ₫`;
+};
+
 export function RightSidebar() {
   const { t } = useLanguage();
+  const { data: stats, isLoading: statsLoading } = useHonorStats();
+  const { data: topRankers = [], isLoading: rankersLoading } = useTopRankers();
 
   const honorStats = [
-    { labelKey: "honor.usdt", value: "5M" },
-    { labelKey: "honor.camly", value: "10M" },
-    { labelKey: "honor.vnd", value: "500M" },
-    { labelKey: "honor.donations", value: "1.2K" },
-    { labelKey: "honor.donors", value: "5.7K" },
+    { labelKey: "honor.topProfile", value: stats?.topProfiles || 0 },
+    { labelKey: "honor.earnings", value: stats?.totalEarnings || 0, isCurrency: true },
+    { labelKey: "honor.posts", value: stats?.totalPosts || 0 },
+    { labelKey: "honor.friendsVideos", value: stats?.friendsVideos || 0 },
+    { labelKey: "honor.nftCount", value: stats?.nftCount || 0 },
   ];
 
   return (
@@ -82,21 +93,27 @@ export function RightSidebar() {
           </h3>
         </div>
         <div className="relative p-3 space-y-3">
-          {honorStats.map((stat) => (
-            <div 
-              key={stat.labelKey} 
-              className="flex items-center justify-between gap-2 px-3 py-2.5 rounded-xl bg-white/95 transition-colors"
-              style={{ 
-                boxShadow: '0 0 12px 2px rgba(255, 215, 0, 0.5), 0 0 4px 1px rgba(255, 215, 0, 0.3)',
-                border: '2px solid rgba(255, 215, 0, 0.6)'
-              }}
-            >
-              <span className="font-bold whitespace-nowrap" style={{ color: '#4C1D95', fontSize: '16px' }}>{t(stat.labelKey)}</span>
-              <span className="font-bold whitespace-nowrap" style={{ color: '#4C1D95', fontSize: '16px' }}>
-                {stat.value}
-              </span>
+          {statsLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="w-6 h-6 animate-spin text-yellow-400" />
             </div>
-          ))}
+          ) : (
+            honorStats.map((stat) => (
+              <div 
+                key={stat.labelKey} 
+                className="flex items-center justify-between gap-2 px-3 py-2.5 rounded-xl bg-white/95 transition-colors"
+                style={{ 
+                  boxShadow: '0 0 12px 2px rgba(255, 215, 0, 0.5), 0 0 4px 1px rgba(255, 215, 0, 0.3)',
+                  border: '2px solid rgba(255, 215, 0, 0.6)'
+                }}
+              >
+                <span className="font-bold whitespace-nowrap" style={{ color: '#4C1D95', fontSize: '16px' }}>{t(stat.labelKey)}</span>
+                <span className="font-bold whitespace-nowrap" style={{ color: '#4C1D95', fontSize: '16px' }}>
+                  {stat.isCurrency ? formatCurrency(stat.value) : formatNumber(stat.value)}
+                </span>
+              </div>
+            ))
+          )}
         </div>
       </div>
 
@@ -110,42 +127,52 @@ export function RightSidebar() {
         </div>
         <ScrollArea className="h-[360px]">
           <div className="relative p-3 space-y-2.5">
-            {topRankers.map((ranker) => (
-              <div
-                key={ranker.rank}
-                className="flex items-center gap-2 px-3 py-3 rounded-xl bg-white/95 cursor-pointer mb-1.5 transition-colors"
-                style={{ 
-                  boxShadow: '0 0 12px 2px rgba(255, 215, 0, 0.5), 0 0 4px 1px rgba(255, 215, 0, 0.3)',
-                  border: '2px solid rgba(255, 215, 0, 0.6)'
-                }}
-              >
-                {/* Rank badge with avatar */}
-                <div className="relative">
-                  <div className="p-0.5 rounded-full bg-gradient-to-br from-yellow-400/60 to-yellow-500/30">
-                    <Avatar className="w-10 h-10 border-2 border-yellow-400/40">
-                      <AvatarImage src={ranker.avatar} />
-                      <AvatarFallback className={`bg-gradient-to-br ${getAvatarGradient(ranker.name)} text-white font-medium`} style={{ fontSize: '16px' }}>
-                        {ranker.name.charAt(0)}
-                      </AvatarFallback>
-                    </Avatar>
-                  </div>
-                  <div className={`absolute -bottom-1 -left-1 w-6 h-6 rounded-full flex items-center justify-center font-bold shadow-md ${getRankBadgeStyle(ranker.rank)}`} style={{ fontSize: '11px' }}>
-                    #{ranker.rank}
-                  </div>
-                </div>
-                <div className="flex-1 min-w-0 ml-1">
-                  <div className="flex items-center gap-1">
-                    <span className="font-bold truncate" style={{ color: '#4C1D95', fontSize: '16px' }}>{ranker.name}</span>
-                    {ranker.verified && (
-                      <span style={{ color: '#4C1D95', fontSize: '12px' }}>✓</span>
-                    )}
-                  </div>
-                </div>
-                <span className="font-bold shrink-0 whitespace-nowrap" style={{ color: '#4C1D95', fontSize: '16px' }}>
-                  {ranker.amount}
-                </span>
+            {rankersLoading ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="w-6 h-6 animate-spin text-yellow-400" />
               </div>
-            ))}
+            ) : topRankers.length === 0 ? (
+              <div className="text-center py-8 text-white/70 text-sm">
+                {t("common.loading")}
+              </div>
+            ) : (
+              topRankers.map((ranker) => (
+                <div
+                  key={ranker.rank}
+                  className="flex items-center gap-2 px-3 py-3 rounded-xl bg-white/95 cursor-pointer mb-1.5 transition-colors"
+                  style={{ 
+                    boxShadow: '0 0 12px 2px rgba(255, 215, 0, 0.5), 0 0 4px 1px rgba(255, 215, 0, 0.3)',
+                    border: '2px solid rgba(255, 215, 0, 0.6)'
+                  }}
+                >
+                  {/* Rank badge with avatar */}
+                  <div className="relative">
+                    <div className="p-0.5 rounded-full bg-gradient-to-br from-yellow-400/60 to-yellow-500/30">
+                      <Avatar className="w-10 h-10 border-2 border-yellow-400/40">
+                        <AvatarImage src={ranker.avatar} />
+                        <AvatarFallback className={`bg-gradient-to-br ${getAvatarGradient(ranker.name)} text-white font-medium`} style={{ fontSize: '16px' }}>
+                          {ranker.name.charAt(0)}
+                        </AvatarFallback>
+                      </Avatar>
+                    </div>
+                    <div className={`absolute -bottom-1 -left-1 w-6 h-6 rounded-full flex items-center justify-center font-bold shadow-md ${getRankBadgeStyle(ranker.rank)}`} style={{ fontSize: '11px' }}>
+                      #{ranker.rank}
+                    </div>
+                  </div>
+                  <div className="flex-1 min-w-0 ml-1">
+                    <div className="flex items-center gap-1">
+                      <span className="font-bold truncate" style={{ color: '#4C1D95', fontSize: '16px' }}>{ranker.name}</span>
+                      {ranker.verified && (
+                        <span style={{ color: '#4C1D95', fontSize: '12px' }}>✓</span>
+                      )}
+                    </div>
+                  </div>
+                  <span className="font-bold shrink-0 whitespace-nowrap" style={{ color: '#4C1D95', fontSize: '16px' }}>
+                    {formatCurrency(ranker.amount)}
+                  </span>
+                </div>
+              ))
+            )}
           </div>
         </ScrollArea>
       </div>
