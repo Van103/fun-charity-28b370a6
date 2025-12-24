@@ -511,7 +511,7 @@ export function GiftDonateModal({ post, trigger }: GiftDonateModalProps) {
             className="flex-1 gap-2 text-muted-foreground hover:text-secondary"
           >
             <Gift className="w-5 h-5" />
-            Từ thiện
+            Tặng
           </Button>
         )}
       </DialogTrigger>
@@ -590,7 +590,7 @@ export function GiftDonateModal({ post, trigger }: GiftDonateModalProps) {
                     <div className="w-10 h-10 rounded-full bg-[#84D9BA]/20 flex items-center justify-center">
                       <HeartHandshake className="w-5 h-5 text-[#84D9BA]" />
                     </div>
-                    Đóng góp từ thiện
+                    Tặng quà
                   </DialogTitle>
                 </DialogHeader>
               </div>

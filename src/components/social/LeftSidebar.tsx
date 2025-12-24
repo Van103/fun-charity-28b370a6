@@ -46,7 +46,7 @@ export function LeftSidebar({ profile }: LeftSidebarProps) {
     <aside className="w-64 shrink-0 space-y-4 sticky top-20">
       {/* Platform Ecosystem */}
       <div className="glass-card p-4 hover-luxury-glow">
-        <h3 className="font-semibold mb-1 text-primary/90" style={{ fontSize: '20px' }}>
+        <h3 className="font-semibold mb-1 text-[#4C1D95]" style={{ fontSize: '20px' }}>
           {t("sidebar.ecosystem")}
         </h3>
         <p className="text-xs mb-4 text-primary/60">{t("sidebar.comingSoon")}</p>

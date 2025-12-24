@@ -26,6 +26,7 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
 import { FeedPost, useCreateFeedPost } from "@/hooks/useFeedPosts";
+import { supabase } from "@/integrations/supabase/client";
 
 interface SharePopoverProps {
   post: FeedPost;
@@ -65,20 +66,23 @@ export function SharePopover({ post, currentUserAvatar }: SharePopoverProps) {
     setOpen(false);
   };
 
-  const handleConfirmShare = () => {
-    // Create a new post that references/shares the original
-    const shareContent = shareText
-      ? `${shareText}\n\n📢 Chia sẻ từ ${post.profiles?.full_name || "Người dùng"}:\n"${post.title || post.content?.slice(0, 100)}${post.content && post.content.length > 100 ? "..." : ""}"`
-      : `📢 Chia sẻ từ ${post.profiles?.full_name || "Người dùng"}:\n"${post.title || post.content?.slice(0, 100)}${post.content && post.content.length > 100 ? "..." : ""}"`;
-
+  const handleConfirmShare = async () => {
+    // Create a new post that references the original post
     createPost.mutate(
       {
         post_type: "story",
-        content: shareContent,
-        media_urls: post.media_urls?.slice(0, 1) || [],
+        content: shareText || null,
+        media_urls: [],
+        shared_post_id: post.id, // Reference to original post
       },
       {
-        onSuccess: () => {
+        onSuccess: async () => {
+          // Increment the shares_count on the original post
+          await supabase
+            .from("feed_posts")
+            .update({ shares_count: ((post as any).shares_count || 0) + 1 })
+            .eq("id", post.id);
+          
           setShowShareDialog(false);
           setShareText("");
           toast({

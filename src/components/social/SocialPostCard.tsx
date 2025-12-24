@@ -16,6 +16,7 @@ import { FeedPost } from "@/hooks/useFeedPosts";
 import { formatDistanceToNow } from "date-fns";
 import { vi } from "date-fns/locale";
 import { FeedReactionPicker, REACTIONS } from "./FeedReactionPicker";
+import { SharedPostPreview } from "./SharedPostPreview";
 import { usePostReactions } from "@/hooks/useFeedReactions";
 import { FeedComments } from "./FeedComments";
 import { SharePopover } from "./SharePopover";
@@ -255,11 +256,20 @@ export function SocialPostCard({ post, highlightPostId }: SocialPostCardProps) {
       )}
 
       {/* Content */}
-      <div className="px-4 pb-3">
-        <div className="whitespace-pre-wrap text-sm leading-relaxed text-foreground">
-          {post.content}
+      {post.content && (
+        <div className="px-4 pb-3">
+          <div className="whitespace-pre-wrap text-sm leading-relaxed text-foreground">
+            {post.content}
+          </div>
         </div>
-      </div>
+      )}
+
+      {/* Shared Post Preview (Facebook-style) */}
+      {(post as any).shared_post_id && (
+        <div className="px-4 pb-3">
+          <SharedPostPreview sharedPostId={(post as any).shared_post_id} />
+        </div>
+      )}
 
       {/* Media - Responsive size with click to open lightbox */}
       {mediaUrls.length > 0 && (
@@ -377,7 +387,7 @@ export function SocialPostCard({ post, highlightPostId }: SocialPostCardProps) {
         </div>
         <div className="flex items-center gap-4 text-xs">
           <span className="hover:underline cursor-pointer">{(post.comments_count || 0).toLocaleString()} bình luận</span>
-          <span className="hover:underline cursor-pointer">0 chia sẻ</span>
+          <span className="hover:underline cursor-pointer">{((post as any).shares_count || 0).toLocaleString()} chia sẻ</span>
         </div>
       </div>
 

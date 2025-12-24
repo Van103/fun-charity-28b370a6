@@ -665,6 +665,8 @@ export type Database = {
           post_type: Database["public"]["Enums"]["feed_post_type"]
           region: string | null
           required_skills: string[] | null
+          shared_post_id: string | null
+          shares_count: number | null
           target_amount: number | null
           title: string | null
           updated_at: string
@@ -692,6 +694,8 @@ export type Database = {
           post_type?: Database["public"]["Enums"]["feed_post_type"]
           region?: string | null
           required_skills?: string[] | null
+          shared_post_id?: string | null
+          shares_count?: number | null
           target_amount?: number | null
           title?: string | null
           updated_at?: string
@@ -719,6 +723,8 @@ export type Database = {
           post_type?: Database["public"]["Enums"]["feed_post_type"]
           region?: string | null
           required_skills?: string[] | null
+          shared_post_id?: string | null
+          shares_count?: number | null
           target_amount?: number | null
           title?: string | null
           updated_at?: string
@@ -736,6 +742,13 @@ export type Database = {
           {
             foreignKeyName: "feed_posts_matched_with_id_fkey"
             columns: ["matched_with_id"]
+            isOneToOne: false
+            referencedRelation: "feed_posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "feed_posts_shared_post_id_fkey"
+            columns: ["shared_post_id"]
             isOneToOne: false
             referencedRelation: "feed_posts"
             referencedColumns: ["id"]
@@ -1338,6 +1351,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_total_friendship_count: { Args: never; Returns: number }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

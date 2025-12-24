@@ -51,7 +51,7 @@ export interface FeedPost {
 export interface CreateFeedPostInput {
   post_type: FeedPostType;
   title?: string;
-  content?: string;
+  content?: string | null;
   media_urls?: string[];
   location?: string;
   region?: string;
@@ -66,6 +66,7 @@ export interface CreateFeedPostInput {
   offered_skills?: string[];
   campaign_id?: string;
   expires_at?: string;
+  shared_post_id?: string;
 }
 
 export interface FeedFilters {
@@ -283,7 +284,7 @@ export function useCreateFeedPost() {
       const { data: user } = await supabase.auth.getUser();
       if (!user.user) throw new Error("Not authenticated");
 
-      const insertData = {
+      const insertData: Record<string, any> = {
         user_id: user.user.id,
         post_type: input.post_type,
         title: input.title || null,
@@ -298,9 +299,14 @@ export function useCreateFeedPost() {
         campaign_id: input.campaign_id || null,
       };
 
+      // Add shared_post_id if provided
+      if (input.shared_post_id) {
+        insertData.shared_post_id = input.shared_post_id;
+      }
+
       const { data, error } = await supabase
         .from("feed_posts")
-        .insert(insertData)
+        .insert(insertData as any)
         .select()
         .single();
 

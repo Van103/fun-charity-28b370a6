@@ -42,18 +42,11 @@ async function fetchHonorStats(): Promise<HonorStats> {
     );
   }).length || 0;
 
-  // Fetch friends/connections count
-  const { data: friendshipData } = await supabase
-    .from("friendships")
-    .select("user_id, friend_id")
-    .eq("status", "accepted");
+  // Fetch friends/connections count using RPC function (bypasses RLS)
+  const { data: friendsCountData } = await supabase
+    .rpc("get_total_friendship_count");
   
-  const uniqueUsers = new Set<string>();
-  friendshipData?.forEach(f => {
-    uniqueUsers.add(f.user_id);
-    uniqueUsers.add(f.friend_id);
-  });
-  const friendsCount = uniqueUsers.size;
+  const friendsCount = friendsCountData || 0;
 
   // Fetch NFT badges count
   const { count: nftCount } = await supabase
