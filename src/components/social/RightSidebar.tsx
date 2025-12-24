@@ -110,7 +110,7 @@ export function RightSidebar() {
               </div>
             ) : topRankers.length === 0 ? (
               <div className="text-center py-8 text-white/70 text-sm">
-                {t("common.loading")}
+                Chưa có người ủng hộ
               </div>
             ) : (
               topRankers.map((ranker) => (
