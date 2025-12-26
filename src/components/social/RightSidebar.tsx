@@ -1,5 +1,4 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useHonorStats, useTopRankers } from "@/hooks/useHonorStats";
 import { AnimatedStatItem } from "./AnimatedStatItem";
@@ -50,12 +49,39 @@ const formatCurrency = (amount: number): string => {
   return `${amount} ₫`;
 };
 
+// Mock data for testing scroll
+const mockRankers = [
+  { rank: 1, name: "Nguyễn Văn An", avatar: "", amount: 125000000, verified: true },
+  { rank: 2, name: "Trần Thị Bình", avatar: "", amount: 98500000, verified: true },
+  { rank: 3, name: "Lê Hoàng Cường", avatar: "", amount: 87200000, verified: false },
+  { rank: 4, name: "Phạm Minh Đức", avatar: "", amount: 76400000, verified: true },
+  { rank: 5, name: "Hoàng Thị Em", avatar: "", amount: 65800000, verified: false },
+  { rank: 6, name: "Vũ Quang Phú", avatar: "", amount: 54300000, verified: true },
+  { rank: 7, name: "Đặng Thu Giang", avatar: "", amount: 48900000, verified: false },
+  { rank: 8, name: "Bùi Văn Hải", avatar: "", amount: 42100000, verified: true },
+  { rank: 9, name: "Ngô Thị Uyên", avatar: "", amount: 38700000, verified: false },
+  { rank: 10, name: "Đỗ Minh Khang", avatar: "", amount: 35200000, verified: true },
+  { rank: 11, name: "Trương Thị Lan", avatar: "", amount: 31500000, verified: false },
+  { rank: 12, name: "Lý Văn Minh", avatar: "", amount: 28900000, verified: true },
+  { rank: 13, name: "Cao Thị Ngọc", avatar: "", amount: 25400000, verified: false },
+  { rank: 14, name: "Phan Quốc Oai", avatar: "", amount: 22800000, verified: true },
+  { rank: 15, name: "Mai Thị Phương", avatar: "", amount: 19600000, verified: false },
+  { rank: 16, name: "Hồ Văn Quân", avatar: "", amount: 17200000, verified: true },
+  { rank: 17, name: "Đinh Thị Rồng", avatar: "", amount: 15800000, verified: false },
+  { rank: 18, name: "Tạ Minh Sơn", avatar: "", amount: 14100000, verified: true },
+  { rank: 19, name: "Lưu Thị Tâm", avatar: "", amount: 12500000, verified: false },
+  { rank: 20, name: "Võ Văn Uy", avatar: "", amount: 10800000, verified: true },
+];
+
 export function RightSidebar() {
   const { t } = useLanguage();
   const { data: stats, isLoading: statsLoading } = useHonorStats();
   const { data: topRankers = [], isLoading: rankersLoading } = useTopRankers();
   const { contacts, isLoading: contactsLoading } = useOnlineContacts();
   const { groups, isLoading: groupsLoading } = useGroupChats();
+
+  // Combine real data with mock data for testing
+  const displayRankers = topRankers.length > 0 ? topRankers : mockRankers;
 
   const honorStats = [
     { labelKey: "honor.topProfile", value: stats?.topProfiles || 0 },
@@ -102,56 +128,50 @@ export function RightSidebar() {
             <span className="animate-sparkle inline-block">👑</span> {t("ranking.title")} <span className="animate-sparkle-delay inline-block">👑</span>
           </h3>
         </div>
-        <ScrollArea className="h-[360px]">
-          <div className="relative p-3 space-y-2.5">
-            {rankersLoading ? (
-              <div className="flex items-center justify-center py-8">
-                <Loader2 className="w-6 h-6 animate-spin text-yellow-400" />
-              </div>
-            ) : topRankers.length === 0 ? (
-              <div className="text-center py-8 text-white/70 text-sm">
-                Chưa có người ủng hộ
-              </div>
-            ) : (
-              topRankers.map((ranker) => (
-                <div
-                  key={ranker.rank}
-                  className="flex items-center gap-2 px-3 py-3 rounded-xl bg-white/95 cursor-pointer mb-1.5 transition-colors"
-                  style={{ 
-                    boxShadow: '0 0 12px 2px rgba(255, 215, 0, 0.5), 0 0 4px 1px rgba(255, 215, 0, 0.3)',
-                    border: '2px solid rgba(255, 215, 0, 0.6)'
-                  }}
-                >
-                  {/* Rank badge with avatar */}
-                  <div className="relative">
-                    <div className="p-0.5 rounded-full bg-gradient-to-br from-yellow-400/60 to-yellow-500/30">
-                      <Avatar className="w-10 h-10 border-2 border-yellow-400/40">
-                        <AvatarImage src={ranker.avatar} />
-                        <AvatarFallback className={`bg-gradient-to-br ${getAvatarGradient(ranker.name)} text-white font-medium`} style={{ fontSize: '16px' }}>
-                          {ranker.name.charAt(0)}
-                        </AvatarFallback>
-                      </Avatar>
-                    </div>
-                    <div className={`absolute -bottom-1 -left-1 w-6 h-6 rounded-full flex items-center justify-center font-bold shadow-md ${getRankBadgeStyle(ranker.rank)}`} style={{ fontSize: '11px' }}>
-                      #{ranker.rank}
-                    </div>
+        <div className="ranking-scroll-container h-[500px] overflow-y-auto relative p-3 space-y-2.5">
+          {rankersLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="w-6 h-6 animate-spin text-yellow-400" />
+            </div>
+          ) : (
+            displayRankers.map((ranker) => (
+              <div
+                key={ranker.rank}
+                className="flex items-center gap-2 px-3 py-3 rounded-xl bg-white/95 cursor-pointer mb-1.5 transition-colors"
+                style={{ 
+                  boxShadow: '0 0 12px 2px rgba(255, 215, 0, 0.5), 0 0 4px 1px rgba(255, 215, 0, 0.3)',
+                  border: '2px solid rgba(255, 215, 0, 0.6)'
+                }}
+              >
+                {/* Rank badge with avatar */}
+                <div className="relative">
+                  <div className="p-0.5 rounded-full bg-gradient-to-br from-yellow-400/60 to-yellow-500/30">
+                    <Avatar className="w-10 h-10 border-2 border-yellow-400/40">
+                      <AvatarImage src={ranker.avatar} />
+                      <AvatarFallback className={`bg-gradient-to-br ${getAvatarGradient(ranker.name)} text-white font-medium`} style={{ fontSize: '16px' }}>
+                        {ranker.name.charAt(0)}
+                      </AvatarFallback>
+                    </Avatar>
                   </div>
-                  <div className="flex-1 min-w-0 ml-1">
-                    <div className="flex items-center gap-1">
-                      <span className="font-bold truncate" style={{ color: '#4C1D95', fontSize: '16px' }}>{ranker.name}</span>
-                      {ranker.verified && (
-                        <span style={{ color: '#4C1D95', fontSize: '12px' }}>✓</span>
-                      )}
-                    </div>
+                  <div className={`absolute -bottom-1 -left-1 w-6 h-6 rounded-full flex items-center justify-center font-bold shadow-md ${getRankBadgeStyle(ranker.rank)}`} style={{ fontSize: '11px' }}>
+                    #{ranker.rank}
                   </div>
-                  <span className="font-bold shrink-0 whitespace-nowrap" style={{ color: '#4C1D95', fontSize: '16px' }}>
-                    {formatCurrency(ranker.amount)}
-                  </span>
                 </div>
-              ))
-            )}
-          </div>
-        </ScrollArea>
+                <div className="flex-1 min-w-0 ml-1">
+                  <div className="flex items-center gap-1">
+                    <span className="font-bold truncate" style={{ color: '#4C1D95', fontSize: '16px' }}>{ranker.name}</span>
+                    {ranker.verified && (
+                      <span style={{ color: '#4C1D95', fontSize: '12px' }}>✓</span>
+                    )}
+                  </div>
+                </div>
+                <span className="font-bold shrink-0 whitespace-nowrap" style={{ color: '#4C1D95', fontSize: '16px' }}>
+                  {formatCurrency(ranker.amount)}
+                </span>
+              </div>
+            ))
+          )}
+        </div>
       </div>
 
       {/* Contacts - Real Friends Data */}

@@ -794,3 +794,38 @@ label,
 .hover-glossy:active {
   transform: scale(1.02) translateY(0);
 }
+
+/* Custom scrollbar for ranking section */
+.ranking-scroll-container {
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+}
+
+.ranking-scroll-container::-webkit-scrollbar {
+  width: 8px;
+}
+
+.ranking-scroll-container::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.ranking-scroll-container::-webkit-scrollbar-thumb {
+  background: transparent;
+  border-radius: 4px;
+  transition: background 0.3s ease;
+}
+
+/* Show scrollbar on hover */
+.ranking-scroll-container:hover {
+  scrollbar-color: rgba(168, 85, 247, 0.6) transparent;
+}
+
+.ranking-scroll-container:hover::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #c084fc, #a855f7);
+  box-shadow: 0 0 8px rgba(168, 85, 247, 0.5), 0 0 16px rgba(192, 132, 252, 0.3);
+}
+
+.ranking-scroll-container:hover::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #d8b4fe, #c084fc);
+  box-shadow: 0 0 12px rgba(168, 85, 247, 0.7), 0 0 24px rgba(192, 132, 252, 0.5);
+}
