@@ -61,12 +61,17 @@ serve(async (req) => {
         sort_order: (url.searchParams.get('sort_order') as 'asc' | 'desc') || 'desc',
       };
 
+      // Handle creatorId filter for /my-campaigns
+      const creatorId = url.searchParams.get('creatorId');
+      
       let query = supabaseClient
         .from('campaigns')
-        .select(`
-          *,
-          creator:profiles!campaigns_creator_id_fkey(id, user_id, full_name, avatar_url, is_verified)
-        `, { count: 'exact' });
+        .select('*', { count: 'exact' });
+
+      // Apply creatorId filter first
+      if (creatorId) {
+        query = query.eq('creator_id', creatorId);
+      }
 
       // Apply filters
       if (filters.category) query = query.eq('category', filters.category);
@@ -87,12 +92,36 @@ serve(async (req) => {
       // Sorting
       query = query.order(filters.sort_by!, { ascending: filters.sort_order === 'asc' });
 
-      const { data, error, count } = await query;
+      const { data: campaigns, error, count } = await query;
 
       if (error) {
         console.error('[campaign-api] List error:', error);
         throw error;
       }
+
+      // Fetch creator profiles separately
+      const creatorIds = [...new Set(campaigns?.map(c => c.creator_id).filter(Boolean) || [])];
+      let creatorsMap: Record<string, { id: string; user_id: string; full_name: string | null; avatar_url: string | null; is_verified: boolean | null }> = {};
+      
+      if (creatorIds.length > 0) {
+        const { data: profiles } = await supabaseClient
+          .from('profiles')
+          .select('id, user_id, full_name, avatar_url, is_verified')
+          .in('user_id', creatorIds);
+        
+        if (profiles) {
+          creatorsMap = profiles.reduce((acc, p) => {
+            acc[p.user_id] = p;
+            return acc;
+          }, {} as typeof creatorsMap);
+        }
+      }
+
+      // Attach creator to each campaign
+      const data = campaigns?.map(campaign => ({
+        ...campaign,
+        creator: creatorsMap[campaign.creator_id] || null
+      })) || [];
 
       console.log(`[campaign-api] Found ${count} campaigns`);
 
@@ -114,13 +143,12 @@ serve(async (req) => {
     if (req.method === 'GET' && action !== 'list' && action !== 'stats') {
       const campaignId = action;
 
-      const { data, error } = await supabaseClient
+      const { data: campaign, error } = await supabaseClient
         .from('campaigns')
         .select(`
           *,
-          creator:profiles!campaigns_creator_id_fkey(id, user_id, full_name, avatar_url, is_verified, bio),
           media:campaign_media(*),
-          updates:campaign_updates(*, author:profiles!campaign_updates_author_id_fkey(full_name, avatar_url))
+          updates:campaign_updates(*)
         `)
         .eq('id', campaignId)
         .single();
@@ -129,6 +157,47 @@ serve(async (req) => {
         console.error('[campaign-api] Get error:', error);
         throw error;
       }
+
+      // Fetch creator profile separately
+      let creator = null;
+      if (campaign?.creator_id) {
+        const { data: profile } = await supabaseClient
+          .from('profiles')
+          .select('id, user_id, full_name, avatar_url, is_verified, bio')
+          .eq('user_id', campaign.creator_id)
+          .single();
+        creator = profile;
+      }
+
+      // Fetch update authors separately
+      const authorIds = [...new Set(campaign?.updates?.map((u: { author_id: string }) => u.author_id).filter(Boolean) || [])];
+      let authorsMap: Record<string, { full_name: string | null; avatar_url: string | null }> = {};
+      
+      if (authorIds.length > 0) {
+        const { data: authorProfiles } = await supabaseClient
+          .from('profiles')
+          .select('user_id, full_name, avatar_url')
+          .in('user_id', authorIds);
+        
+        if (authorProfiles) {
+          authorsMap = authorProfiles.reduce((acc, p) => {
+            acc[p.user_id] = { full_name: p.full_name, avatar_url: p.avatar_url };
+            return acc;
+          }, {} as typeof authorsMap);
+        }
+      }
+
+      // Attach authors to updates
+      const updatesWithAuthors = campaign?.updates?.map((update: { author_id: string }) => ({
+        ...update,
+        author: authorsMap[update.author_id] || null
+      })) || [];
+
+      const data = {
+        ...campaign,
+        creator,
+        updates: updatesWithAuthors
+      };
 
       // Get donation stats
       const { data: donationStats } = await supabaseClient
