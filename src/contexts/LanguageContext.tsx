@@ -14,6 +14,7 @@ export const translations: Translations = {
   // Navigation
   "nav.home": { en: "Home", vi: "Trang chủ" },
   "nav.campaigns": { en: "Campaigns", vi: "Chiến dịch" },
+  "nav.myCampaigns": { en: "My Campaigns", vi: "Chiến dịch của tôi" },
   "nav.needsMap": { en: "Needs Map", vi: "Bản đồ nhu cầu" },
   "nav.overview": { en: "Overview", vi: "Tổng quan" },
   "nav.platform": { en: "Platform", vi: "Nền tảng" },

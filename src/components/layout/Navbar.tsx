@@ -21,6 +21,7 @@ import CursorSettings from "@/components/cursor/CursorSettings";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useFriendRequestNotifications } from "@/hooks/useFriendNotifications";
 import { usePostNotifications } from "@/hooks/usePostNotifications";
+import { useDonationNotifications } from "@/hooks/useDonationNotifications";
 import {
   Menu,
   X,
@@ -48,6 +49,7 @@ import {
 
 const platformItems = [
   { nameKey: "nav.campaigns", path: "/campaigns", icon: Newspaper },
+  { nameKey: "nav.myCampaigns", path: "/my-campaigns", icon: Layers },
   { nameKey: "nav.needsMap", path: "/needs-map", icon: MapPin },
   { nameKey: "nav.overview", path: "/dashboard", icon: LayoutDashboard },
   { nameKey: "nav.reviews", path: "/reviews", icon: Star },
@@ -71,6 +73,7 @@ export function Navbar() {
   // Enable realtime notifications
   useFriendRequestNotifications(user?.id || null);
   usePostNotifications(user?.id || null);
+  useDonationNotifications(user?.id || null);
 
   // Fetch unread message count
   useEffect(() => {
