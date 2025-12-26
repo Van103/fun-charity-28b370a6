@@ -30,6 +30,7 @@ import Play from "./pages/Play";
 import Legal from "./pages/Legal";
 import Planet from "./pages/Planet";
 import Friends from "./pages/Friends";
+import MyCampaigns from "./pages/MyCampaigns";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -83,6 +84,7 @@ const App = () => (
                 <Route path="/legal" element={<Legal />} />
                 <Route path="/planet" element={<Planet />} />
                 <Route path="/friends" element={<Friends />} />
+                <Route path="/my-campaigns" element={<MyCampaigns />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </BrowserRouter>
