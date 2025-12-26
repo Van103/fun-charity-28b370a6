@@ -2,13 +2,17 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useLocation, useNavigate } from "react-router-dom";
 import { MotionProvider } from "@/contexts/MotionContext";
 import { CursorProvider } from "@/contexts/CursorContext";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import { AnimatedBackground } from "@/components/background/AnimatedBackground";
 import { EnergyBokeh } from "@/components/background/EnergyBokeh";
 import CustomCursor from "@/components/cursor/CustomCursor";
+import { useIncomingCallListener } from "@/hooks/useIncomingCallListener";
+import { IncomingCallNotification } from "@/components/chat/IncomingCallNotification";
+import { supabase } from "@/integrations/supabase/client";
+import { useEffect, useState } from "react";
 import Index from "./pages/Index";
 import Campaigns from "./pages/Campaigns";
 import CampaignDetail from "./pages/CampaignDetail";
@@ -49,6 +53,52 @@ function BackgroundWithVariant() {
   return <AnimatedBackground variant={getVariant()} intensity="medium" />;
 }
 
+// Global incoming call listener component
+function IncomingCallListener() {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [userId, setUserId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const getUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      setUserId(user?.id || null);
+    };
+    getUser();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
+      setUserId(session?.user?.id || null);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const { incomingCall, answerCall, declineCall } = useIncomingCallListener({
+    userId,
+    onAnswerCall: (call) => {
+      // Navigate to messages page with call info
+      if (location.pathname !== "/messages") {
+        navigate(`/messages?answer=${call.id}&conversation=${call.conversationId}&type=${call.callType}`);
+      }
+    }
+  });
+
+  // Don't show notification on messages page (it has its own handling)
+  if (location.pathname === "/messages" || !incomingCall) {
+    return null;
+  }
+
+  return (
+    <IncomingCallNotification
+      callerName={incomingCall.callerName}
+      callerAvatar={incomingCall.callerAvatar}
+      callType={incomingCall.callType}
+      onAnswer={answerCall}
+      onDecline={declineCall}
+    />
+  );
+}
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <LanguageProvider>
@@ -61,6 +111,7 @@ const App = () => (
             <BrowserRouter>
               <BackgroundWithVariant />
               <EnergyBokeh />
+              <IncomingCallListener />
               <Routes>
                 <Route path="/" element={<Index />} />
                 <Route path="/campaigns" element={<Campaigns />} />

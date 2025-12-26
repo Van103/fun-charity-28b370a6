@@ -11,7 +11,9 @@ import {
   MicOff,
   Loader2,
   X,
-  RotateCcw
+  RotateCcw,
+  Monitor,
+  MonitorOff
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { motion, AnimatePresence } from "framer-motion";
@@ -45,6 +47,7 @@ export function VideoCallModal({
   const [callStatus, setCallStatus] = useState<"idle" | "connecting" | "ringing" | "active" | "ended">("idle");
   const [isMuted, setIsMuted] = useState(false);
   const [isVideoOff, setIsVideoOff] = useState(callType === "audio");
+  const [isScreenSharing, setIsScreenSharing] = useState(false);
   const [localStream, setLocalStream] = useState<MediaStream | null>(null);
   const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null);
   const [callDuration, setCallDuration] = useState(0);
@@ -57,6 +60,8 @@ export function VideoCallModal({
   const callTimerRef = useRef<NodeJS.Timeout | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const localStreamRef = useRef<MediaStream | null>(null);
+  const screenStreamRef = useRef<MediaStream | null>(null);
+  const originalVideoTrackRef = useRef<MediaStreamTrack | null>(null);
   const isCleanedUpRef = useRef(false);
   const hasInitializedRef = useRef(false);
 
@@ -96,6 +101,15 @@ export function VideoCallModal({
     
     console.log("Cleaning up video call resources...");
     
+    // Stop screen share stream
+    if (screenStreamRef.current) {
+      screenStreamRef.current.getTracks().forEach(track => {
+        track.stop();
+        console.log("Stopped screen track:", track.kind);
+      });
+      screenStreamRef.current = null;
+    }
+    
     // Stop all tracks from local stream using ref
     if (localStreamRef.current) {
       localStreamRef.current.getTracks().forEach(track => {
@@ -129,6 +143,7 @@ export function VideoCallModal({
     setLocalStream(null);
     setRemoteStream(null);
     setCallDuration(0);
+    setIsScreenSharing(false);
   }, []);
 
   // End call
@@ -566,6 +581,111 @@ export function VideoCallModal({
     }
   }, [toast]);
 
+  // Toggle screen sharing
+  const toggleScreenShare = useCallback(async () => {
+    if (!peerConnectionRef.current) return;
+
+    if (isScreenSharing) {
+      // Stop screen sharing, restore camera
+      console.log("Stopping screen share...");
+      
+      if (screenStreamRef.current) {
+        screenStreamRef.current.getTracks().forEach(track => track.stop());
+        screenStreamRef.current = null;
+      }
+
+      // Restore original video track
+      if (originalVideoTrackRef.current && localStreamRef.current) {
+        const sender = peerConnectionRef.current?.getSenders().find(s => s.track?.kind === "video");
+        if (sender) {
+          try {
+            // Get new camera stream
+            const cameraStream = await navigator.mediaDevices.getUserMedia({
+              video: { facingMode: "user" },
+              audio: false
+            });
+            const newVideoTrack = cameraStream.getVideoTracks()[0];
+            
+            await sender.replaceTrack(newVideoTrack);
+            
+            // Update local stream
+            const oldVideoTrack = localStreamRef.current.getVideoTracks()[0];
+            if (oldVideoTrack) {
+              localStreamRef.current.removeTrack(oldVideoTrack);
+            }
+            localStreamRef.current.addTrack(newVideoTrack);
+            
+            if (localVideoRef.current) {
+              localVideoRef.current.srcObject = localStreamRef.current;
+            }
+          } catch (error) {
+            console.error("Error restoring camera:", error);
+          }
+        }
+      }
+
+      setIsScreenSharing(false);
+      toast({
+        title: "Chia sẻ màn hình",
+        description: "Đã dừng chia sẻ màn hình"
+      });
+    } else {
+      // Start screen sharing
+      console.log("Starting screen share...");
+      
+      try {
+        const screenStream = await navigator.mediaDevices.getDisplayMedia({
+          video: true,
+          audio: false
+        });
+        
+        screenStreamRef.current = screenStream;
+        const screenTrack = screenStream.getVideoTracks()[0];
+        
+        // Save original video track
+        if (localStreamRef.current) {
+          const currentVideoTrack = localStreamRef.current.getVideoTracks()[0];
+          if (currentVideoTrack) {
+            originalVideoTrackRef.current = currentVideoTrack;
+          }
+        }
+        
+        // Replace video track with screen track
+        const sender = peerConnectionRef.current?.getSenders().find(s => s.track?.kind === "video");
+        if (sender) {
+          await sender.replaceTrack(screenTrack);
+        }
+
+        // Update local video preview to show screen
+        if (localVideoRef.current) {
+          localVideoRef.current.srcObject = screenStream;
+        }
+
+        // Handle when user stops sharing via browser UI
+        screenTrack.onended = () => {
+          console.log("Screen share ended by user");
+          toggleScreenShare();
+        };
+
+        setIsScreenSharing(true);
+        toast({
+          title: "Chia sẻ màn hình",
+          description: "Đang chia sẻ màn hình của bạn"
+        });
+      } catch (error: any) {
+        console.error("Error starting screen share:", error);
+        
+        if (error.name !== "NotAllowedError") {
+          toast({
+            title: "Lỗi",
+            description: "Không thể chia sẻ màn hình",
+            variant: "destructive"
+          });
+        }
+      }
+    }
+  }, [isScreenSharing, toast]);
+
   // Handle close button
   const handleClose = useCallback(() => {
     endCall();
@@ -768,16 +888,32 @@ export function VideoCallModal({
                 </motion.button>
                 
                 {callType === "video" && (
-                  <motion.button
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={toggleVideo}
-                    className={`w-14 h-14 rounded-full flex items-center justify-center shadow-lg transition-colors ${
-                      isVideoOff ? "bg-red-500 hover:bg-red-600" : "bg-white/20 hover:bg-white/30"
-                    }`}
-                  >
-                    {isVideoOff ? <VideoOff className="w-6 h-6 text-white" /> : <Video className="w-6 h-6 text-white" />}
-                  </motion.button>
+                  <>
+                    <motion.button
+                      whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={toggleVideo}
+                      className={`w-14 h-14 rounded-full flex items-center justify-center shadow-lg transition-colors ${
+                        isVideoOff ? "bg-red-500 hover:bg-red-600" : "bg-white/20 hover:bg-white/30"
+                      }`}
+                    >
+                      {isVideoOff ? <VideoOff className="w-6 h-6 text-white" /> : <Video className="w-6 h-6 text-white" />}
+                    </motion.button>
+
+                    {callStatus === "active" && (
+                      <motion.button
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.95 }}
+                        onClick={toggleScreenShare}
+                        className={`w-14 h-14 rounded-full flex items-center justify-center shadow-lg transition-colors ${
+                          isScreenSharing ? "bg-green-500 hover:bg-green-600" : "bg-white/20 hover:bg-white/30"
+                        }`}
+                        title={isScreenSharing ? "Dừng chia sẻ màn hình" : "Chia sẻ màn hình"}
+                      >
+                        {isScreenSharing ? <MonitorOff className="w-6 h-6 text-white" /> : <Monitor className="w-6 h-6 text-white" />}
+                      </motion.button>
+                    )}
+                  </>
                 )}
 
                 <motion.button
