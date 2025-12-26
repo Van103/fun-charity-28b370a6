@@ -93,7 +93,7 @@ export function RightSidebar() {
   ];
 
   return (
-    <aside className="w-80 shrink-0 space-y-4 sticky top-20">
+    <aside className="w-80 shrink-0 space-y-4">
       {/* Honor Board */}
       <div className="rounded-2xl overflow-hidden relative" style={{ backgroundImage: 'url(/images/purple-light-bg.jpg)', backgroundSize: 'cover', backgroundPosition: 'center' }}>
         <div className="absolute inset-0 bg-purple-900/20 backdrop-blur-[1px]" />

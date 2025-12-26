@@ -129,7 +129,7 @@ export default function SocialFeed() {
           <div className="container mx-auto px-2 sm:px-4">
             <div className="flex gap-4 lg:gap-6">
               {/* Left Sidebar - Hidden on mobile/tablet */}
-              <div className="hidden lg:block">
+              <div className="hidden lg:block h-[calc(100vh-6rem)] sticky top-20">
                 <LeftSidebar profile={profile} />
               </div>
 
@@ -181,7 +181,7 @@ export default function SocialFeed() {
               </div>
 
               {/* Right Sidebar - Hidden on mobile/tablet */}
-              <div className="hidden xl:block">
+              <div className="hidden xl:block h-[calc(100vh-6rem)] sticky top-20 overflow-y-auto scrollbar-purple pr-1">
                 <RightSidebar />
               </div>
             </div>
