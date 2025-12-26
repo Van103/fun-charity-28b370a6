@@ -71,8 +71,9 @@ export function HeroSection() {
             </Badge>
           </motion.div>
 
-          <motion.h1 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.2 }} className="font-display text-4xl md:text-6xl lg:text-7xl font-bold mb-6 leading-tight text-primary-foreground">
-            <span className="gradient-text-luxury">FUN</span> Charity
+          <motion.h1 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.2 }} className="font-display text-4xl md:text-6xl lg:text-7xl font-bold mb-6 leading-tight">
+            <span className="text-[#FFD700] drop-shadow-[0_0_20px_rgba(255,215,0,0.6)]">FUN</span>{" "}
+            <span className="text-[#FFD700] drop-shadow-[0_0_20px_rgba(255,215,0,0.6)]">Charity</span>
           </motion.h1>
 
           <motion.p initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.3 }} className="text-lg md:text-xl text-primary-foreground/80 mb-4 max-w-3xl mx-auto italic">
