@@ -265,6 +265,34 @@ label,
     filter: drop-shadow(0 0 10px hsl(38 86% 72% / 0.5)) drop-shadow(0 0 20px hsl(270 91% 56% / 0.3));
   }
 
+  /* Shimmering Gold text - like real gold */
+  .text-gold-shimmer {
+    @apply bg-clip-text text-transparent font-bold;
+    background-image: linear-gradient(
+      90deg,
+      hsl(43 96% 56%) 0%,
+      hsl(48 100% 67%) 15%,
+      hsl(43 96% 56%) 30%,
+      hsl(38 86% 72%) 45%,
+      hsl(48 100% 75%) 55%,
+      hsl(43 96% 56%) 70%,
+      hsl(48 100% 67%) 85%,
+      hsl(43 96% 56%) 100%
+    );
+    background-size: 200% 100%;
+    animation: gold-shimmer 3s ease-in-out infinite;
+    filter: drop-shadow(0 0 8px hsl(43 96% 56% / 0.6)) drop-shadow(0 0 16px hsl(48 100% 67% / 0.4));
+  }
+
+  @keyframes gold-shimmer {
+    0%, 100% {
+      background-position: 0% 50%;
+    }
+    50% {
+      background-position: 100% 50%;
+    }
+  }
+
   @keyframes logo-shimmer {
     0%, 100% {
       background-position: 0% 50%;
