@@ -11,8 +11,6 @@ import {
   MicOff,
   Loader2,
   X,
-  Maximize2,
-  Minimize2,
   RotateCcw
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -44,15 +42,12 @@ export function VideoCallModal({
   callSessionId
 }: VideoCallModalProps) {
   const { toast } = useToast();
-  const [callStatus, setCallStatus] = useState<"connecting" | "ringing" | "active" | "ended">(
-    isIncoming ? "ringing" : "connecting"
-  );
+  const [callStatus, setCallStatus] = useState<"idle" | "connecting" | "ringing" | "active" | "ended">("idle");
   const [isMuted, setIsMuted] = useState(false);
   const [isVideoOff, setIsVideoOff] = useState(callType === "audio");
   const [localStream, setLocalStream] = useState<MediaStream | null>(null);
   const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null);
   const [callDuration, setCallDuration] = useState(0);
-  const [isFullscreen, setIsFullscreen] = useState(true);
   
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
@@ -61,12 +56,14 @@ export function VideoCallModal({
   const sessionIdRef = useRef<string | null>(callSessionId || null);
   const callTimerRef = useRef<NodeJS.Timeout | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const localStreamRef = useRef<MediaStream | null>(null);
+  const isCleanedUpRef = useRef(false);
+  const hasInitializedRef = useRef(false);
 
   const configuration: RTCConfiguration = {
     iceServers: [
       { urls: "stun:stun.l.google.com:19302" },
       { urls: "stun:stun1.l.google.com:19302" },
-      { urls: "stun:stun2.l.google.com:19302" },
     ]
   };
 
@@ -87,17 +84,90 @@ export function VideoCallModal({
     return () => {
       if (callTimerRef.current) {
         clearInterval(callTimerRef.current);
+        callTimerRef.current = null;
       }
     };
   }, [callStatus]);
 
+  // Cleanup function - uses refs to avoid stale closures
+  const cleanup = useCallback(() => {
+    if (isCleanedUpRef.current) return;
+    isCleanedUpRef.current = true;
+    
+    console.log("Cleaning up video call resources...");
+    
+    // Stop all tracks from local stream using ref
+    if (localStreamRef.current) {
+      localStreamRef.current.getTracks().forEach(track => {
+        track.stop();
+        console.log("Stopped track:", track.kind);
+      });
+      localStreamRef.current = null;
+    }
+    
+    // Close peer connection
+    if (peerConnectionRef.current) {
+      peerConnectionRef.current.close();
+      peerConnectionRef.current = null;
+      console.log("Closed peer connection");
+    }
+    
+    // Remove channel
+    if (channelRef.current) {
+      supabase.removeChannel(channelRef.current);
+      channelRef.current = null;
+      console.log("Removed signaling channel");
+    }
+    
+    // Clear timer
+    if (callTimerRef.current) {
+      clearInterval(callTimerRef.current);
+      callTimerRef.current = null;
+    }
+    
+    // Reset states
+    setLocalStream(null);
+    setRemoteStream(null);
+    setCallDuration(0);
+  }, []);
+
+  // End call
+  const endCall = useCallback(async () => {
+    console.log("Ending call...");
+    
+    if (sessionIdRef.current) {
+      try {
+        await supabase
+          .from("call_sessions")
+          .update({ status: "ended", ended_at: new Date().toISOString() })
+          .eq("id", sessionIdRef.current);
+
+        if (channelRef.current) {
+          channelRef.current.send({
+            type: "broadcast",
+            event: "call-ended",
+            payload: {}
+          });
+        }
+      } catch (error) {
+        console.error("Error updating call session:", error);
+      }
+    }
+    
+    cleanup();
+    setCallStatus("ended");
+    onClose();
+  }, [onClose, cleanup]);
+
   // Initialize media stream
   const initializeMedia = useCallback(async () => {
     try {
+      console.log("Requesting media access...", callType);
+      
       const stream = await navigator.mediaDevices.getUserMedia({
         video: callType === "video" ? {
-          width: { ideal: 1280 },
-          height: { ideal: 720 },
+          width: { ideal: 1280, max: 1920 },
+          height: { ideal: 720, max: 1080 },
           facingMode: "user"
         } : false,
         audio: {
@@ -106,16 +176,33 @@ export function VideoCallModal({
           autoGainControl: true
         }
       });
+      
+      console.log("Got media stream:", stream.getTracks().map(t => t.kind));
+      
+      // Store in ref for cleanup
+      localStreamRef.current = stream;
       setLocalStream(stream);
+      
       if (localVideoRef.current) {
         localVideoRef.current.srcObject = stream;
       }
+      
       return stream;
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error accessing media devices:", error);
+      
+      let errorMessage = "Không thể truy cập camera/microphone.";
+      if (error.name === "NotAllowedError") {
+        errorMessage = "Vui lòng cho phép truy cập camera và microphone trong trình duyệt.";
+      } else if (error.name === "NotFoundError") {
+        errorMessage = "Không tìm thấy camera hoặc microphone.";
+      } else if (error.name === "NotReadableError") {
+        errorMessage = "Camera hoặc microphone đang được sử dụng bởi ứng dụng khác.";
+      }
+      
       toast({
-        title: "Lỗi",
-        description: "Không thể truy cập camera/microphone. Vui lòng kiểm tra quyền truy cập.",
+        title: "Lỗi truy cập thiết bị",
+        description: errorMessage,
         variant: "destructive"
       });
       return null;
@@ -124,14 +211,22 @@ export function VideoCallModal({
 
   // Create peer connection
   const createPeerConnection = useCallback((stream: MediaStream) => {
+    // Close existing connection if any
+    if (peerConnectionRef.current) {
+      peerConnectionRef.current.close();
+      peerConnectionRef.current = null;
+    }
+    
+    console.log("Creating new peer connection...");
     const pc = new RTCPeerConnection(configuration);
     
     stream.getTracks().forEach(track => {
       pc.addTrack(track, stream);
+      console.log("Added track:", track.kind);
     });
 
     pc.ontrack = (event) => {
-      console.log("Received remote track");
+      console.log("Received remote track:", event.track.kind);
       setRemoteStream(event.streams[0]);
       if (remoteVideoRef.current) {
         remoteVideoRef.current.srcObject = event.streams[0];
@@ -140,6 +235,7 @@ export function VideoCallModal({
 
     pc.onicecandidate = (event) => {
       if (event.candidate && channelRef.current) {
+        console.log("Sending ICE candidate");
         channelRef.current.send({
           type: "broadcast",
           event: "ice-candidate",
@@ -153,6 +249,7 @@ export function VideoCallModal({
       if (pc.connectionState === "connected") {
         setCallStatus("active");
       } else if (pc.connectionState === "disconnected" || pc.connectionState === "failed") {
+        console.log("Connection lost, ending call");
         endCall();
       }
     };
@@ -163,124 +260,124 @@ export function VideoCallModal({
 
     peerConnectionRef.current = pc;
     return pc;
-  }, []);
-
-  // Cleanup function
-  const cleanup = useCallback(() => {
-    localStream?.getTracks().forEach(track => track.stop());
-    remoteStream?.getTracks().forEach(track => track.stop());
-    peerConnectionRef.current?.close();
-    if (channelRef.current) {
-      supabase.removeChannel(channelRef.current);
-    }
-    if (callTimerRef.current) {
-      clearInterval(callTimerRef.current);
-    }
-    setLocalStream(null);
-    setRemoteStream(null);
-    setCallStatus("ended");
-    setCallDuration(0);
-  }, [localStream, remoteStream]);
-
-  // End call
-  const endCall = useCallback(async () => {
-    if (sessionIdRef.current) {
-      await supabase
-        .from("call_sessions")
-        .update({ status: "ended", ended_at: new Date().toISOString() })
-        .eq("id", sessionIdRef.current);
-
-      channelRef.current?.send({
-        type: "broadcast",
-        event: "call-ended",
-        payload: {}
-      });
-    }
-    cleanup();
-    onClose();
-  }, [onClose, cleanup]);
+  }, [endCall]);
 
   // Start outgoing call
   const startCall = useCallback(async () => {
+    if (isCleanedUpRef.current) return;
+    
+    console.log("Starting outgoing call...");
+    setCallStatus("connecting");
+    
     const stream = await initializeMedia();
-    if (!stream) return;
+    if (!stream) {
+      setCallStatus("ended");
+      onClose();
+      return;
+    }
 
     const pc = createPeerConnection(stream);
     
-    // Create offer first
-    const offer = await pc.createOffer();
-    await pc.setLocalDescription(offer);
+    try {
+      // Create offer first
+      const offer = await pc.createOffer();
+      await pc.setLocalDescription(offer);
+      console.log("Created offer");
 
-    // Create call session in database with offer stored
-    const { data: session, error } = await supabase
-      .from("call_sessions")
-      .insert({
-        conversation_id: conversationId,
-        caller_id: currentUserId,
-        call_type: callType,
-        status: "pending",
-        signaling_data: { offer: { type: offer.type, sdp: offer.sdp } }
-      })
-      .select()
-      .single();
+      // Create call session in database with offer stored
+      const { data: session, error } = await supabase
+        .from("call_sessions")
+        .insert({
+          conversation_id: conversationId,
+          caller_id: currentUserId,
+          call_type: callType,
+          status: "pending",
+          signaling_data: { offer: { type: offer.type, sdp: offer.sdp } }
+        })
+        .select()
+        .single();
 
-    if (error || !session) {
-      console.error("Error creating call session:", error);
+      if (error || !session) {
+        console.error("Error creating call session:", error);
+        toast({
+          title: "Lỗi",
+          description: "Không thể bắt đầu cuộc gọi",
+          variant: "destructive"
+        });
+        cleanup();
+        onClose();
+        return;
+      }
+
+      sessionIdRef.current = session.id;
+      setCallStatus("ringing");
+      console.log("Call session created:", session.id);
+      
+      // Setup signaling channel
+      const channel = supabase.channel(`call-${session.id}`);
+      channelRef.current = channel;
+
+      channel.on("broadcast", { event: "answer" }, async (msg) => {
+        console.log("Received answer");
+        const answer = msg.payload.answer;
+        if (peerConnectionRef.current && peerConnectionRef.current.signalingState !== "closed") {
+          try {
+            await peerConnectionRef.current.setRemoteDescription(new RTCSessionDescription(answer));
+          } catch (e) {
+            console.error("Error setting remote description:", e);
+          }
+        }
+      });
+
+      channel.on("broadcast", { event: "ice-candidate" }, async (msg) => {
+        console.log("Received ICE candidate");
+        try {
+          if (peerConnectionRef.current && peerConnectionRef.current.signalingState !== "closed") {
+            await peerConnectionRef.current.addIceCandidate(new RTCIceCandidate(msg.payload.candidate));
+          }
+        } catch (e) {
+          console.error("Error adding ICE candidate:", e);
+        }
+      });
+
+      channel.on("broadcast", { event: "call-declined" }, () => {
+        toast({
+          title: "Cuộc gọi bị từ chối",
+          description: `${otherUser.full_name || "Người dùng"} đã từ chối cuộc gọi`
+        });
+        cleanup();
+        setCallStatus("ended");
+        onClose();
+      });
+
+      channel.on("broadcast", { event: "call-ended" }, () => {
+        console.log("Call ended by remote");
+        cleanup();
+        setCallStatus("ended");
+        onClose();
+      });
+
+      await channel.subscribe();
+      console.log("Subscribed to signaling channel");
+      
+    } catch (error) {
+      console.error("Error starting call:", error);
       toast({
         title: "Lỗi",
         description: "Không thể bắt đầu cuộc gọi",
         variant: "destructive"
       });
-      stream.getTracks().forEach(track => track.stop());
-      return;
+      cleanup();
+      onClose();
     }
+  }, [conversationId, currentUserId, callType, initializeMedia, createPeerConnection, otherUser, toast, cleanup, onClose]);
 
-    sessionIdRef.current = session.id;
-    peerConnectionRef.current = pc;
-    setCallStatus("ringing");
-    
-    // Setup signaling channel
-    const channel = supabase.channel(`call-${session.id}`);
-    channelRef.current = channel;
-
-    channel.on("broadcast", { event: "answer" }, async (msg) => {
-      console.log("Received answer");
-      const answer = msg.payload.answer;
-      if (peerConnectionRef.current) {
-        await peerConnectionRef.current.setRemoteDescription(new RTCSessionDescription(answer));
-      }
-    });
-
-    channel.on("broadcast", { event: "ice-candidate" }, async (msg) => {
-      console.log("Received ICE candidate");
-      try {
-        if (peerConnectionRef.current) {
-          await peerConnectionRef.current.addIceCandidate(new RTCIceCandidate(msg.payload.candidate));
-        }
-      } catch (e) {
-        console.error("Error adding ICE candidate:", e);
-      }
-    });
-
-    channel.on("broadcast", { event: "call-declined" }, () => {
-      toast({
-        title: "Cuộc gọi bị từ chối",
-        description: `${otherUser.full_name} đã từ chối cuộc gọi`
-      });
-      endCall();
-    });
-
-    channel.on("broadcast", { event: "call-ended" }, () => {
-      endCall();
-    });
-
-    await channel.subscribe();
-    console.log("Call started, session:", session.id);
-  }, [conversationId, currentUserId, callType, initializeMedia, createPeerConnection, otherUser, toast, endCall]);
-
-  // Answer incoming call - now retrieves offer from database
+  // Answer incoming call
   const answerCall = useCallback(async () => {
-    if (!callSessionId) return;
+    if (!callSessionId || isCleanedUpRef.current) return;
+
+    console.log("Answering incoming call...");
+    setCallStatus("connecting");
 
     // First, get the offer from the database
     const { data: callSession, error: fetchError } = await supabase
@@ -296,14 +393,17 @@ export function VideoCallModal({
         description: "Không thể tham gia cuộc gọi",
         variant: "destructive"
       });
+      onClose();
       return;
     }
 
     const stream = await initializeMedia();
-    if (!stream) return;
+    if (!stream) {
+      onClose();
+      return;
+    }
 
     const pc = createPeerConnection(stream);
-    peerConnectionRef.current = pc;
     
     const channel = supabase.channel(`call-${callSessionId}`);
     channelRef.current = channel;
@@ -311,7 +411,7 @@ export function VideoCallModal({
     channel.on("broadcast", { event: "ice-candidate" }, async (msg) => {
       console.log("Received ICE candidate");
       try {
-        if (peerConnectionRef.current) {
+        if (peerConnectionRef.current && peerConnectionRef.current.signalingState !== "closed") {
           await peerConnectionRef.current.addIceCandidate(new RTCIceCandidate(msg.payload.candidate));
         }
       } catch (e) {
@@ -320,91 +420,123 @@ export function VideoCallModal({
     });
 
     channel.on("broadcast", { event: "call-ended" }, () => {
-      endCall();
+      console.log("Call ended by remote");
+      cleanup();
+      setCallStatus("ended");
+      onClose();
     });
 
     await channel.subscribe();
+    console.log("Subscribed to signaling channel");
 
-    // Set remote description from stored offer
-    const signalingData = callSession.signaling_data as { offer?: RTCSessionDescriptionInit };
-    if (signalingData?.offer) {
-      console.log("Setting remote description from stored offer");
-      await pc.setRemoteDescription(new RTCSessionDescription(signalingData.offer));
-      
-      const answer = await pc.createAnswer();
-      await pc.setLocalDescription(answer);
+    try {
+      // Set remote description from stored offer
+      const signalingData = callSession.signaling_data as { offer?: RTCSessionDescriptionInit };
+      if (signalingData?.offer) {
+        console.log("Setting remote description from stored offer");
+        await pc.setRemoteDescription(new RTCSessionDescription(signalingData.offer));
+        
+        const answer = await pc.createAnswer();
+        await pc.setLocalDescription(answer);
+        console.log("Created answer");
 
-      channel.send({
-        type: "broadcast",
-        event: "answer",
-        payload: { answer: { type: answer.type, sdp: answer.sdp } }
-      });
-    } else {
-      console.error("No offer found in call session");
+        channel.send({
+          type: "broadcast",
+          event: "answer",
+          payload: { answer: { type: answer.type, sdp: answer.sdp } }
+        });
+        
+        // Update call status in DB
+        await supabase
+          .from("call_sessions")
+          .update({ status: "active" })
+          .eq("id", callSessionId);
+
+        setCallStatus("active");
+      } else {
+        console.error("No offer found in call session");
+        toast({
+          title: "Lỗi",
+          description: "Không tìm thấy dữ liệu cuộc gọi",
+          variant: "destructive"
+        });
+        cleanup();
+        onClose();
+      }
+    } catch (error) {
+      console.error("Error answering call:", error);
       toast({
         title: "Lỗi",
-        description: "Không tìm thấy dữ liệu cuộc gọi",
+        description: "Không thể trả lời cuộc gọi",
         variant: "destructive"
       });
-      return;
+      cleanup();
+      onClose();
     }
-
-    // Update call status
-    await supabase
-      .from("call_sessions")
-      .update({ status: "active" })
-      .eq("id", callSessionId);
-
-    setCallStatus("active");
-  }, [callSessionId, initializeMedia, createPeerConnection, endCall, toast]);
+  }, [callSessionId, initializeMedia, createPeerConnection, cleanup, toast, onClose]);
 
   // Decline incoming call
   const declineCall = useCallback(async () => {
+    console.log("Declining call...");
+    
     if (callSessionId) {
-      await supabase
-        .from("call_sessions")
-        .update({ status: "declined", ended_at: new Date().toISOString() })
-        .eq("id", callSessionId);
+      try {
+        await supabase
+          .from("call_sessions")
+          .update({ status: "declined", ended_at: new Date().toISOString() })
+          .eq("id", callSessionId);
 
-      channelRef.current?.send({
-        type: "broadcast",
-        event: "call-declined",
-        payload: {}
-      });
+        if (channelRef.current) {
+          channelRef.current.send({
+            type: "broadcast",
+            event: "call-declined",
+            payload: {}
+          });
+        }
+      } catch (error) {
+        console.error("Error declining call:", error);
+      }
     }
+    
     cleanup();
+    setCallStatus("ended");
     onClose();
-  }, [callSessionId, onClose, cleanup]);
+  }, [callSessionId, cleanup, onClose]);
 
   // Toggle mute
-  const toggleMute = () => {
-    localStream?.getAudioTracks().forEach(track => {
-      track.enabled = isMuted;
-    });
-    setIsMuted(!isMuted);
-  };
+  const toggleMute = useCallback(() => {
+    if (localStreamRef.current) {
+      localStreamRef.current.getAudioTracks().forEach(track => {
+        track.enabled = isMuted;
+      });
+      setIsMuted(!isMuted);
+    }
+  }, [isMuted]);
 
   // Toggle video
-  const toggleVideo = () => {
-    localStream?.getVideoTracks().forEach(track => {
-      track.enabled = isVideoOff;
-    });
-    setIsVideoOff(!isVideoOff);
-  };
+  const toggleVideo = useCallback(() => {
+    if (localStreamRef.current) {
+      localStreamRef.current.getVideoTracks().forEach(track => {
+        track.enabled = isVideoOff;
+      });
+      setIsVideoOff(!isVideoOff);
+    }
+  }, [isVideoOff]);
 
   // Switch camera (for mobile)
-  const switchCamera = async () => {
-    if (!localStream) return;
+  const switchCamera = useCallback(async () => {
+    if (!localStreamRef.current) return;
     
-    const videoTrack = localStream.getVideoTracks()[0];
+    const videoTrack = localStreamRef.current.getVideoTracks()[0];
     if (!videoTrack) return;
 
     const constraints = videoTrack.getConstraints();
-    const facingMode = constraints.facingMode === "user" ? "environment" : "user";
+    const currentFacingMode = (constraints.facingMode as string) || "user";
+    const newFacingMode = currentFacingMode === "user" ? "environment" : "user";
 
     try {
       const newStream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode },
+        video: { facingMode: newFacingMode },
         audio: false
       });
 
@@ -418,30 +550,57 @@ export function VideoCallModal({
 
       // Update local stream
       videoTrack.stop();
-      localStream.removeTrack(videoTrack);
-      localStream.addTrack(newVideoTrack);
+      localStreamRef.current.removeTrack(videoTrack);
+      localStreamRef.current.addTrack(newVideoTrack);
 
       if (localVideoRef.current) {
-        localVideoRef.current.srcObject = localStream;
+        localVideoRef.current.srcObject = localStreamRef.current;
       }
     } catch (error) {
       console.error("Error switching camera:", error);
+      toast({
+        title: "Lỗi",
+        description: "Không thể chuyển đổi camera",
+        variant: "destructive"
+      });
     }
-  };
+  }, [toast]);
+
+  // Handle close button
+  const handleClose = useCallback(() => {
+    endCall();
+  }, [endCall]);
 
   // Initialize call on mount
   useEffect(() => {
-    if (open && !isIncoming) {
-      startCall();
+    if (open && !hasInitializedRef.current) {
+      hasInitializedRef.current = true;
+      isCleanedUpRef.current = false;
+      
+      if (isIncoming) {
+        setCallStatus("ringing");
+      } else {
+        startCall();
+      }
     }
   }, [open, isIncoming, startCall]);
 
-  // Cleanup on unmount
+  // Cleanup on unmount or when modal closes
   useEffect(() => {
     return () => {
+      console.log("VideoCallModal unmounting, cleaning up...");
       cleanup();
+      hasInitializedRef.current = false;
     };
-  }, []);
+  }, [cleanup]);
+
+  // Reset refs when modal closes
+  useEffect(() => {
+    if (!open) {
+      hasInitializedRef.current = false;
+      isCleanedUpRef.current = false;
+    }
+  }, [open]);
 
   if (!open) return null;
 
@@ -467,14 +626,16 @@ export function VideoCallModal({
               <div>
                 <p className="text-white font-semibold text-lg">{otherUser.full_name || "Người dùng"}</p>
                 <p className="text-white/60 text-sm">
+                  {callStatus === "idle" && "Chuẩn bị..."}
                   {callStatus === "connecting" && "Đang kết nối..."}
                   {callStatus === "ringing" && (isIncoming ? "Cuộc gọi đến..." : "Đang đổ chuông...")}
                   {callStatus === "active" && formatDuration(callDuration)}
+                  {callStatus === "ended" && "Đã kết thúc"}
                 </p>
               </div>
             </div>
             <div className="flex items-center gap-2">
-              {callType === "video" && (
+              {callType === "video" && callStatus === "active" && (
                 <Button
                   variant="ghost"
                   size="icon"
@@ -488,7 +649,7 @@ export function VideoCallModal({
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={endCall}
+                onClick={handleClose}
                 className="text-white hover:bg-white/20 rounded-full h-10 w-10"
               >
                 <X className="w-5 h-5" />
@@ -535,9 +696,11 @@ export function VideoCallModal({
                 <p className="text-white/60 mt-2 animate-pulse">Đang đổ chuông...</p>
               )}
               {callStatus === "ringing" && isIncoming && (
-                <p className="text-primary mt-2 animate-pulse text-lg">Cuộc gọi {callType === "video" ? "video" : "thoại"} đến</p>
+                <p className="text-primary mt-2 animate-pulse text-lg">
+                  Cuộc gọi {callType === "video" ? "video" : "thoại"} đến
+                </p>
               )}
-              {callStatus === "active" && (
+              {callStatus === "active" && callType === "audio" && (
                 <p className="text-green-400 mt-2 flex items-center gap-2">
                   <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
                   Đang trong cuộc gọi
