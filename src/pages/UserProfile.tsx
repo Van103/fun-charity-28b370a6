@@ -9,6 +9,7 @@ import { SocialPostCard } from "@/components/social/SocialPostCard";
 import { PostCardSkeletonList, PostCardSkeleton } from "@/components/social/PostCardSkeleton";
 import { PullToRefresh } from "@/components/social/PullToRefresh";
 import { PhotosPreviewCard, PhotosTab } from "@/components/profile/PhotosTab";
+import { DonationHistoryCard } from "@/components/donations/DonationHistoryCard";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Helmet } from "react-helmet-async";
@@ -116,11 +117,10 @@ export default function UserProfile() {
 
   const tabs = [
     { id: "posts", label: "Bài viết" },
+    { id: "donations", label: "Quyên góp" },
     { id: "about", label: "Giới thiệu" },
     { id: "friends", label: "Bạn bè" },
     { id: "photos", label: "Ảnh" },
-    { id: "videos", label: "Video" },
-    { id: "checkins", label: "Check in" },
   ];
 
   if (loading) {
@@ -297,46 +297,78 @@ export default function UserProfile() {
 
                 {/* Friends Preview Card */}
                 <FriendsPreviewCard userId={profile?.user_id || ""} />
+
+                {/* Donation History Card */}
+                <DonationHistoryCard userId={profile?.user_id || null} limit={5} />
               </div>
 
-              {/* Right Column - Posts Feed */}
+              {/* Right Column - Content based on active tab */}
               <div className="flex-1 min-w-0">
-                <PullToRefresh onRefresh={handleRefresh}>
-                  <div className="space-y-4">
-                    <CreatePostBox profile={profile} />
-                    
-                    {/* Posts Feed */}
+                {activeTab === "posts" && (
+                  <PullToRefresh onRefresh={handleRefresh}>
                     <div className="space-y-4">
-                      {postsLoading ? (
-                        <PostCardSkeletonList count={3} />
-                      ) : posts && posts.length > 0 ? (
-                        <>
-                          {posts.map((post) => (
-                            <SocialPostCard key={post.id} post={post} />
-                          ))}
-                          
-                          {/* Load More Trigger */}
-                          <div ref={loadMoreRef} className="py-4">
-                            {isFetchingNextPage && (
-                              <PostCardSkeleton />
-                            )}
-                            {!hasNextPage && posts.length > 0 && (
-                              <p className="text-center text-sm text-muted-foreground">
-                                Bạn đã xem hết tất cả bài viết 🎉
-                              </p>
-                            )}
+                      <CreatePostBox profile={profile} />
+                      
+                      {/* Posts Feed */}
+                      <div className="space-y-4">
+                        {postsLoading ? (
+                          <PostCardSkeletonList count={3} />
+                        ) : posts && posts.length > 0 ? (
+                          <>
+                            {posts.map((post) => (
+                              <SocialPostCard key={post.id} post={post} />
+                            ))}
+                            
+                            {/* Load More Trigger */}
+                            <div ref={loadMoreRef} className="py-4">
+                              {isFetchingNextPage && (
+                                <PostCardSkeleton />
+                              )}
+                              {!hasNextPage && posts.length > 0 && (
+                                <p className="text-center text-sm text-muted-foreground">
+                                  Bạn đã xem hết tất cả bài viết 🎉
+                                </p>
+                              )}
+                            </div>
+                          </>
+                        ) : (
+                          <div className="glass-card p-12 text-center">
+                            <p className="text-muted-foreground">
+                              Chưa có bài viết nào. Hãy là người đầu tiên chia sẻ!
+                            </p>
                           </div>
-                        </>
-                      ) : (
-                        <div className="glass-card p-12 text-center">
-                          <p className="text-muted-foreground">
-                            Chưa có bài viết nào. Hãy là người đầu tiên chia sẻ!
-                          </p>
-                        </div>
-                      )}
+                        )}
+                      </div>
                     </div>
+                  </PullToRefresh>
+                )}
+
+                {activeTab === "donations" && (
+                  <DonationHistoryCard 
+                    userId={profile?.user_id || null} 
+                    limit={20} 
+                    showViewAll={false} 
+                  />
+                )}
+
+                {activeTab === "about" && (
+                  <div className="glass-card p-6">
+                    <h3 className="font-bold text-lg mb-4">Giới thiệu</h3>
+                    <p className="text-muted-foreground">
+                      {profile?.bio || "Chưa có thông tin giới thiệu."}
+                    </p>
                   </div>
-                </PullToRefresh>
+                )}
+
+                {activeTab === "friends" && (
+                  <FriendsPreviewCard userId={profile?.user_id || ""} />
+                )}
+
+                {activeTab === "photos" && (
+                  <div className="glass-card p-6">
+                    <PhotosTab userId={profile?.user_id || null} />
+                  </div>
+                )}
               </div>
             </div>
           </div>
