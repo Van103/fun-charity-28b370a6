@@ -35,6 +35,8 @@ import { CreateGroupModal } from "@/components/chat/CreateGroupModal";
 import { MessageReactionPicker, MessageReactionsDisplay } from "@/components/chat/MessageReactionPicker";
 import { useToast } from "@/hooks/use-toast";
 import { motion, AnimatePresence } from "framer-motion";
+import { useIncomingCallListener } from "@/hooks/useIncomingCallListener";
+import { IncomingCallNotification } from "@/components/chat/IncomingCallNotification";
 
 interface Conversation {
   id: string;
@@ -104,6 +106,14 @@ export default function Messages() {
   const [activeFilter, setActiveFilter] = useState<"all" | "unread" | "groups">("all");
   const [mediaOpen, setMediaOpen] = useState(false);
   const [privacyOpen, setPrivacyOpen] = useState(false);
+  const [isIncomingCall, setIsIncomingCall] = useState(false);
+  const [incomingCallSessionId, setIncomingCallSessionId] = useState<string | null>(null);
+  const [incomingCallConversationId, setIncomingCallConversationId] = useState<string | null>(null);
+  const [incomingCallOtherUser, setIncomingCallOtherUser] = useState<{
+    user_id: string;
+    full_name: string | null;
+    avatar_url: string | null;
+  } | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -120,6 +130,34 @@ export default function Messages() {
     activeConversation?.id || null,
     currentUserId
   );
+
+  // Handle incoming call answer
+  const handleAnswerIncomingCall = useCallback(async (call: {
+    id: string;
+    conversationId: string;
+    callerId: string;
+    callerName: string;
+    callerAvatar: string | null;
+    callType: "video" | "audio";
+  }) => {
+    console.log("Answering incoming call:", call);
+    setCallType(call.callType);
+    setIsIncomingCall(true);
+    setIncomingCallSessionId(call.id);
+    setIncomingCallConversationId(call.conversationId);
+    setIncomingCallOtherUser({
+      user_id: call.callerId,
+      full_name: call.callerName,
+      avatar_url: call.callerAvatar
+    });
+    setShowVideoCall(true);
+  }, []);
+
+  // Setup incoming call listener
+  const { incomingCall, answerCall, declineCall, dismissCall } = useIncomingCallListener({
+    userId: currentUserId,
+    onAnswerCall: handleAnswerIncomingCall
+  });
 
   // Get message IDs for reactions
   const messageIds = useMemo(() => messages.map(m => m.id), [messages]);
@@ -546,7 +584,26 @@ export default function Messages() {
     }
   };
 
-  const startCall = (type: "video" | "audio") => {
+  const startCall = async (type: "video" | "audio") => {
+    // Check if other user is online before starting call
+    if (activeConversation?.otherUser) {
+      const onlineStatusMap = await getOnlineStatus([activeConversation.otherUser.user_id]);
+      const isOnline = onlineStatusMap.get(activeConversation.otherUser.user_id) || false;
+      
+      if (!isOnline) {
+        toast({
+          title: "Không kết nối được",
+          description: `${activeConversation.otherUser.full_name || "Người dùng"} hiện không trực tuyến. Vui lòng thử lại sau.`,
+          variant: "destructive"
+        });
+        return;
+      }
+    }
+    
+    setIsIncomingCall(false);
+    setIncomingCallSessionId(null);
+    setIncomingCallConversationId(null);
+    setIncomingCallOtherUser(null);
     setCallType(type);
     setShowVideoCall(true);
   };
@@ -1368,15 +1425,36 @@ export default function Messages() {
         )}
       </AnimatePresence>
 
-      {/* Video/Audio Call Modal */}
-      {showVideoCall && activeConversation?.otherUser && currentUserId && (
+      {/* Incoming Call Notification */}
+      <AnimatePresence>
+        {incomingCall && (
+          <IncomingCallNotification
+            callerName={incomingCall.callerName}
+            callerAvatar={incomingCall.callerAvatar}
+            callType={incomingCall.callType}
+            onAnswer={answerCall}
+            onDecline={declineCall}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Video/Audio Call Modal - Outgoing or Incoming */}
+      {showVideoCall && currentUserId && (
         <VideoCallModal
           open={showVideoCall}
-          onClose={() => setShowVideoCall(false)}
-          conversationId={activeConversation.id}
+          onClose={() => {
+            setShowVideoCall(false);
+            setIsIncomingCall(false);
+            setIncomingCallSessionId(null);
+            setIncomingCallConversationId(null);
+            setIncomingCallOtherUser(null);
+          }}
+          conversationId={isIncomingCall && incomingCallConversationId ? incomingCallConversationId : (activeConversation?.id || "")}
           currentUserId={currentUserId}
-          otherUser={activeConversation.otherUser}
+          otherUser={isIncomingCall && incomingCallOtherUser ? incomingCallOtherUser : (activeConversation?.otherUser || { user_id: "", full_name: null, avatar_url: null })}
           callType={callType}
+          isIncoming={isIncomingCall}
+          callSessionId={incomingCallSessionId || undefined}
         />
       )}
 
