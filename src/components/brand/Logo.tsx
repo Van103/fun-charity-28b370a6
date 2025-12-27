@@ -6,22 +6,22 @@ interface LogoProps {
   className?: string;
 }
 
-export function Logo({ size = "md", showText = true, className = "" }: LogoProps) {
+export function Logo({ size = "md", showText = false, className = "" }: LogoProps) {
   const sizes = {
-    sm: { icon: 32, text: "text-lg" },
-    md: { icon: 40, text: "text-xl" },
-    lg: { icon: 56, text: "text-2xl" },
-    xl: { icon: 72, text: "text-3xl" },
+    sm: { icon: 36, text: "text-lg" },
+    md: { icon: 48, text: "text-xl" },
+    lg: { icon: 60, text: "text-2xl" },
+    xl: { icon: 80, text: "text-3xl" },
   };
 
   const s = sizes[size];
 
   return (
-    <div className={`flex items-center gap-2 ${className}`}>
-      <div className="relative group">
-        {/* Video Logo Container */}
+    <div className={`flex items-center gap-2 group ${className}`}>
+      <div className="relative">
+        {/* Video Logo Container - Circular */}
         <div
-          className="rounded-xl overflow-hidden relative"
+          className="rounded-full overflow-hidden relative ring-2 ring-primary/30 shadow-lg shadow-primary/20 group-hover:ring-primary/50 group-hover:shadow-primary/40 transition-all duration-300"
           style={{ width: s.icon, height: s.icon }}
         >
           <video
@@ -29,7 +29,7 @@ export function Logo({ size = "md", showText = true, className = "" }: LogoProps
             loop
             muted
             playsInline
-            className="w-full h-full object-cover"
+            className="w-full h-full object-cover scale-110"
           >
             <source src="/videos/logo-video.mp4" type="video/mp4" />
           </video>
@@ -45,7 +45,7 @@ export function Logo({ size = "md", showText = true, className = "" }: LogoProps
           animate={{ scale: [1, 1.2, 1], opacity: [0.7, 1, 0.7] }}
           transition={{ duration: 2, repeat: Infinity, delay: 0 }}
         >
-          <svg width={s.icon * 0.2} height={s.icon * 0.2} viewBox="0 0 24 24" fill="#C9A23D">
+          <svg width={s.icon * 0.18} height={s.icon * 0.18} viewBox="0 0 24 24" fill="#C9A23D">
             <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
           </svg>
         </motion.div>
@@ -55,7 +55,7 @@ export function Logo({ size = "md", showText = true, className = "" }: LogoProps
           animate={{ scale: [1, 1.3, 1], opacity: [0.5, 1, 0.5] }}
           transition={{ duration: 2.5, repeat: Infinity, delay: 0.5 }}
         >
-          <svg width={s.icon * 0.14} height={s.icon * 0.14} viewBox="0 0 24 24" fill="#2E0F4A">
+          <svg width={s.icon * 0.12} height={s.icon * 0.12} viewBox="0 0 24 24" fill="#2E0F4A">
             <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
           </svg>
         </motion.div>
@@ -71,11 +71,19 @@ export function Logo({ size = "md", showText = true, className = "" }: LogoProps
         </motion.div>
       </div>
 
-      {showText && (
-        <span className={`font-display font-bold ${s.text} text-gold-shimmer tracking-tight`}>
-          FUNCHARITY
-        </span>
-      )}
+      {/* Text shows on hover */}
+      <motion.span 
+        className={`font-display font-bold ${s.text} text-gold-shimmer tracking-tight whitespace-nowrap`}
+        initial={{ opacity: 0, width: 0 }}
+        animate={{ 
+          opacity: showText ? 1 : 0, 
+          width: showText ? "auto" : 0 
+        }}
+        whileHover={{ opacity: 1, width: "auto" }}
+        transition={{ duration: 0.3 }}
+      >
+        FUNCHARITY
+      </motion.span>
     </div>
   );
 }

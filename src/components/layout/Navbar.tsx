@@ -188,31 +188,50 @@ export function Navbar() {
     <nav className="fixed top-0 left-0 right-0 z-50 bg-white border-b border-border/50 shadow-sm">
       <div className="container mx-auto px-2 sm:px-4">
         <div className="flex items-center justify-between h-14 sm:h-16">
-          {/* Logo */}
-          <div className="flex items-center gap-2 sm:gap-3">
-            <Link to="/social" className="flex items-center gap-1 sm:gap-2 group">
-              <Logo size="md" />
-            </Link>
+          {/* Left Section: Logo + Search + Home */}
+          <div className="flex items-center gap-1 sm:gap-2">
+            {/* Logo - Circular, text shows on hover */}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Link to="/social" className="flex items-center">
+                  <motion.div
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    transition={{ type: "spring", stiffness: 400, damping: 17 }}
+                  >
+                    <Logo size="md" showText={false} />
+                  </motion.div>
+                </Link>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" className="bg-foreground text-background font-bold text-base px-4 py-2">
+                FUNCHARITY
+              </TooltipContent>
+            </Tooltip>
             
-            {/* Home Button - Facebook style icon with tooltip and animations */}
+            {/* Search - next to logo, compact */}
+            <div className="hidden md:block w-44 lg:w-52">
+              <SearchBar />
+            </div>
+
+            {/* Home Button - right of search */}
             <Tooltip>
               <TooltipTrigger asChild>
                 <Link to="/social">
                   <motion.div
-                    whileHover={{ scale: 1.08 }}
-                    whileTap={{ scale: 0.95 }}
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.92 }}
                     transition={{ type: "spring", stiffness: 400, damping: 17 }}
                   >
                     <Button 
                       variant="ghost" 
                       size="icon"
-                      className={`relative w-10 h-10 sm:w-12 sm:h-12 rounded-full transition-all duration-300 ${
+                      className={`relative w-11 h-11 sm:w-12 sm:h-12 rounded-full transition-all duration-300 ${
                         location.pathname === "/social" 
                           ? "bg-gradient-to-br from-primary to-primary/80 text-white shadow-lg shadow-primary/30 hover:shadow-primary/50" 
                           : "text-primary hover:bg-primary/15 hover:text-primary hover:shadow-md"
                       }`}
                     >
-                      <Home className="w-6 h-6 sm:w-7 sm:h-7" strokeWidth={2.5} />
+                      <Home className="w-7 h-7 sm:w-8 sm:h-8" strokeWidth={2.5} />
                       {location.pathname === "/social" && (
                         <motion.div
                           layoutId="nav-indicator"
@@ -230,31 +249,27 @@ export function Navbar() {
                 {t("nav.home")}
               </TooltipContent>
             </Tooltip>
-            
-            {/* Search - shorter width, hidden on mobile */}
-            <div className="hidden md:block w-48 lg:w-56">
-              <SearchBar />
-            </div>
           </div>
 
-          {/* Center Navigation - Facebook style icon buttons with animations */}
+          {/* Center Navigation - Larger icon buttons */}
           <div className="hidden lg:flex items-center gap-2">
-            {/* Platform Dropdown - Icon only with tooltip and animation */}
+            {/* Platform Dropdown - With arrow indicator */}
             <DropdownMenu>
               <Tooltip>
                 <TooltipTrigger asChild>
                   <DropdownMenuTrigger asChild>
                     <motion.div
-                      whileHover={{ scale: 1.08 }}
-                      whileTap={{ scale: 0.95 }}
+                      whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.92 }}
                       transition={{ type: "spring", stiffness: 400, damping: 17 }}
                     >
                       <Button 
                         variant="ghost" 
-                        size="icon" 
-                        className="w-12 h-12 rounded-full text-primary hover:bg-primary/15 hover:shadow-md transition-all duration-300"
+                        size="default" 
+                        className="w-auto h-12 px-4 gap-1 rounded-full text-primary hover:bg-primary/15 hover:shadow-md transition-all duration-300"
                       >
                         <Layers className="w-7 h-7" strokeWidth={2.5} />
+                        <ChevronDown className="w-5 h-5" strokeWidth={2.5} />
                       </Button>
                     </motion.div>
                   </DropdownMenuTrigger>
@@ -287,7 +302,7 @@ export function Navbar() {
               </DropdownMenuContent>
             </DropdownMenu>
 
-            {/* Community - Icon only with tooltip and animation */}
+            {/* Community - Larger icon */}
             {navItems.map((item) => {
               const Icon = item.icon;
               const isActive = location.pathname === item.path;
@@ -296,8 +311,8 @@ export function Navbar() {
                   <TooltipTrigger asChild>
                     <Link to={item.path}>
                       <motion.div
-                        whileHover={{ scale: 1.08 }}
-                        whileTap={{ scale: 0.95 }}
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.92 }}
                         transition={{ type: "spring", stiffness: 400, damping: 17 }}
                       >
                         <Button
@@ -331,22 +346,23 @@ export function Navbar() {
             })}
           </div>
 
-          {/* Right Actions - Facebook style with animations */}
+
+          {/* Right Actions - Larger icons, no cursor settings button outside */}
           <div className="flex items-center gap-1 sm:gap-2">
-            {/* Sparkles/Activity - Icon only with tooltip and animation */}
+            {/* Sparkles/Activity - Larger icon */}
             <Tooltip>
               <TooltipTrigger asChild>
                 <motion.div
-                  whileHover={{ scale: 1.08, rotate: 5 }}
-                  whileTap={{ scale: 0.95 }}
+                  whileHover={{ scale: 1.1, rotate: 5 }}
+                  whileTap={{ scale: 0.92 }}
                   transition={{ type: "spring", stiffness: 400, damping: 17 }}
                 >
                   <Button 
                     variant="ghost" 
                     size="icon" 
-                    className="hidden md:flex w-11 h-11 rounded-full text-primary hover:bg-primary/15 hover:shadow-md transition-all duration-300"
+                    className="hidden md:flex w-12 h-12 rounded-full text-primary hover:bg-primary/15 hover:shadow-md transition-all duration-300"
                   >
-                    <Sparkles className="w-6 h-6" strokeWidth={2.5} />
+                    <Sparkles className="w-7 h-7" strokeWidth={2.5} />
                   </Button>
                 </motion.div>
               </TooltipTrigger>
@@ -369,22 +385,26 @@ export function Navbar() {
               onWalletConnected={(address) => setConnectedWallet(address)}
             />
 
-            {/* User Avatar Dropdown - Facebook style: avatar only, show name on hover */}
+            {/* User Avatar Dropdown - Larger avatar, name shows on hover */}
             <div className="hidden sm:flex items-center pl-2 sm:pl-3 border-l border-border/50">
               {user ? (
                 <DropdownMenu>
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <DropdownMenuTrigger asChild>
-                        <button className="flex items-center gap-1 hover:opacity-80 transition-opacity cursor-pointer focus:outline-none">
-                          <Avatar className="w-10 h-10 sm:w-11 sm:h-11 border-3 border-primary/30 ring-2 ring-primary/20">
+                        <motion.button 
+                          className="flex items-center gap-1 cursor-pointer focus:outline-none"
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          transition={{ type: "spring", stiffness: 400, damping: 17 }}
+                        >
+                          <Avatar className="w-11 h-11 sm:w-12 sm:h-12 border-2 border-primary/40 ring-2 ring-primary/20 shadow-md shadow-primary/20">
                             <AvatarImage src={avatarUrl || undefined} alt="Avatar" />
                             <AvatarFallback className="bg-primary/20 text-primary font-bold">
-                              <UserIcon className="w-5 h-5" />
+                              <UserIcon className="w-6 h-6" />
                             </AvatarFallback>
                           </Avatar>
-                          <ChevronDown className="w-4 h-4 text-primary" strokeWidth={2.5} />
-                        </button>
+                        </motion.button>
                       </DropdownMenuTrigger>
                     </TooltipTrigger>
                     <TooltipContent className="bg-foreground text-background font-semibold">
