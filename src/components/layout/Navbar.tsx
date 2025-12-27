@@ -208,42 +208,33 @@ export function Navbar() {
               </TooltipContent>
             </Tooltip>
             
-            {/* Search - next to logo */}
-            <div className="hidden md:block w-44 lg:w-52">
+            {/* Search - next to logo, shorter */}
+            <div className="hidden md:block w-32 lg:w-40">
               <SearchBar />
             </div>
           </div>
 
-          {/* Center Navigation - Home, Platform, Community */}
-          <div className="hidden lg:flex items-center justify-center gap-2 flex-1">
+          {/* Center Navigation - Home, Platform, Community - Facebook-like centered */}
+          <div className="hidden lg:flex items-center justify-center gap-1 absolute left-1/2 -translate-x-1/2">
             {/* Home Button */}
             <Tooltip>
               <TooltipTrigger asChild>
                 <Link to="/social">
                   <motion.div
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.92 }}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
                     transition={{ type: "spring", stiffness: 400, damping: 17 }}
                   >
                     <Button 
                       variant="ghost" 
                       size="icon"
-                      className={`relative w-20 h-12 rounded-xl transition-all duration-300 ${
+                      className={`relative w-24 h-12 rounded-xl transition-all duration-300 ${
                         location.pathname === "/social" 
-                          ? "bg-gradient-to-br from-primary to-primary/80 text-white shadow-lg shadow-primary/30 hover:shadow-primary/50" 
-                          : "text-primary hover:bg-primary/15 hover:text-primary hover:shadow-md"
+                          ? "bg-primary text-white" 
+                          : "text-primary hover:bg-primary/10"
                       }`}
                     >
-                      <Home className="w-7 h-7" strokeWidth={2.5} />
-                      {location.pathname === "/social" && (
-                        <motion.div
-                          layoutId="nav-indicator"
-                          className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-10 h-1 bg-primary rounded-full"
-                          initial={{ opacity: 0, scale: 0 }}
-                          animate={{ opacity: 1, scale: 1 }}
-                          transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                        />
-                      )}
+                      <Home className="w-7 h-7" strokeWidth={2} />
                     </Button>
                   </motion.div>
                 </Link>
@@ -259,17 +250,17 @@ export function Navbar() {
                 <TooltipTrigger asChild>
                   <DropdownMenuTrigger asChild>
                     <motion.div
-                      whileHover={{ scale: 1.1 }}
-                      whileTap={{ scale: 0.92 }}
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
                       transition={{ type: "spring", stiffness: 400, damping: 17 }}
                     >
                       <Button 
                         variant="ghost" 
                         size="default" 
-                        className="w-20 h-12 px-4 gap-1 rounded-xl text-primary hover:bg-primary/15 hover:shadow-md transition-all duration-300"
+                        className="w-24 h-12 px-4 gap-1 rounded-xl text-primary hover:bg-primary/10 transition-all duration-300"
                       >
-                        <Layers className="w-7 h-7" strokeWidth={2.5} />
-                        <ChevronDown className="w-5 h-5" strokeWidth={2.5} />
+                        <Layers className="w-7 h-7" strokeWidth={2} />
+                        <ChevronDown className="w-4 h-4" strokeWidth={2} />
                       </Button>
                     </motion.div>
                   </DropdownMenuTrigger>
@@ -311,29 +302,20 @@ export function Navbar() {
                   <TooltipTrigger asChild>
                     <Link to={item.path}>
                       <motion.div
-                        whileHover={{ scale: 1.1 }}
-                        whileTap={{ scale: 0.92 }}
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
                         transition={{ type: "spring", stiffness: 400, damping: 17 }}
                       >
                         <Button
                           variant="ghost"
                           size="icon"
-                          className={`relative w-20 h-12 rounded-xl transition-all duration-300 ${
+                          className={`relative w-24 h-12 rounded-xl transition-all duration-300 ${
                             isActive 
-                              ? "bg-gradient-to-br from-primary to-primary/80 text-white shadow-lg shadow-primary/30 hover:shadow-primary/50" 
-                              : "text-primary hover:bg-primary/15 hover:shadow-md"
+                              ? "bg-primary text-white" 
+                              : "text-primary hover:bg-primary/10"
                           }`}
                         >
-                          <Icon className="w-7 h-7" strokeWidth={2.5} />
-                          {isActive && (
-                            <motion.div
-                              layoutId="nav-indicator-community"
-                              className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-10 h-1 bg-primary rounded-full"
-                              initial={{ opacity: 0, scale: 0 }}
-                              animate={{ opacity: 1, scale: 1 }}
-                              transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                            />
-                          )}
+                          <Icon className="w-7 h-7" strokeWidth={2} />
                         </Button>
                       </motion.div>
                     </Link>
